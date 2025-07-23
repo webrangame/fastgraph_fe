@@ -127,14 +127,12 @@ export default function Sidebar() {
                 <>
                   <span className="font-semibold tracking-wide">{item.name}</span>
                   
-                  {/* Active indicator */}
                   {isActive(item.href) && (
                     <div className="ml-auto w-2 h-2 bg-white rounded-full shadow-sm"></div>
                   )}
                 </>
               )}
               
-              {/* Collapsed active indicator */}
               {collapsed && isActive(item.href) && (
                 <div className="absolute right-2 w-2 h-2 bg-white rounded-full shadow-sm"></div>
               )}
@@ -142,7 +140,6 @@ export default function Sidebar() {
           ))}
         </div>
 
-        {/* Bottom spacing */}
         {!collapsed && (
           <div className="mt-8 px-4">
             <div className="border-t border-gray-700 pt-6">
