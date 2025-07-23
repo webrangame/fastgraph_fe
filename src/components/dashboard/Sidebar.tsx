@@ -64,7 +64,7 @@ export default function Sidebar() {
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-105 transition-transform">
-            <span className="text-white font-bold text-sm">A</span>
+            <span className="text-white font-bold text-sm">AA</span>
           </div>
           {!collapsed && (
             <span className="text-white font-semibold text-lg tracking-tight group-hover:text-blue-200 transition-colors">ADMIN</span>

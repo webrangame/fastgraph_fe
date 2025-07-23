@@ -1,4 +1,3 @@
-
 # dependencies
 /node_modules
 
@@ -24,3 +23,27 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Add these lines:
+# Source maps and build chunks
+*.js.map
+*_*.js
+*_*.css
+
+# SWC compiler cache
+.swc/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
