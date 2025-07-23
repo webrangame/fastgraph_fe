@@ -147,7 +147,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             </button>
-            <h1 className="text-xl font-semibold">TimeLine</h1>
+            <h1 className="text-xl font-semibold">Fast Graph</h1>
           </div>
           
           <div className="flex items-center space-x-4">

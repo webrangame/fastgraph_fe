@@ -67,7 +67,7 @@ export default function Sidebar() {
             <span className="text-white font-bold text-sm">A</span>
           </div>
           {!collapsed && (
-            <span className="text-white font-semibold text-lg tracking-tight group-hover:text-blue-200 transition-colors">ADMINTO</span>
+            <span className="text-white font-semibold text-lg tracking-tight group-hover:text-blue-200 transition-colors">ADMIN</span>
           )}
         </button>
       </div>
