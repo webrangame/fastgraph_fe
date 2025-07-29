@@ -63,65 +63,46 @@ interface WorkflowCanvasProps {
   selectedNode: string | null;
   setSelectedNode: (nodeId: string | null) => void;
   onDeleteNode: (nodeId: string) => void;
+  onAddNode: (nodeData: any, position: { x: number; y: number }) => void;
 }
 
-interface PropertiesPanelProps {
-  selectedNode: string | null;
-  workflow: Workflow | undefined;
-}
+// Node types (keeping only for existing workflow compatibility)
+const nodeTypes: NodeType[] = [];
 
-// Node types similar to n8n
-const nodeTypes: NodeType[] = [
+// Sample created agents
+const createdAgents = [
   {
-    id: 'trigger',
-    name: 'Email Trigger',
-    icon: Mail,
-    color: 'bg-green-500',
-    category: 'Triggers'
-  },
-  {
-    id: 'agent',
-    name: 'AI Agent',
+    id: 'customer-service-agent',
+    name: 'Customer Service Agent',
     icon: Bot,
     color: 'bg-blue-500',
     category: 'Agents'
   },
   {
-    id: 'condition',
-    name: 'Condition',
-    icon: GitBranch,
-    color: 'bg-yellow-500',
-    category: 'Logic'
+    id: 'billing-agent',
+    name: 'Billing Agent', 
+    icon: Bot,
+    color: 'bg-green-500',
+    category: 'Agents'
   },
   {
-    id: 'action',
-    name: 'Action',
-    icon: Zap,
-    color: 'bg-purple-500',
-    category: 'Actions'
+    id: 'technical-support-agent',
+    name: 'Technical Support Agent',
+    icon: Bot,
+    color: 'bg-purple-500', 
+    category: 'Agents'
   }
 ];
 
-// Sample workflows
+// Sample workflows (empty canvas)
 const initialWorkflows: Workflow[] = [
   {
     id: '1',
     name: 'Customer Service Router',
     status: 'active',
     lastModified: '2 hours ago',
-    nodes: [
-      { id: 'n1', type: 'trigger', label: 'Email Trigger', x: 100, y: 200 },
-      { id: 'n2', type: 'agent', label: 'Main Agent', x: 300, y: 200 },
-      { id: 'n3', type: 'condition', label: 'Route Logic', x: 500, y: 200 },
-      { id: 'n4', type: 'agent', label: 'Billing Agent', x: 700, y: 150 },
-      { id: 'n5', type: 'agent', label: 'Return Agent', x: 700, y: 250 }
-    ],
-    connections: [
-      { from: 'n1', to: 'n2' },
-      { from: 'n2', to: 'n3' },
-      { from: 'n3', to: 'n4' },
-      { from: 'n3', to: 'n5' }
-    ]
+    nodes: [], // Empty - no pre-loaded nodes
+    connections: [] // Empty - no pre-loaded connections
   }
 ];
 
@@ -144,12 +125,12 @@ function WorkflowNode({ node, isSelected, onClick, onDelete }: WorkflowNodeProps
         isSelected ? 'border-blue-500 shadow-lg shadow-blue-500/25' : 'border-gray-600 hover:border-gray-500'
       }`}>
         <div className="flex items-center space-x-3">
-          <div className={`p-2 rounded-lg ${nodeType?.color || 'bg-gray-500'}`}>
+          <div className={`p-2 rounded-lg ${node.type === 'agent' ? 'bg-blue-500' : 'bg-gray-500'}`}>
             <Icon className="w-5 h-5 text-white" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-white font-medium text-sm">{node.label}</div>
-            <div className="text-gray-400 text-xs">{nodeType?.name}</div>
+            <div className="text-gray-400 text-xs">Agent</div>
           </div>
         </div>
         
@@ -170,7 +151,16 @@ function WorkflowNode({ node, isSelected, onClick, onDelete }: WorkflowNodeProps
   );
 }
 
-function WorkflowCanvas({ workflow, selectedNode, setSelectedNode, onDeleteNode }: WorkflowCanvasProps) {
+function WorkflowCanvas({ workflow, selectedNode, setSelectedNode, onDeleteNode, onAddNode }: WorkflowCanvasProps) {
+  const addNodeToCanvas = (e: React.DragEvent, nodeData: any) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - 60; // Center the node
+    const y = e.clientY - rect.top - 40;  // Center the node
+    
+    onAddNode(nodeData, { x, y });
+  };
+
   if (!workflow) {
     return (
       <div className="flex-1 bg-gray-900 flex items-center justify-center">
@@ -184,7 +174,17 @@ function WorkflowCanvas({ workflow, selectedNode, setSelectedNode, onDeleteNode 
   }
 
   return (
-    <div className="flex-1 bg-gray-900 relative overflow-hidden">
+    <div 
+      className="flex-1 bg-gray-900 relative overflow-hidden"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        const nodeDataString = e.dataTransfer.getData('text/plain');
+        if (nodeDataString) {
+          const nodeData = JSON.parse(nodeDataString);
+          addNodeToCanvas(e, nodeData);
+        }
+      }}
+    >
       {/* Grid background */}
       <div className="absolute inset-0 opacity-10" style={{
         backgroundImage: `
@@ -193,6 +193,19 @@ function WorkflowCanvas({ workflow, selectedNode, setSelectedNode, onDeleteNode 
         `,
         backgroundSize: '20px 20px'
       }}></div>
+      
+      {/* Empty Canvas Message - Only show when no nodes */}
+      {workflow.nodes.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-gray-600">
+              <Bot className="w-12 h-12 text-gray-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">Drag agents here to build your workflow</h3>
+            <p className="text-gray-400 text-sm">Select agents from the left panel and drag them onto the canvas</p>
+          </div>
+        </div>
+      )}
       
       {/* Connections */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none">
@@ -250,126 +263,6 @@ function WorkflowCanvas({ workflow, selectedNode, setSelectedNode, onDeleteNode 
   );
 }
 
-function NodePanel() {
-  return (
-    <div className="w-64 bg-gray-800 border-r border-gray-700">
-      <div className="p-4">
-        <div className="flex items-center space-x-2 mb-4">
-          <Search className="w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search nodes..."
-            className="flex-1 bg-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        
-        <div className="space-y-4">
-          {['Triggers', 'Agents', 'Logic', 'Actions'].map(category => (
-            <div key={category}>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-gray-300">{category}</h3>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
-              <div className="space-y-1">
-                {nodeTypes
-                  .filter(type => type.category === category)
-                  .map(type => (
-                    <div
-                      key={type.id}
-                      className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 cursor-pointer group"
-                      draggable
-                    >
-                      <div className={`p-1.5 rounded ${type.color}`}>
-                        <type.icon className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-sm text-gray-300 group-hover:text-white">
-                        {type.name}
-                      </span>
-                    </div>
-                  ))
-                }
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PropertiesPanel({ selectedNode, workflow }: PropertiesPanelProps) {
-  const node = workflow?.nodes.find((n: WorkflowNode) => n.id === selectedNode);
-  
-  if (!selectedNode || !node) {
-    return (
-      <div className="w-80 bg-gray-800 border-l border-gray-700 p-4">
-        <div className="text-center text-gray-400 mt-8">
-          <Settings className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>Select a node to configure</p>
-        </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="w-80 bg-gray-800 border-l border-gray-700 p-4">
-      <h3 className="text-lg font-semibold text-white mb-4">Node Properties</h3>
-      
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Node Name
-          </label>
-          <input
-            type="text"
-            value={node.label}
-            className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        
-        {node.type === 'agent' && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                AI Model
-              </label>
-              <select className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option>GPT-4</option>
-                <option>GPT-3.5</option>
-                <option>Claude</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                System Prompt
-              </label>
-              <textarea
-                rows={4}
-                placeholder="Enter system prompt..."
-                className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </>
-        )}
-        
-        {node.type === 'condition' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Condition Logic
-            </label>
-            <select className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option>Contains keywords</option>
-              <option>Sentiment analysis</option>
-              <option>Custom logic</option>
-            </select>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>(initialWorkflows);
   const [activeWorkflow, setActiveWorkflow] = useState<string | null>('1');
@@ -377,7 +270,33 @@ export default function WorkflowsPage() {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   
   const currentWorkflow = workflows.find((w: Workflow) => w.id === activeWorkflow);
-  
+
+  const addNodeToWorkflow = (nodeData: any, position: { x: number; y: number }) => {
+    if (!activeWorkflow) return;
+    
+    const newNodeId = `node_${Date.now()}`;
+    const newNode: WorkflowNode = {
+      id: newNodeId,
+      type: nodeData.type,
+      label: nodeData.name,
+      x: position.x,
+      y: position.y
+    };
+    
+    const updatedWorkflows = workflows.map((w: Workflow) => {
+      if (w.id === activeWorkflow) {
+        return {
+          ...w,
+          nodes: [...w.nodes, newNode],
+          lastModified: 'Just now'
+        };
+      }
+      return w;
+    });
+    
+    setWorkflows(updatedWorkflows);
+  };
+
   const createNewWorkflow = () => {
     if (workflows.length >= 5) {
       alert('Maximum 5 workflows allowed');
@@ -470,7 +389,7 @@ export default function WorkflowsPage() {
     setActiveWorkflow(updatedWorkflows[0]?.id || null);
     setSelectedNode(null);
   };
-  
+
   return (
     <div className="h-screen bg-gray-900 flex flex-col">
       {/* Header */}
@@ -581,16 +500,80 @@ export default function WorkflowsPage() {
       
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        <NodePanel />
+        <div className="w-64 bg-gray-800 border-r border-gray-700">
+          <div className="p-4">
+            {/* Agents Title */}
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-300">Available Agents</h3>
+            </div>
+            
+            {/* Agent List - Draggable */}
+            <div className="space-y-2">
+              <div 
+                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 cursor-grab active:cursor-grabbing group transition-colors"
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/plain', JSON.stringify({
+                    type: 'agent',
+                    name: 'Customer Service Agent',
+                    color: 'bg-blue-500'
+                  }));
+                }}
+              >
+                <div className="p-2 rounded-lg bg-blue-500">
+                  <Bot className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm text-gray-300 group-hover:text-white font-medium">
+                  Customer Service Agent
+                </span>
+              </div>
+              
+              <div 
+                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 cursor-grab active:cursor-grabbing group transition-colors"
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/plain', JSON.stringify({
+                    type: 'agent',
+                    name: 'Billing Agent',
+                    color: 'bg-green-500'
+                  }));
+                }}
+              >
+                <div className="p-2 rounded-lg bg-green-500">
+                  <Bot className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm text-gray-300 group-hover:text-white font-medium">
+                  Billing Agent
+                </span>
+              </div>
+              
+              <div 
+                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 cursor-grab active:cursor-grabbing group transition-colors"
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/plain', JSON.stringify({
+                    type: 'agent',
+                    name: 'Technical Support Agent',
+                    color: 'bg-purple-500'
+                  }));
+                }}
+              >
+                <div className="p-2 rounded-lg bg-purple-500">
+                  <Bot className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm text-gray-300 group-hover:text-white font-medium">
+                  Technical Support Agent
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
         <WorkflowCanvas 
           workflow={currentWorkflow}
           selectedNode={selectedNode}
           setSelectedNode={setSelectedNode}
           onDeleteNode={deleteNode}
-        />
-        <PropertiesPanel 
-          selectedNode={selectedNode}
-          workflow={currentWorkflow}
+          onAddNode={addNodeToWorkflow}
         />
       </div>
     </div>
