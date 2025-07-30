@@ -37,16 +37,16 @@ const quickActions = [
     title: 'Add Agent',
     description: 'Deploy a new AI agent',
     icon: UserPlus,
-    gradient: 'from-green-500 to-green-600',
-    hoverGradient: 'from-green-600 to-green-700',
+    gradient: 'from-indigo-500 to-purple-600',
+    hoverGradient: 'from-indigo-600 to-purple-700',
     href: '/dashboard/agents/create'
   },
   {
     title: 'View Analytics',
     description: 'Check performance metrics',
     icon: Eye,
-    gradient: 'from-purple-500 to-purple-600',
-    hoverGradient: 'from-purple-600 to-purple-700',
+    gradient: 'from-cyan-500 to-teal-600',
+    hoverGradient: 'from-cyan-600 to-teal-700',
     href: '/dashboard/analytics'
   }
 ];
@@ -147,7 +147,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             </button>
-            <h1 className="text-xl font-semibold">Fast Graph</h1>
+            <h1 className="text-xl font-semibold">TimeLine</h1>
           </div>
           
           <div className="flex items-center space-x-4">
