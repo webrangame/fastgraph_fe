@@ -4,7 +4,6 @@ import {
   Search, 
   Bell, 
   Settings, 
-  Sun, 
   Flag,
   MoreVertical,
   TrendingUp,
@@ -23,6 +22,7 @@ import {
   AlertCircle,
   XCircle
 } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
 
 const quickActions = [
   {
@@ -31,7 +31,9 @@ const quickActions = [
     icon: Plus,
     gradient: 'from-blue-500 to-blue-600',
     hoverGradient: 'from-blue-600 to-blue-700',
-    href: '/dashboard/workflows/create'
+    href: '/dashboard/workflows/create',
+    lightColor: '#3b82f6',
+    darkBg: 'rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.15)'
   },
   {
     title: 'Add Agent',
@@ -39,7 +41,9 @@ const quickActions = [
     icon: UserPlus,
     gradient: 'from-indigo-500 to-purple-600',
     hoverGradient: 'from-indigo-600 to-purple-700',
-    href: '/dashboard/agents/create'
+    href: '/dashboard/agents/create',
+    lightColor: '#8b5cf6',
+    darkBg: 'rgba(99, 102, 241, 0.1), rgba(147, 51, 234, 0.15)'
   },
   {
     title: 'View Analytics',
@@ -47,7 +51,9 @@ const quickActions = [
     icon: Eye,
     gradient: 'from-cyan-500 to-teal-600',
     hoverGradient: 'from-cyan-600 to-teal-700',
-    href: '/dashboard/analytics'
+    href: '/dashboard/analytics',
+    lightColor: '#06b6d4',
+    darkBg: 'rgba(6, 182, 212, 0.1), rgba(13, 148, 136, 0.15)'
   }
 ];
 
@@ -134,48 +140,49 @@ const statsCards = [
 ];
 
 export default function DashboardPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
-    <div className="bg-gray-900 min-h-screen text-white">
+    <div className="theme-bg min-h-screen theme-text-primary transition-colors duration-300">
       {/* Header */}
-      <header className="bg-gray-800 px-6 py-4 border-b border-gray-700">
+      <header className="theme-header-bg px-6 py-4 theme-border theme-shadow" style={{ borderBottomWidth: '1px' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button className="p-2 rounded-lg hover:bg-gray-700">
+            <button className="p-2 rounded-lg theme-hover-bg transition-colors">
               <div className="w-6 h-6 grid grid-cols-3 gap-0.5">
                 {[...Array(9)].map((_, i) => (
-                  <div key={i} className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  <div key={i} className="w-1 h-1 theme-text-muted rounded-full" style={{ backgroundColor: 'var(--text-muted)' }}></div>
                 ))}
               </div>
             </button>
-            <h1 className="text-xl font-semibold">TimeLine</h1>
+            <h1 className="text-xl font-semibold theme-text-primary">TimeLine</h1>
           </div>
           
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 theme-text-muted w-4 h-4" />
               <input
                 type="text"
                 placeholder="Search something.."
-                className="bg-gray-700 text-white pl-10 pr-4 py-2 rounded-lg w-64 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="theme-input-bg theme-text-primary pl-10 pr-4 py-2 rounded-lg w-64 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 theme-border"
+                style={{ borderWidth: '1px' }}
               />
             </div>
-            <button className="p-2 rounded-lg hover:bg-gray-700">
-              <Flag className="w-5 h-5" />
+            <button className="p-2 rounded-lg theme-hover-bg transition-colors">
+              <Flag className="w-5 h-5 theme-text-secondary" />
             </button>
-            <button className="p-2 rounded-lg hover:bg-gray-700">
-              <Bell className="w-5 h-5" />
+            <button className="p-2 rounded-lg theme-hover-bg transition-colors">
+              <Bell className="w-5 h-5 theme-text-secondary" />
             </button>
-            <button className="p-2 rounded-lg hover:bg-gray-700">
-              <Settings className="w-5 h-5" />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-gray-700">
-              <Sun className="w-5 h-5" />
+            <button className="p-2 rounded-lg theme-hover-bg transition-colors">
+              <Settings className="w-5 h-5 theme-text-secondary" />
             </button>
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-medium text-sm">NH</span>
               </div>
-              <span className="text-sm font-medium">Nowak Helme</span>
+              <span className="text-sm font-medium theme-text-primary">Nowak Helme</span>
             </div>
           </div>
         </div>
@@ -186,13 +193,13 @@ export default function DashboardPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statsCards.map((card, index) => (
-            <div key={index} className="bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-700 hover:border-gray-600">
+            <div key={index} className="theme-card-bg rounded-2xl p-6 theme-shadow hover:shadow-md transition-all duration-300 theme-border hover:border-gray-300" style={{ borderWidth: '1px' }}>
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-xl bg-gradient-to-br ${card.gradient} shadow-lg`}>
                   <card.icon className="w-6 h-6 text-white" />
                 </div>
-                <button className="text-gray-400 hover:text-gray-300 p-1 rounded-lg hover:bg-gray-700 transition-colors">
+                <button className="theme-text-muted hover:text-gray-600 p-1 rounded-lg theme-hover-bg transition-colors">
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </div>
@@ -200,17 +207,17 @@ export default function DashboardPage() {
               {/* Content */}
               <div className="space-y-3">
                 <div>
-                  <h3 className="text-gray-300 text-sm font-medium mb-1">{card.title}</h3>
-                  <p className="text-gray-500 text-xs">{card.description}</p>
+                  <h3 className="theme-text-secondary text-sm font-medium mb-1">{card.title}</h3>
+                  <p className="theme-text-muted text-xs">{card.description}</p>
                 </div>
                 
                 <div className="flex items-end justify-between">
                   <div>
-                    <div className="text-3xl font-bold text-white mb-1">{card.value}</div>
+                    <div className="text-3xl font-bold theme-text-primary mb-1">{card.value}</div>
                     <div className="flex items-center space-x-1">
-                      <TrendingUp className="w-3 h-3 text-green-400" />
-                      <span className="text-green-400 text-sm font-semibold">{card.change}</span>
-                      <span className="text-gray-500 text-xs">vs last month</span>
+                      <TrendingUp className="w-3 h-3 text-green-500" />
+                      <span className="text-green-500 text-sm font-semibold">{card.change}</span>
+                      <span className="theme-text-muted text-xs">vs last month</span>
                     </div>
                   </div>
                 </div>
@@ -219,7 +226,7 @@ export default function DashboardPage() {
               {/* Progress Bar for Success Rate */}
               {card.title === 'Success Rate' && (
                 <div className="mt-4">
-                  <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div className="w-full theme-input-bg rounded-full h-2">
                     <div 
                       className={`bg-gradient-to-r ${card.gradient} h-2 rounded-full transition-all duration-500`}
                       style={{width: card.value}}
@@ -231,7 +238,7 @@ export default function DashboardPage() {
               {/* Mini chart indicator for other cards */}
               {card.title !== 'Success Rate' && (
                 <div className="mt-4 flex justify-end">
-                  <div className="h-8 w-16 bg-gray-700 rounded-lg flex items-center justify-center">
+                  <div className="h-8 w-16 theme-input-bg rounded-lg flex items-center justify-center">
                     <div className={`w-8 h-2 bg-gradient-to-r ${card.gradient} opacity-60 rounded-full`}></div>
                   </div>
                 </div>
@@ -242,21 +249,97 @@ export default function DashboardPage() {
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4">Quick Actions</h2>
+          <h2 className="text-xl font-semibold theme-text-primary mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {quickActions.map((action, index) => (
               <button
                 key={index}
-                className={`group relative bg-gradient-to-br ${action.gradient} hover:bg-gradient-to-br hover:${action.hoverGradient} rounded-2xl p-6 text-left transition-all duration-300 hover:scale-105 hover:shadow-2xl shadow-lg`}
+                className="group relative rounded-2xl p-6 text-left shadow-lg overflow-hidden
+                  transition-all duration-500 ease-out
+                  hover:scale-[1.02] hover:shadow-2xl hover:-translate-y-1
+                  transform-gpu will-change-transform"
+                style={{
+                  transformStyle: 'preserve-3d',
+                  backfaceVisibility: 'hidden'
+                }}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <action.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                {/* Background - Conditional based on theme */}
+                <div className="absolute inset-0 rounded-2xl transition-all duration-500">
+                  {isDark ? (
+                    /* Dark mode gradient background */
+                    <div 
+                      className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${action.gradient} 
+                        before:absolute before:inset-0 before:bg-gradient-to-br before:${action.hoverGradient} before:opacity-0 before:transition-opacity before:duration-500
+                        group-hover:before:opacity-100`}
+                    />
+                  ) : (
+                    /* Light mode glassmorphism */
+                    <div 
+                      className="absolute inset-0 rounded-2xl backdrop-blur-xl border border-white/20 transition-all duration-500 group-hover:backdrop-blur-2xl group-hover:border-white/30"
+                      style={{
+                        background: `linear-gradient(135deg, ${action.darkBg})`,
+                        boxShadow: '0 8px 32px rgba(31, 38, 135, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                      }}
+                    />
+                  )}
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">{action.title}</h3>
-                <p className="text-white/80 text-sm">{action.description}</p>
+
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div 
+                      className="p-3 rounded-xl backdrop-blur-sm transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      }}
+                    >
+                      <action.icon 
+                        className="w-6 h-6 transition-all duration-300 group-hover:scale-110" 
+                        style={{
+                          color: isDark ? 'white' : action.lightColor
+                        }}
+                      />
+                    </div>
+                    <ArrowRight 
+                      className="w-5 h-5 transition-all duration-500 ease-out group-hover:translate-x-2 group-hover:scale-110" 
+                      style={{
+                        color: isDark ? 'rgba(255, 255, 255, 0.7)' : action.lightColor,
+                        opacity: isDark ? 1 : 0.8
+                      }}
+                    />
+                  </div>
+                  <h3 
+                    className="text-lg font-semibold mb-2 transition-all duration-300 group-hover:translate-x-1"
+                    style={{
+                      color: isDark ? 'white' : (action.lightColor === '#3b82f6' ? '#1e40af' : 
+                             action.lightColor === '#8b5cf6' ? '#7c3aed' : '#0891b2')
+                    }}
+                  >
+                    {action.title}
+                  </h3>
+                  <p 
+                    className="text-sm transition-all duration-300 group-hover:translate-x-1"
+                    style={{
+                      color: isDark ? 'rgba(255, 255, 255, 0.8)' : 'var(--text-secondary)',
+                      opacity: isDark ? 1 : 0.8
+                    }}
+                  >
+                    {action.description}
+                  </p>
+                </div>
+                
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-700">
+                  <div 
+                    className="absolute top-0 left-0 w-full h-full transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"
+                    style={{
+                      background: isDark 
+                        ? 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)'
+                        : 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent)'
+                    }}
+                  />
+                </div>
               </button>
             ))}
           </div>
@@ -264,11 +347,11 @@ export default function DashboardPage() {
 
         {/* Recent Activity */}
         <div className="mb-8">
-          <div className="bg-gray-800 rounded-2xl border border-gray-700">
-            <div className="p-6 border-b border-gray-700">
+          <div className="theme-card-bg rounded-2xl theme-border theme-shadow" style={{ borderWidth: '1px' }}>
+            <div className="p-6 theme-border" style={{ borderBottomWidth: '1px' }}>
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-white">Recent Activity</h2>
-                <button className="text-gray-400 hover:text-white transition-colors">
+                <h2 className="text-xl font-semibold theme-text-primary">Recent Activity</h2>
+                <button className="theme-text-muted hover:text-gray-600 transition-colors">
                   <MoreVertical className="w-5 h-5" />
                 </button>
               </div>
@@ -276,19 +359,19 @@ export default function DashboardPage() {
             <div className="p-6">
               <div className="space-y-4">
                 {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-4 p-4 rounded-xl hover:bg-gray-700/50 transition-colors">
+                  <div key={activity.id} className="flex items-start space-x-4 p-4 rounded-xl theme-hover-bg transition-colors">
                     <div className={`p-2 rounded-lg flex-shrink-0 ${
-                      activity.type === 'success' ? 'bg-green-500/20 text-green-400' :
-                      activity.type === 'error' ? 'bg-red-500/20 text-red-400' :
-                      activity.type === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-blue-500/20 text-blue-400'
+                      activity.type === 'success' ? 'bg-green-100 text-green-600' :
+                      activity.type === 'error' ? 'bg-red-100 text-red-600' :
+                      activity.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                      'bg-blue-100 text-blue-600'
                     }`}>
                       <activity.icon className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-white font-medium text-sm mb-1">{activity.title}</h4>
-                      <p className="text-gray-400 text-xs mb-2">{activity.description}</p>
-                      <div className="flex items-center text-gray-500 text-xs">
+                      <h4 className="theme-text-primary font-medium text-sm mb-1">{activity.title}</h4>
+                      <p className="theme-text-secondary text-xs mb-2">{activity.description}</p>
+                      <div className="flex items-center theme-text-muted text-xs">
                         <Clock className="w-3 h-3 mr-1" />
                         {activity.time}
                       </div>
@@ -297,7 +380,7 @@ export default function DashboardPage() {
                 ))}
               </div>
               <div className="mt-6 text-center">
-                <button className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
+                <button className="text-blue-500 hover:text-blue-600 text-sm font-medium transition-colors">
                   View all activities →
                 </button>
               </div>

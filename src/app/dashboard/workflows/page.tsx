@@ -117,20 +117,20 @@ function WorkflowNode({ node, isSelected, onClick, onDelete }: WorkflowNodeProps
       onClick={() => onClick(node.id)}
     >
       {/* Connection points */}
-      <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-      <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 theme-text-muted rounded-full border-2 theme-border opacity-0 group-hover:opacity-100 transition-opacity" style={{ backgroundColor: 'var(--text-muted)', borderColor: 'var(--border-color)' }}></div>
+      <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 theme-text-muted rounded-full border-2 theme-border opacity-0 group-hover:opacity-100 transition-opacity" style={{ backgroundColor: 'var(--text-muted)', borderColor: 'var(--border-color)' }}></div>
       
       {/* Node */}
-      <div className={`relative bg-gray-800 rounded-lg p-4 border-2 transition-all ${
-        isSelected ? 'border-blue-500 shadow-lg shadow-blue-500/25' : 'border-gray-600 hover:border-gray-500'
+      <div className={`relative theme-card-bg rounded-lg p-4 border-2 transition-all theme-shadow ${
+        isSelected ? 'border-blue-500 shadow-lg shadow-blue-500/25' : 'theme-border hover:border-gray-400'
       }`}>
         <div className="flex items-center space-x-3">
           <div className={`p-2 rounded-lg ${node.type === 'agent' ? 'bg-blue-500' : 'bg-gray-500'}`}>
             <Icon className="w-5 h-5 text-white" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-white font-medium text-sm">{node.label}</div>
-            <div className="text-gray-400 text-xs">Agent</div>
+            <div className="theme-text-primary font-medium text-sm">{node.label}</div>
+            <div className="theme-text-muted text-xs">Agent</div>
           </div>
         </div>
         
@@ -163,11 +163,11 @@ function WorkflowCanvas({ workflow, selectedNode, setSelectedNode, onDeleteNode,
 
   if (!workflow) {
     return (
-      <div className="flex-1 bg-gray-900 flex items-center justify-center">
+      <div className="flex-1 theme-bg flex items-center justify-center">
         <div className="text-center">
-          <Bot className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">No Workflow Selected</h3>
-          <p className="text-gray-400">Create a new workflow to get started</p>
+          <Bot className="w-16 h-16 theme-text-muted mx-auto mb-4" />
+          <h3 className="text-xl font-semibold theme-text-primary mb-2">No Workflow Selected</h3>
+          <p className="theme-text-secondary">Create a new workflow to get started</p>
         </div>
       </div>
     );
@@ -175,7 +175,7 @@ function WorkflowCanvas({ workflow, selectedNode, setSelectedNode, onDeleteNode,
 
   return (
     <div 
-      className="flex-1 bg-gray-900 relative overflow-hidden"
+      className="flex-1 theme-bg relative overflow-hidden"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         const nodeDataString = e.dataTransfer.getData('text/plain');
@@ -188,8 +188,8 @@ function WorkflowCanvas({ workflow, selectedNode, setSelectedNode, onDeleteNode,
       {/* Grid background */}
       <div className="absolute inset-0 opacity-10" style={{
         backgroundImage: `
-          linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+          linear-gradient(var(--text-muted) 1px, transparent 1px),
+          linear-gradient(90deg, var(--text-muted) 1px, transparent 1px)
         `,
         backgroundSize: '20px 20px'
       }}></div>
@@ -198,11 +198,11 @@ function WorkflowCanvas({ workflow, selectedNode, setSelectedNode, onDeleteNode,
       {workflow.nodes.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className="w-24 h-24 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-gray-600">
-              <Bot className="w-12 h-12 text-gray-500" />
+            <div className="w-24 h-24 theme-card-bg rounded-2xl flex items-center justify-center mx-auto mb-4 border-2 border-dashed theme-border">
+              <Bot className="w-12 h-12 theme-text-muted" />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Drag agents here to build your workflow</h3>
-            <p className="text-gray-400 text-sm">Select agents from the left panel and drag them onto the canvas</p>
+            <h3 className="text-lg font-semibold theme-text-primary mb-2">Drag agents here to build your workflow</h3>
+            <p className="theme-text-secondary text-sm">Select agents from the left panel and drag them onto the canvas</p>
           </div>
         </div>
       )}
@@ -223,7 +223,7 @@ function WorkflowCanvas({ workflow, selectedNode, setSelectedNode, onDeleteNode,
             <path
               key={index}
               d={`M ${x1} ${y1} C ${x1 + 50} ${y1} ${x2 - 50} ${y2} ${x2} ${y2}`}
-              stroke="#4B5563"
+              stroke="var(--text-secondary)"
               strokeWidth="2"
               fill="none"
               markerEnd="url(#arrowhead)"
@@ -243,7 +243,7 @@ function WorkflowCanvas({ workflow, selectedNode, setSelectedNode, onDeleteNode,
           >
             <polygon
               points="0 0, 10 3.5, 0 7"
-              fill="#4B5563"
+              fill="var(--text-secondary)"
             />
           </marker>
         </defs>
@@ -391,12 +391,12 @@ export default function WorkflowsPage() {
   };
 
   return (
-    <div className="h-screen bg-gray-900 flex flex-col">
+    <div className="h-screen theme-bg flex flex-col transition-colors duration-300">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700">
+      <div className="theme-header-bg theme-border" style={{ borderBottomWidth: '1px' }}>
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-semibold text-white">Workflow Builder</h1>
+            <h1 className="text-xl font-semibold theme-text-primary">Workflow Builder</h1>
             {currentWorkflow && (
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
@@ -405,7 +405,7 @@ export default function WorkflowsPage() {
                   currentWorkflow.status === 'stopped' ? 'bg-red-400' :
                   'bg-gray-400'
                 }`}></div>
-                <span className="text-sm text-gray-400 capitalize">{currentWorkflow.status}</span>
+                <span className="text-sm theme-text-muted capitalize">{currentWorkflow.status}</span>
               </div>
             )}
           </div>
@@ -423,7 +423,7 @@ export default function WorkflowsPage() {
               <button 
                 onClick={executeWorkflow}
                 disabled={!currentWorkflow || currentWorkflow.nodes.length === 0}
-                className="px-4 py-2 bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white flex items-center space-x-2 transition-colors"
+                className="px-4 py-2 bg-green-600 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white flex items-center space-x-2 transition-colors"
               >
                 <Play className="w-4 h-4" />
                 <span>Execute</span>
@@ -443,7 +443,7 @@ export default function WorkflowsPage() {
             <button 
               onClick={deleteWorkflow}
               disabled={!currentWorkflow}
-              className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white flex items-center space-x-2 transition-colors"
+              className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white flex items-center space-x-2 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
               <span>Delete</span>
@@ -457,10 +457,10 @@ export default function WorkflowsPage() {
             {workflows.map((workflow: Workflow) => (
               <div
                 key={workflow.id}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg cursor-pointer relative ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg cursor-pointer relative transition-colors ${
                   activeWorkflow === workflow.id
-                    ? 'bg-gray-900 text-white border-t-2 border-blue-500'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'theme-bg theme-text-primary border-t-2 border-blue-500'
+                    : 'theme-input-bg theme-text-secondary theme-hover-bg'
                 }`}
                 onClick={() => setActiveWorkflow(workflow.id)}
               >
@@ -478,7 +478,7 @@ export default function WorkflowsPage() {
                     e.stopPropagation();
                     closeWorkflow(workflow.id);
                   }}
-                  className="text-gray-400 hover:text-white"
+                  className="theme-text-muted hover:text-red-500 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -489,7 +489,7 @@ export default function WorkflowsPage() {
           {workflows.length < 5 && (
             <button
               onClick={createNewWorkflow}
-              className="flex items-center space-x-1 px-3 py-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg"
+              className="flex items-center space-x-1 px-3 py-2 theme-text-secondary hover:theme-text-primary theme-hover-bg rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span className="text-sm">New Workflow</span>
@@ -500,17 +500,17 @@ export default function WorkflowsPage() {
       
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-64 bg-gray-800 border-r border-gray-700">
+        <div className="w-64 theme-sidebar-bg theme-border" style={{ borderRightWidth: '1px' }}>
           <div className="p-4">
             {/* Agents Title */}
             <div className="mb-4">
-              <h3 className="text-sm font-semibold text-gray-300">Available Agents</h3>
+              <h3 className="text-sm font-semibold theme-text-secondary">Available Agents</h3>
             </div>
             
             {/* Agent List - Draggable */}
             <div className="space-y-2">
               <div 
-                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 cursor-grab active:cursor-grabbing group transition-colors"
+                className="flex items-center space-x-3 p-3 rounded-lg theme-hover-bg cursor-grab active:cursor-grabbing group transition-colors"
                 draggable={true}
                 onDragStart={(e) => {
                   e.dataTransfer.setData('text/plain', JSON.stringify({
@@ -523,13 +523,13 @@ export default function WorkflowsPage() {
                 <div className="p-2 rounded-lg bg-blue-500">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-sm text-gray-300 group-hover:text-white font-medium">
+                <span className="text-sm theme-text-secondary group-hover:theme-text-primary font-medium transition-colors">
                   Customer Service Agent
                 </span>
               </div>
               
               <div 
-                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 cursor-grab active:cursor-grabbing group transition-colors"
+                className="flex items-center space-x-3 p-3 rounded-lg theme-hover-bg cursor-grab active:cursor-grabbing group transition-colors"
                 draggable={true}
                 onDragStart={(e) => {
                   e.dataTransfer.setData('text/plain', JSON.stringify({
@@ -542,13 +542,13 @@ export default function WorkflowsPage() {
                 <div className="p-2 rounded-lg bg-green-500">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-sm text-gray-300 group-hover:text-white font-medium">
+                <span className="text-sm theme-text-secondary group-hover:theme-text-primary font-medium transition-colors">
                   Billing Agent
                 </span>
               </div>
               
               <div 
-                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 cursor-grab active:cursor-grabbing group transition-colors"
+                className="flex items-center space-x-3 p-3 rounded-lg theme-hover-bg cursor-grab active:cursor-grabbing group transition-colors"
                 draggable={true}
                 onDragStart={(e) => {
                   e.dataTransfer.setData('text/plain', JSON.stringify({
@@ -561,7 +561,7 @@ export default function WorkflowsPage() {
                 <div className="p-2 rounded-lg bg-purple-500">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-sm text-gray-300 group-hover:text-white font-medium">
+                <span className="text-sm theme-text-secondary group-hover:theme-text-primary font-medium transition-colors">
                   Technical Support Agent
                 </span>
               </div>
