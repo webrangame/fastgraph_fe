@@ -26,11 +26,11 @@ const navigationItems = [
     href: '/dashboard/workflows',
     icon: Workflow,
   },
-  {
-    name: 'Agents',
-    href: '/dashboard/agents',
-    icon: Bot,
-  },
+  // {
+  //   name: 'Agents',
+  //   href: '/dashboard/agents',
+  //   icon: Bot,
+  // },
   {
     name: 'Analytics',
     href: '/dashboard/analytics',
