@@ -1,3 +1,7 @@
+import { Bot } from 'lucide-react';
+import { Workflow, AgentData } from '@/types/workflow';
+
+
 export const QUICK_ACTIONS = [
   {
     title: 'Create Workflow',
@@ -84,3 +88,49 @@ export const RECENT_ACTIVITIES = [
     icon: 'XCircle'
   }
 ];
+
+export const createdAgents: AgentData[] = [
+  {
+    id: 'customer-service-agent',
+    name: 'Customer Service Agent',
+    icon: Bot,
+    color: 'bg-blue-500',
+    category: 'Agents'
+  },
+  {
+    id: 'billing-agent',
+    name: 'Billing Agent', 
+    icon: Bot,
+    color: 'bg-green-500',
+    category: 'Agents'
+  },
+  {
+    id: 'technical-support-agent',
+    name: 'Technical Support Agent',
+    icon: Bot,
+    color: 'bg-purple-500', 
+    category: 'Agents'
+  }
+];
+
+// Sample workflows (empty canvas)
+export const initialWorkflows: Workflow[] = [
+  {
+    id: '1',
+    name: 'Customer Service Router',
+    status: 'active',
+    lastModified: '2 hours ago',
+    nodes: [],
+    connections: []
+  }
+];
+
+export const MAX_WORKFLOWS = 5;
+
+export const WORKFLOW_STATUSES = {
+  ACTIVE: 'active' as const,
+  DRAFT: 'draft' as const,
+  INACTIVE: 'inactive' as const,
+  RUNNING: 'running' as const,
+  STOPPED: 'stopped' as const
+};
