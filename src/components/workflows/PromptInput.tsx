@@ -16,15 +16,8 @@ import {
 interface PromptInputProps {
   onSubmit: (message: string) => void;
   isProcessing: boolean;
+  isMobile?: boolean;
 }
-
-// Mock agent data - replace with your actual agent types
-// const agents = [
-//   { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', icon: '🧠', description: 'Most capable model' },
-//   { id: 'claude-3-haiku', name: 'Claude 3 Haiku', icon: '⚡', description: 'Fast and efficient' },
-//   { id: 'gpt-4', name: 'GPT-4', icon: '🤖', description: 'OpenAI\'s latest model' },
-//   { id: 'gemini-pro', name: 'Gemini Pro', icon: '✨', description: 'Google\'s advanced AI' }
-// ];
 
 const getFileIcon = (type: string) => {
   if (type.startsWith('image/')) return <Image className="w-4 h-4" />;
@@ -34,7 +27,7 @@ const getFileIcon = (type: string) => {
   return <FileText className="w-4 h-4" />;
 };
 
-export function PromptInput({ onSubmit, isProcessing }: PromptInputProps) {
+export function PromptInput({ onSubmit, isProcessing, isMobile = false }: PromptInputProps) {
   const [inputValue, setInputValue] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,6 +65,107 @@ export function PromptInput({ onSubmit, isProcessing }: PromptInputProps) {
     }
   };
 
+  if (isMobile) {
+    return (
+      <div className="theme-header-bg theme-border border-t p-3 safe-area-bottom">
+        {/* Attached Files - Mobile */}
+        {attachedFiles.length > 0 && (
+          <div className="mb-3">
+            <div className="flex flex-wrap gap-2">
+              {attachedFiles.map((file, index) => (
+                <div key={index} className="flex items-center gap-2 px-2 py-1 bg-cyan-500/10 dark:bg-cyan-400/10 rounded-lg border border-cyan-200/30 dark:border-cyan-700/30">
+                  {getFileIcon(file.type)}
+                  <span className="text-xs theme-text-primary truncate max-w-20">
+                    {file.name}
+                  </span>
+                  <button
+                    onClick={() => removeFile(index)}
+                    className="p-0.5 rounded-full hover:bg-red-500/20 text-red-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Input */}
+        <div className="space-y-2">
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={inputValue}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                adjustTextareaHeight();
+              }}
+              onKeyPress={handleKeyPress}
+              placeholder="Describe what you want to add..."
+              className="w-full min-h-12 max-h-24 px-3 py-2 pr-12 theme-input-bg theme-border border rounded-lg resize-none theme-text-primary placeholder:theme-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+              disabled={isProcessing}
+              rows={1}
+            />
+            
+            <div className="absolute right-2 bottom-2 flex items-center gap-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleFileSelect}
+                accept="*/*"
+              />
+              
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-1.5 rounded-lg theme-hover-bg theme-text-muted hover:theme-text-primary transition-colors"
+                disabled={isProcessing}
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={!inputValue.trim() || isProcessing}
+            className={`w-full py-3 rounded-lg transition-all font-medium ${
+              inputValue.trim() && !isProcessing
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'theme-input-bg theme-text-muted cursor-not-allowed'
+            }`}
+          >
+            {isProcessing ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Processing...
+              </div>
+            ) : (
+              'Add to Workflow'
+            )}
+          </button>
+        </div>
+
+        {/* Processing Status - Mobile */}
+        {isProcessing && (
+          <div className="mt-3">
+            <div className="flex items-center gap-3 p-3 bg-cyan-500/10 dark:bg-cyan-400/10 rounded-lg border border-cyan-200/30 dark:border-cyan-700/30">
+              <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+              <div className="flex-1">
+                <div className="font-medium text-cyan-700 dark:text-cyan-300 text-sm">
+                  Processing your request
+                </div>
+              </div>
+              <Sparkles className="w-4 h-4 text-cyan-500 animate-pulse" />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Desktop version (unchanged)
   return (
     <div className="fixed bottom-6 z-50 w-full pointer-events-none">
       <div className="ml-40 mr-40 flex justify-center pointer-events-auto">

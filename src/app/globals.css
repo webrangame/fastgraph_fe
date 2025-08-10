@@ -148,3 +148,38 @@ body {
 .sidebar-collapsed .theme-toggle-icon {
   margin: 0 !important;
 }
+
+/* Add these to your globals.css file */
+
+/* Hide scrollbar for mobile workflow tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area for mobile devices */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Touch-friendly interactions */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* Mobile-specific utilities */
+@media (max-width: 1023px) {
+  .mobile-node {
+    min-width: 120px !important;
+    min-height: 80px !important;
+  }
+  
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
