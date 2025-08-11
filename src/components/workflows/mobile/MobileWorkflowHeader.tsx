@@ -127,8 +127,8 @@ export function MobileWorkflowHeader({
       )}
 
       {/* Workflow Tabs */}
-      <div className="px-4 pb-3">
-        <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide">
+      <div className="px-4 pb-3 pt-2">
+        <div className="flex items-center space-x-3 overflow-x-auto scrollbar-hide">
           <button
             onClick={onCreateNew}
             className="flex-shrink-0 p-2 theme-hover-bg rounded-lg theme-text-secondary border theme-border"
@@ -139,7 +139,7 @@ export function MobileWorkflowHeader({
             <button
               key={workflow.id}
               onClick={() => onSelectWorkflow(workflow.id)}
-              className={`flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 activeWorkflow === workflow.id
                   ? 'theme-card-bg theme-text-primary theme-border border shadow-sm'
                   : 'theme-text-secondary theme-hover-bg'

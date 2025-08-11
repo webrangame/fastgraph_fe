@@ -109,7 +109,7 @@ export function WorkflowCanvas({
             </h3>
             <p className={`theme-text-secondary ${isMobile ? 'text-xs' : 'text-sm'}`}>
               {isMobile 
-                ? 'Use the menu button to open agents panel and tap agents to add them'
+                ? 'Use the Ajent Icon to open agents panel and tap agents to add them'
                 : 'Select agents from the left panel and drag them onto the canvas'
               }
             </p>
