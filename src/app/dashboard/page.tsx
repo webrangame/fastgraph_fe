@@ -1,16 +1,59 @@
 'use client';
+import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { QuickActionCard } from '@/components/dashboard/QuickActionCard';
 import { ActivityItem } from '@/components/dashboard/ActivityItem';
+import { CreateWorkflowModal, WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
+import { CreateAgentModal, AgentFormData } from '@/components/dashboard/CreateAgentModal';
 import { QUICK_ACTIONS, STATS_CARDS, RECENT_ACTIVITIES } from '@/lib/constants';
 
 export default function DashboardPage() {
+  const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState(false);
+  const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
+
+  const handleCreateWorkflow = () => {
+    setIsWorkflowModalOpen(true);
+  };
+
+  const handleAddAgent = () => {
+    setIsAgentModalOpen(true);
+  };
+
+  const handleWorkflowSubmit = (data: WorkflowFormData) => {
+    // Handle the workflow creation here
+    console.log('Creating workflow:', data);
+    
+    // You can add your workflow creation logic here
+    // For example: redirect to workflow builder, save to database, etc.
+  };
+
+  const handleAgentSubmit = (data: AgentFormData) => {
+    // Handle the agent creation here
+    console.log('Creating agent:', data);
+    
+    // You can add your agent creation logic here
+    // For example: save to database, deploy agent, etc.
+  };
+
+  const handleQuickAction = (action: typeof QUICK_ACTIONS[0]) => {
+    if (action.title === 'Create Workflow') {
+      handleCreateWorkflow();
+    } else if (action.title === 'Add Agent') {
+      handleAddAgent();
+    } else {
+      // Handle other actions normally
+      window.location.href = action.href;
+    }
+  };
+
   return (
     <div className="theme-bg min-h-screen theme-text-primary transition-colors duration-300">
-      {/* Header - Extract to HeaderComponent later */}
-      <header className="theme-header-bg px-6 py-4 theme-border theme-shadow" style={{ borderBottomWidth: '1px' }}>
+      
+      {/* Desktop Header - Hidden on mobile */}
+      <header className="hidden lg:block theme-header-bg px-6 py-4 theme-border theme-shadow" 
+              style={{ borderBottomWidth: '1px' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button className="p-2 rounded-lg theme-hover-bg">
@@ -47,46 +90,66 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="p-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Main Content - Responsive padding */}
+      <div className="p-4 md:p-6">
+        
+        {/* Stats Cards - Responsive Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
           {STATS_CARDS.map((card, index) => (
             <StatsCard key={index} {...card} />
           ))}
         </div>
 
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+        {/* Quick Actions - Responsive Layout */}
+        <div className="mb-6 md:mb-8">
+          <h2 className="text-lg md:text-xl font-semibold mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {QUICK_ACTIONS.map((action, index) => (
-              <QuickActionCard key={index} {...action} />
+              <QuickActionCard 
+                key={index} 
+                {...action} 
+                onClick={() => handleQuickAction(action)}
+              />
             ))}
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent Activity - Mobile Optimized */}
         <Card>
-          <div className="p-6 theme-border" style={{ borderBottomWidth: '1px' }}>
+          <div className="p-4 md:p-6 theme-border" style={{ borderBottomWidth: '1px' }}>
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Recent Activity</h2>
+              <h2 className="text-lg md:text-xl font-semibold">Recent Activity</h2>
               <Icon name="MoreVertical" className="w-5 h-5 theme-text-muted hover:text-gray-600 cursor-pointer" />
             </div>
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
+          <div className="p-4 md:p-6">
+            <div className="space-y-3 md:space-y-4">
               {RECENT_ACTIVITIES.map((activity) => (
                 <ActivityItem key={activity.id} {...activity} />
               ))}
             </div>
             <div className="mt-6 text-center">
-              <button className="text-blue-500 hover:text-blue-600 text-sm font-medium">
+              <button className="text-blue-500 hover:text-blue-600 text-sm font-medium py-2 px-4 rounded-lg theme-hover-bg">
                 View all activities →
               </button>
             </div>
           </div>
         </Card>
       </div>
+
+      {/* Create Workflow Modal */}
+      <CreateWorkflowModal
+        isOpen={isWorkflowModalOpen}
+        onClose={() => setIsWorkflowModalOpen(false)}
+        onSubmit={handleWorkflowSubmit}
+      />
+
+      {/* Create Agent Modal */}
+      <CreateAgentModal
+        isOpen={isAgentModalOpen}
+        onClose={() => setIsAgentModalOpen(false)}
+        onSubmit={handleAgentSubmit}
+      />
     </div>
   );
 }
