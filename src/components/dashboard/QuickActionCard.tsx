@@ -7,15 +7,35 @@ interface QuickActionProps {
   description: string;
   icon: string;
   colors: { light: string; gradient: string };
-  href: string;
+  href?: string;
+  onClick?: () => void;
 }
 
-export function QuickActionCard({ title, description, icon, colors }: QuickActionProps) {
+export function QuickActionCard({ 
+  title, 
+  description, 
+  icon, 
+  colors, 
+  href,
+  onClick 
+}: QuickActionProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else if (href) {
+      // Navigate to href if no onClick handler
+      window.location.href = href;
+    }
+  };
+
   return (
-    <button className="group relative rounded-2xl p-6 text-left shadow-lg overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:-translate-y-1 transform-gpu">
+    <button 
+      onClick={handleClick}
+      className="group relative rounded-2xl p-6 text-left shadow-lg overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:-translate-y-1 transform-gpu w-full"
+    >
       {/* Conditional Background */}
       <div className="absolute inset-0 rounded-2xl">
         {isDark ? (

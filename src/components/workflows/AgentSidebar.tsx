@@ -3,7 +3,12 @@
 import { Bot } from 'lucide-react';
 import { createdAgents } from '@/lib/constants';
 
-export function AgentSidebar() {
+interface AgentSidebarProps {
+  isMobile?: boolean;
+  onAgentSelect?: () => void;
+}
+
+export function AgentSidebar({ isMobile = false, onAgentSelect }: AgentSidebarProps) {
   const handleDragStart = (e: React.DragEvent, agentData: any) => {
     e.dataTransfer.setData('text/plain', JSON.stringify({
       type: 'agent',
@@ -12,12 +17,21 @@ export function AgentSidebar() {
     }));
   };
 
+  const handleAgentClick = (agent: any) => {
+    // On mobile, simulate drag and drop behavior or handle touch interactions
+    if (isMobile && onAgentSelect) {
+      onAgentSelect(); // Close mobile drawer
+    }
+  };
+
   return (
-    <div className="w-64 theme-sidebar-bg theme-border border-r">
+    <div className={`${isMobile ? 'w-full' : 'w-64'} theme-sidebar-bg ${!isMobile ? 'theme-border border-r' : ''}`}>
       <div className="p-4">
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold theme-text-secondary">Available Agents</h3>
-        </div>
+        {!isMobile && (
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold theme-text-secondary">Available Agents</h3>
+          </div>
+        )}
         
         <div className="space-y-2">
           {createdAgents.map((agent) => {
@@ -25,20 +39,38 @@ export function AgentSidebar() {
             return (
               <div 
                 key={agent.id}
-                className="flex items-center space-x-3 p-3 rounded-lg theme-hover-bg cursor-grab active:cursor-grabbing group transition-colors"
-                draggable={true}
-                onDragStart={(e) => handleDragStart(e, agent)}
+                className={`flex items-center space-x-3 p-3 rounded-lg theme-hover-bg cursor-grab active:cursor-grabbing group transition-colors ${
+                  isMobile ? 'active:scale-95' : ''
+                }`}
+                draggable={!isMobile}
+                onDragStart={!isMobile ? (e) => handleDragStart(e, agent) : undefined}
+                onClick={() => handleAgentClick(agent)}
               >
                 <div className={`p-2 rounded-lg ${agent.color}`}>
                   <Icon className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-sm theme-text-secondary group-hover:theme-text-primary font-medium transition-colors">
-                  {agent.name}
-                </span>
+                <div className="flex-1 min-w-0">
+                  <span className={`${isMobile ? 'text-base' : 'text-sm'} theme-text-secondary group-hover:theme-text-primary font-medium transition-colors block truncate`}>
+                    {agent.name}
+                  </span>
+                  {isMobile && (
+                    <span className="text-xs theme-text-muted">
+                      Tap to add to workflow
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
+
+        {isMobile && (
+          <div className="mt-6 p-3 theme-card-bg rounded-lg theme-border border">
+            <p className="text-xs theme-text-muted text-center">
+              Tap an agent to add it to your workflow canvas
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
