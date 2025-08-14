@@ -28,6 +28,7 @@ export interface Workflow {
   lastModified: string;
   nodes: WorkflowNode[];
   connections: Connection[];
+  description: string;
 }
 
 export interface WorkflowNodeProps {

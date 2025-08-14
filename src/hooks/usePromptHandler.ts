@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Workflow, PromptMessage } from '@/types/workflow';
+import { useAutoOrchestrateMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
 
 interface UsePromptHandlerProps {
   currentWorkflow: Workflow | undefined;
@@ -18,6 +19,7 @@ export function usePromptHandler({
   deleteNode,
   executeWorkflow
 }: UsePromptHandlerProps) {
+  const [autoOrchestrate] = useAutoOrchestrateMutation();
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [messages, setMessages] = useState<PromptMessage[]>([]);
 
@@ -39,7 +41,15 @@ export function usePromptHandler({
     // Process the command based on message content
     let responseText = '';
     
-    if (message.toLowerCase().includes('add') && message.toLowerCase().includes('agent')) {
+    if (message.toLowerCase().includes('auto') || message.toLowerCase().includes('orchestrate')) {
+      // Use auto-orchestration API
+      try {
+        const result = await autoOrchestrate({ command: message }).unwrap();
+        responseText = result.response || 'Auto-orchestration completed successfully!';
+      } catch (error) {
+        responseText = 'Failed to auto-orchestrate. Please try again.';
+      }
+    } else if (message.toLowerCase().includes('add') && message.toLowerCase().includes('agent')) {
       // Add a random agent to the workflow
       const agents = ['Customer Service Agent', 'Billing Agent', 'Technical Support Agent'];
       const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500'];
@@ -74,7 +84,7 @@ export function usePromptHandler({
         responseText = 'Please select an agent first to remove it.';
       }
     } else {
-      responseText = 'I can help you add agents, execute workflows, show statistics, or remove selected agents. Try commands like "Add a customer service agent" or "Execute workflow".';
+      responseText = 'I can help you add agents, execute workflows, show statistics, or remove selected agents. Try commands like "Add a customer service agent", "Execute workflow", or "Auto-orchestrate a workflow for customer onboarding".';
     }
 
     // Add system response

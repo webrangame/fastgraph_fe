@@ -17,13 +17,14 @@ import { authApi } from '../lib/api/authApi';
 import { categoryApi } from '@/redux/api/category/categoryApi';
 import { lessonApi } from '@/redux/api/lesson/lessonApi';
 import { courseApi } from '@/redux/api/course/courseApi';
+import { autoOrchestrateApi } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
 
 
 
 const persistConfig = {
   key: 'root',
   storage: sessionStorage,
-  whitelist: ['auth', 'cart'], // Persist auth and cart reducers
+  whitelist: ['auth', 'cart' , 'workflows'], // Persist auth and cart reducers
 };
 
 const rootReducer = combineReducers({
@@ -34,6 +35,7 @@ const rootReducer = combineReducers({
   [categoryApi.reducerPath]: categoryApi.reducer,
   [lessonApi.reducerPath]: lessonApi.reducer,
   [courseApi.reducerPath]: courseApi.reducer,
+  [autoOrchestrateApi.reducerPath]: autoOrchestrateApi.reducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -45,7 +47,7 @@ export const Store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(authApi.middleware, categoryApi.middleware , lessonApi.middleware , courseApi.middleware),
+    }).concat(authApi.middleware, categoryApi.middleware , lessonApi.middleware , courseApi.middleware, autoOrchestrateApi.middleware),
   devTools: process.env.NODE_ENV !== 'production',
 });
 

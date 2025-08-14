@@ -18,10 +18,7 @@ export function useWorkflowManager() {
   const currentWorkflow = workflows.find((w: Workflow) => w.id === activeWorkflow);
 
   const createNewWorkflow = () => {
-    if (workflows.length >= 5) {
-      alert('Maximum 5 workflows allowed');
-      return;
-    }
+   
     
     const newWorkflow = createNewWorkflowData(workflows.length + 1);
     setWorkflows([...workflows, newWorkflow]);
