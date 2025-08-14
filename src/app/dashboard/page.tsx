@@ -1,5 +1,7 @@
 'use client';
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -7,9 +9,12 @@ import { QuickActionCard } from '@/components/dashboard/QuickActionCard';
 import { ActivityItem } from '@/components/dashboard/ActivityItem';
 import { CreateWorkflowModal, WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 import { CreateAgentModal, AgentFormData } from '@/components/dashboard/CreateAgentModal';
+import { addWorkflow } from '@/redux/slice/workflowSlice';
 import { QUICK_ACTIONS, STATS_CARDS, RECENT_ACTIVITIES } from '@/lib/constants';
 
 export default function DashboardPage() {
+  const dispatch = useDispatch();
+  const router = useRouter();
   const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState(false);
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
 
@@ -25,8 +30,21 @@ export default function DashboardPage() {
     // Handle the workflow creation here
     console.log('Creating workflow:', data);
     
-    // You can add your workflow creation logic here
-    // For example: redirect to workflow builder, save to database, etc.
+    // Dispatch the workflow data to the store
+    const workflowData = {
+      id: Date.now().toString(),
+      ...data,
+      createdAt: new Date().toISOString(),
+      status: 'draft'
+    };
+    
+    dispatch(addWorkflow(workflowData));
+    
+    // Close the modal
+    setIsWorkflowModalOpen(false);
+    
+    // Navigate to the workflows page
+    router.push('/dashboard/workflows');
   };
 
   const handleAgentSubmit = (data: AgentFormData) => {

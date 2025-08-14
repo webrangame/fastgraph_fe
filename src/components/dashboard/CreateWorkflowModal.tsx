@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
@@ -19,14 +20,25 @@ export interface WorkflowFormData {
 }
 
 export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflowModalProps) {
-  const [formData, setFormData] = useState<WorkflowFormData>({
-    name: generateDefaultName(),
-    description: '',
-    type: 'dynamic'
-  });
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    watch,
+    setValue
+  } = useForm<WorkflowFormData>({
+    defaultValues: {
+      name: generateDefaultName(),
+      description: '',
+      type: 'dynamic'
+    }
+  });
+  
+  const formData = watch();
 
   // Generate a default workflow name
   function generateDefaultName(): string {
@@ -40,29 +52,25 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
     return `Workflow ${timestamp}`;
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        name: generateDefaultName(),
+        description: '',
+        type: 'dynamic'
+      });
+    }
+  }, [isOpen, reset]);
+
+  const onSubmitHandler = async (data: WorkflowFormData) => {
     setIsSubmitting(true);
     
-    // Validation
-    const newErrors: { [key: string]: string } = {};
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    if (!formData.name.trim()) {
-      newErrors.name = 'Workflow name is required';
-    } else if (formData.name.length > 200) {
-      newErrors.name = 'Workflow name must be 200 characters or less';
-    }
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length === 0) {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      onSubmit(formData);
-      handleClose();
-    }
-    
+    onSubmit(data);
+    handleClose();
     setIsSubmitting(false);
   };
 
@@ -70,35 +78,26 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
     if (isSubmitting) return; // Prevent closing during submission
     
     // Reset form
-    setFormData({
+    reset({
       name: generateDefaultName(),
       description: '',
       type: 'dynamic'
     });
-    setErrors({});
     setFocusedField(null);
     setIsSubmitting(false);
     onClose();
   };
 
-  const handleInputChange = (field: keyof WorkflowFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={handleClose} 
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
       title="Create New Workflow"
       maxWidth="max-w-lg"
       headerColor="blue"
       headerIcon="Workflow"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmitHandler)} className="space-y-6">
         {/* Workflow Name */}
         <div>
           <label className="block text-sm font-medium theme-text-primary mb-2">
@@ -107,16 +106,21 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
           <div className="relative">
             <input
               type="text"
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
+              {...register('name', {
+                required: 'Workflow name is required',
+                maxLength: {
+                  value: 200,
+                  message: 'Workflow name must be 200 characters or less'
+                }
+              })}
               onFocus={() => setFocusedField('name')}
               onBlur={() => setFocusedField(null)}
               maxLength={200}
               className={`w-full theme-input-bg theme-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-all duration-200 ${
-                errors.name 
-                  ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                  : focusedField === 'name' 
-                    ? 'focus:ring-blue-500 focus:border-blue-500 transform scale-[1.02]' 
+                errors.name
+                  ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                  : focusedField === 'name'
+                    ? 'focus:ring-blue-500 focus:border-blue-500 transform scale-[1.02]'
                     : 'focus:ring-blue-500'
               }`}
               placeholder="Enter workflow name"
@@ -131,7 +135,7 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
           {errors.name && (
             <div className="mt-1 text-sm text-red-500 flex items-center animate-in slide-in-from-left-2 duration-200">
               <Icon name="AlertCircle" className="w-4 h-4 mr-1" />
-              {errors.name}
+              <span>{errors.name.message}</span>
             </div>
           )}
           <div className="mt-1 text-xs theme-text-muted flex justify-between">
@@ -148,27 +152,38 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
         {/* Workflow Description */}
         <div>
           <label className="block text-sm font-medium theme-text-primary mb-2">
-            Description (Optional)
+            Command *
           </label>
           <div className="relative">
             <textarea
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+              {...register('description', {
+                required: 'Command is required'
+              })}
               onFocus={() => setFocusedField('description')}
               onBlur={() => setFocusedField(null)}
               rows={3}
-              className={`w-full theme-input-bg theme-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 resize-none ${
-                focusedField === 'description' ? 'transform scale-[1.02]' : ''
+              className={`w-full theme-input-bg theme-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-all duration-200 resize-none ${
+                errors.description
+                  ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                  : focusedField === 'description'
+                    ? 'focus:ring-blue-500 focus:border-blue-500 transform scale-[1.02]'
+                    : 'focus:ring-blue-500'
               }`}
-              placeholder="Describe what this workflow will do..."
+              placeholder="Enter command..."
               disabled={isSubmitting}
             />
-            {focusedField === 'description' && (
+            {focusedField === 'description' && !errors.description && (
               <div className="absolute -top-1 -right-1">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
               </div>
             )}
           </div>
+          {errors.description && (
+            <div className="mt-1 text-sm text-red-500 flex items-center animate-in slide-in-from-left-2 duration-200">
+              <Icon name="AlertCircle" className="w-4 h-4 mr-1" />
+              <span>{errors.description.message}</span>
+            </div>
+          )}
         </div>
 
         {/* Workflow Type */}
@@ -178,12 +193,17 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
           </label>
           <div className="relative">
             <select
-              value={formData.type}
-              onChange={(e) => handleInputChange('type', e.target.value as 'dynamic' | 'manual')}
+              {...register('type', {
+                required: 'Workflow type is required'
+              })}
               onFocus={() => setFocusedField('type')}
               onBlur={() => setFocusedField(null)}
-              className={`w-full theme-input-bg theme-border rounded-lg px-3 py-2 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 appearance-none ${
-                focusedField === 'type' ? 'transform scale-[1.02]' : ''
+              className={`w-full theme-input-bg theme-border rounded-lg px-3 py-2 pr-12 text-sm focus:outline-none focus:ring-2 transition-all duration-200 appearance-none ${
+                errors.type
+                  ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                  : focusedField === 'type'
+                    ? 'focus:ring-blue-500 focus:border-blue-500 transform scale-[1.02]'
+                    : 'focus:ring-blue-500'
               }`}
               disabled={isSubmitting}
             >
@@ -193,11 +213,11 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
             
             {/* Custom Dropdown Icon */}
             <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-              <Icon 
-                name="ChevronDown" 
+              <Icon
+                name="ChevronDown"
                 className={`w-4 h-4 theme-text-muted transition-transform duration-200 ${
                   focusedField === 'type' ? 'rotate-180' : ''
-                }`} 
+                }`}
               />
             </div>
             
@@ -207,14 +227,20 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
               </div>
             )}
           </div>
+          {errors.type && (
+            <div className="mt-1 text-sm text-red-500 flex items-center animate-in slide-in-from-left-2 duration-200">
+              <Icon name="AlertCircle" className="w-4 h-4 mr-1" />
+              <span>{errors.type.message}</span>
+            </div>
+          )}
           <div className={`mt-1 text-xs flex items-center transition-all duration-200 ${
             formData.type === 'dynamic' ? 'text-blue-600' : 'text-purple-600'
           }`}>
-            <Icon 
-              name={formData.type === 'dynamic' ? 'Zap' : 'Hand'} 
-              className="w-3 h-3 mr-1" 
+            <Icon
+              name={formData.type === 'dynamic' ? 'Zap' : 'Hand'}
+              className="w-3 h-3 mr-1"
             />
-            {formData.type === 'dynamic' 
+            {formData.type === 'dynamic'
               ? 'Workflow runs automatically based on triggers'
               : 'Workflow requires manual execution'
             }
@@ -223,17 +249,17 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
 
         {/* Form Actions */}
         <div className="flex items-center justify-end space-x-3 pt-4">
-          <Button 
-            type="button" 
-            variant="secondary" 
+          <Button
+            type="button"
+            variant="secondary"
             onClick={handleClose}
             disabled={isSubmitting}
             className="transition-all duration-200 hover:scale-105"
           >
             Cancel
           </Button>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             variant="primary"
             icon={Plus}
             disabled={isSubmitting}

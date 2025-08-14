@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-// Fixed: Use relative imports instead of @/ aliases
-import { Workflow, WorkflowNode, Connection } from '../types/workflow';
-import { initialWorkflows } from '../lib/constants';
-import { 
-  createNewWorkflowData, 
-  updateWorkflowStatus, 
-  addNodeToWorkflowData 
-} from '../lib/workflow-utils';
+import { Workflow, WorkflowNode, Connection } from '@/types/workflow';
+import { initialWorkflows } from '@/lib/constants';
+import {
+  createNewWorkflowData,
+  updateWorkflowStatus,
+  addNodeToWorkflowData
+} from '@/lib/workflow-utils';
 
 export function useWorkflowManager() {
   const [workflows, setWorkflows] = useState<Workflow[]>(initialWorkflows);
@@ -41,8 +40,8 @@ export function useWorkflowManager() {
   const addNodeToWorkflow = (nodeData: any, position: { x: number; y: number }) => {
     if (!activeWorkflow) return;
     
-    setWorkflows(workflows.map((w: Workflow) => 
-      w.id === activeWorkflow 
+    setWorkflows(workflows.map((w: Workflow) =>
+      w.id === activeWorkflow
         ? addNodeToWorkflowData(w, nodeData, position)
         : w
     ));
@@ -54,7 +53,7 @@ export function useWorkflowManager() {
         return {
           ...w,
           nodes: w.nodes.filter((n: WorkflowNode) => n.id !== nodeId),
-          connections: w.connections.filter((c: Connection) => 
+          connections: w.connections.filter((c: Connection) =>
             c.from !== nodeId && c.to !== nodeId
           )
         };
@@ -68,16 +67,16 @@ export function useWorkflowManager() {
     if (!currentWorkflow) return;
     
     setIsRunning(true);
-    setWorkflows(workflows.map((w: Workflow) => 
-      w.id === activeWorkflow 
+    setWorkflows(workflows.map((w: Workflow) =>
+      w.id === activeWorkflow
         ? updateWorkflowStatus(w, 'running')
         : w
     ));
     
     setTimeout(() => {
       setIsRunning(false);
-      setWorkflows(workflows.map((w: Workflow) => 
-        w.id === activeWorkflow 
+      setWorkflows(workflows.map((w: Workflow) =>
+        w.id === activeWorkflow
           ? updateWorkflowStatus(w, 'active', 'Just now')
           : w
       ));
@@ -86,8 +85,8 @@ export function useWorkflowManager() {
 
   const stopWorkflow = () => {
     setIsRunning(false);
-    setWorkflows(workflows.map((w: Workflow) => 
-      w.id === activeWorkflow 
+    setWorkflows(workflows.map((w: Workflow) =>
+      w.id === activeWorkflow
         ? updateWorkflowStatus(w, 'stopped', 'Just now')
         : w
     ));
