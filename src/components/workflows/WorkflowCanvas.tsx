@@ -18,13 +18,14 @@ export function WorkflowCanvas({
   onDeleteNode,
   onAddNode,
   agents,
+  connections,
   isAutoOrchestrating,
 }: WorkflowCanvasProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
 
-  // Initialize nodes based on agents
+  // Initialize nodes based on agents and edges based on connections
   useEffect(() => {
     if (agents) {
       const agentNodes = Object.entries(agents).map(([name, agent], index) => ({
@@ -42,7 +43,14 @@ export function WorkflowCanvas({
       
       setNodes(agentNodes);
     }
-  }, [agents]);
+    
+    // Initialize edges based on connections
+    if (connections) {
+      setEdges(connections);
+    } else {
+      setEdges([]);
+    }
+  }, [agents, connections]);
 
   const onNodesChange = useCallback(
     (changes: any) =>

@@ -54,6 +54,7 @@ export interface WorkflowCanvasProps {
   onDeleteNode: (nodeId: string) => void;
   onAddNode: (nodeData: any, position: { x: number; y: number }) => void;
   agents?: Record<string, AutoOrchestrateAgent>;
+  connections?: any[];
   isAutoOrchestrating?: boolean;
 }
 

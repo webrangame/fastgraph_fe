@@ -22,6 +22,7 @@ export default function WorkflowsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [agents, setAgents] = useState<Record<string, any> | null>(null);
+  const [connections, setConnections] = useState<any[] | null>(null);
   const hasAutoOrchestrated = useRef(false);
   
   // Redux state
@@ -307,9 +308,9 @@ export default function WorkflowsPage() {
     }
   },
   "finalizedResult": "{'success': True, 'results': {'poet_agent': {'success': True, 'result': 'In the cradle of dawn where whispers begin,  \\nThe world unfurls with a gentle spin.  \\nThe sky blushes a tender hue,  \\nAs sunbeams weave a golden view.  \\n\\nA symphony of colors paints the air,  \\nWith melodies that soar and ensnare.  \\nClouds drift like dreams in a sapphire sea,  \\nTheir soft embrace setting the spirit free.  \\n\\nBeneath the canopy of ancient trees,  \\nLeaves dance to the rhythm of the breeze.  \\nEmerald shadows play upon the ground,  \\nWhere secrets of the forest abound.  \\n\\nIn the meadow, wildflowers bloom,  \\nA riot of colors that chase away gloom.  \\nTheir petals whisper tales untold,  \\nOf sunlit days and nights grown cold.  \\n\\nThe river sings a lullaby sweet,  \\nAs pebbles dance beneath its feet.  \\nIt carves a path through hill and dale,  \\nA silver thread in nature’s tale.  \\n\\nMountains rise with majesty grand,  \\nGuardians of this enchanted land.  \\nTheir peaks kiss the heavens high,  \\nCrowned by the stars in the velvet sky.  \\n\\nIn the quiet of the twilight hour,  \\nNature reveals its gentle power.  \\nA tapestry of wonder, vast and deep,  \\nIn its embrace, our souls find peace to keep.  \\n\\nThrough this beauty, our hearts are stirred,  \\nBy the silent song of the earth, unheard.  \\nIn every leaf, in every breeze,  \\nWe find the soul’s quiet release.  \\n\\nSo let us wander, hand in hand,  \\nThrough the wonders of this timeless land.  \\nFor in nature’s beauty, pure and true,  \\nWe find the light that will renew.', 'outputs': {'poem_output': 'In the cradle of dawn where whispers begin,  \\nThe world unfurls with a gentle spin.  \\nThe sky blushes a tender hue,  \\nAs sunbeams weave a golden view.  \\n\\nA symphony of colors paints the air,  \\nWith melodies that soar and ensnare.  \\nClouds drift like dreams in a sapphire sea,  \\nTheir soft embrace setting the spirit free.  \\n\\nBeneath the canopy of ancient trees,  \\nLeaves dance to the rhythm of the breeze.  \\nEmerald shadows play upon the ground,  \\nWhere secrets of the forest abound.  \\n\\nIn the meadow, wildflowers bloom,  \\nA riot of colors that chase away gloom.  \\nTheir petals whisper tales untold,  \\nOf sunlit days and nights grown cold.  \\n\\nThe river sings a lullaby sweet,  \\nAs pebbles dance beneath its feet.  \\nIt carves a path through hill and dale,  \\nA silver thread in nature’s tale.  \\n\\nMountains rise with majesty grand,  \\nGuardians of this enchanted land.  \\nTheir peaks kiss the heavens high,  \\nCrowned by the stars in the velvet sky.  \\n\\nIn the quiet of the twilight hour,  \\nNature reveals its gentle power.  \\nA tapestry of wonder, vast and deep,  \\nIn its embrace, our souls find peace to keep.  \\n\\nThrough this beauty, our hearts are stirred,  \\nBy the silent song of the earth, unheard.  \\nIn every leaf, in every breeze,  \\nWe find the soul’s quiet release.  \\n\\nSo let us wander, hand in hand,  \\nThrough the wonders of this timeless land.  \\nFor in nature’s beauty, pure and true,  \\nWe find the light that will renew.'}}, 'word_counter_agent': {'success': True, 'result': 'This poem beautifully captures the serene and majestic essence of nature as it transitions from dawn to twilight. The imagery evokes a sense of peace and wonder, celebrating the harmony between the natural world and the human spirit. Each stanza weaves together elements of nature—from the sky\\'s morning blush to the grandeur of mountains—creating a vivid tapestry of the earth\\'s splendor.\\n\\nIn the first stanza, the dawn is personified as a gentle beginning, setting the stage for the day\\'s unfolding beauty. The subsequent verses expand on this theme, with descriptions of colors and sounds that enchant the senses, such as the \"symphony of colors\" and the \"river\\'s lullaby.\" The poem\\'s rhythm mirrors the natural cycles it describes, inviting readers to immerse themselves in the tranquility and renewal that nature offers.\\n\\nUltimately, the poem is an invitation to connect with the earth, suggesting that through this connection, we can find peace and inspiration. It\\'s a reminder of the timeless, restorative power of the natural world, encouraging us to cherish and explore its wonders.', 'outputs': {'word_count': 'This poem beautifully captures the serene and majestic essence of nature as it transitions from dawn to twilight. The imagery evokes a sense of peace and wonder, celebrating the harmony between the natural world and the human spirit. Each stanza weaves together elements of nature—from the sky\\'s morning blush to the grandeur of mountains—creating a vivid tapestry of the earth\\'s splendor.\\n\\nIn the first stanza, the dawn is personified as a gentle beginning, setting the stage for the day\\'s unfolding beauty. The subsequent verses expand on this theme, with descriptions of colors and sounds that enchant the senses, such as the \"symphony of colors\" and the \"river\\'s lullaby.\" The poem\\'s rhythm mirrors the natural cycles it describes, inviting readers to immerse themselves in the tranquility and renewal that nature offers.\\n\\nUltimately, the poem is an invitation to connect with the earth, suggesting that through this connection, we can find peace and inspiration. It\\'s a reminder of the timeless, restorative power of the natural world, encouraging us to cherish and explore its wonders.'}}}, 'final_data': {'user_command': 'write a poem and then count its words', 'poem_request': 'Compose a creative and imaginative poem about the beauty of nature. Focus on vivid imagery and emotional depth.', 'poem_output': 'In the cradle of dawn where whispers begin,  \\nThe world unfurls with a gentle spin.  \\nThe sky blushes a tender hue,  \\nAs sunbeams weave a golden view.  \\n\\nA symphony of colors paints the air,  \\nWith melodies that soar and ensnare.  \\nClouds drift like dreams in a sapphire sea,  \\nTheir soft embrace setting the spirit free.  \\n\\nBeneath the canopy of ancient trees,  \\nLeaves dance to the rhythm of the breeze.  \\nEmerald shadows play upon the ground,  \\nWhere secrets of the forest abound.  \\n\\nIn the meadow, wildflowers bloom,  \\nA riot of colors that chase away gloom.  \\nTheir petals whisper tales untold,  \\nOf sunlit days and nights grown cold.  \\n\\nThe river sings a lullaby sweet,  \\nAs pebbles dance beneath its feet.  \\nIt carves a path through hill and dale,  \\nA silver thread in nature’s tale.  \\n\\nMountains rise with majesty grand,  \\nGuardians of this enchanted land.  \\nTheir peaks kiss the heavens high,  \\nCrowned by the stars in the velvet sky.  \\n\\nIn the quiet of the twilight hour,  \\nNature reveals its gentle power.  \\nA tapestry of wonder, vast and deep,  \\nIn its embrace, our souls find peace to keep.  \\n\\nThrough this beauty, our hearts are stirred,  \\nBy the silent song of the earth, unheard.  \\nIn every leaf, in every breeze,  \\nWe find the soul’s quiet release.  \\n\\nSo let us wander, hand in hand,  \\nThrough the wonders of this timeless land.  \\nFor in nature’s beauty, pure and true,  \\nWe find the light that will renew.', 'word_count': 'This poem beautifully captures the serene and majestic essence of nature as it transitions from dawn to twilight. The imagery evokes a sense of peace and wonder, celebrating the harmony between the natural world and the human spirit. Each stanza weaves together elements of nature—from the sky\\'s morning blush to the grandeur of mountains—creating a vivid tapestry of the earth\\'s splendor.\\n\\nIn the first stanza, the dawn is personified as a gentle beginning, setting the stage for the day\\'s unfolding beauty. The subsequent verses expand on this theme, with descriptions of colors and sounds that enchant the senses, such as the \"symphony of colors\" and the \"river\\'s lullaby.\" The poem\\'s rhythm mirrors the natural cycles it describes, inviting readers to immerse themselves in the tranquility and renewal that nature offers.\\n\\nUltimately, the poem is an invitation to connect with the earth, suggesting that through this connection, we can find peace and inspiration. It\\'s a reminder of the timeless, restorative power of the natural world, encouraging us to cherish and explore its wonders.'}, 'errors': []}"
-};
+}
 
-            
+
             // Extract agents from the response
             const swarmSpec = result.auto_orchestrate_response?.swarm_result?.swarm_spec;
             const executionPlan = result.auto_orchestrate_response?.swarm_result?.swarm_spec?.execution_plan;
@@ -347,7 +348,32 @@ export default function WorkflowsPage() {
                 }
               });
               
+              // Identify connections based on matching outputs/inputs
+              const connections: any[] = [];
+              const agentsArray = Object.entries(agentsRecord);
+              
+              // For each agent, check its outputs against other agents' inputs
+              agentsArray.forEach(([sourceAgentName, sourceAgent]) => {
+                sourceAgent.outputs?.forEach((output: string) => {
+                  agentsArray.forEach(([targetAgentName, targetAgent]) => {
+                    // Skip if it's the same agent
+                    if (sourceAgentName === targetAgentName) return;
+                    
+                    // Check if target agent has this output as an input
+                    if (targetAgent.inputs?.includes(output)) {
+                      connections.push({
+                        id: `connection-${sourceAgentName}-${targetAgentName}`,
+                        source: `agent-${sourceAgentName}`,
+                        target: `agent-${targetAgentName}`,
+                        label: ""
+                      });
+                    }
+                  });
+                });
+              });
+              
               setAgents(agentsRecord);
+              setConnections(connections);
             }
             
             // Mark as executed to prevent multiple calls
@@ -535,6 +561,7 @@ export default function WorkflowsPage() {
           onDeleteNode={deleteNode}
           onAddNode={addNodeToWorkflow}
           agents={agents || undefined}
+          connections={connections || undefined}
           isAutoOrchestrating={isAutoOrchestrating}
         />
       </div>
