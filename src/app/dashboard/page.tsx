@@ -9,7 +9,7 @@ import { QuickActionCard } from '@/components/dashboard/QuickActionCard';
 import { ActivityItem } from '@/components/dashboard/ActivityItem';
 import { CreateWorkflowModal, WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 import { CreateAgentModal, AgentFormData } from '@/components/dashboard/CreateAgentModal';
-import { addWorkflow } from '@/redux/slice/workflowSlice';
+import { addWorkflow, removeAllWorkflows } from '@/redux/slice/workflowSlice';
 import { QUICK_ACTIONS, STATS_CARDS, RECENT_ACTIVITIES } from '@/lib/constants';
 
 export default function DashboardPage() {
@@ -29,6 +29,9 @@ export default function DashboardPage() {
   const handleWorkflowSubmit = (data: WorkflowFormData) => {
     // Handle the workflow creation here
     console.log('Creating workflow:', data);
+    
+    // Remove all existing workflows
+    dispatch(removeAllWorkflows());
     
     // Dispatch the workflow data to the store
     const workflowData = {

@@ -66,8 +66,7 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
   const onSubmitHandler = async (data: WorkflowFormData) => {
     setIsSubmitting(true);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  
     
     onSubmit(data);
     handleClose();

@@ -11,22 +11,38 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-const initialNodes = [
-  { id: "n1", position: { x: 0, y: 0 }, data: { label: "Node 1" } },
-  { id: "n2", position: { x: 0, y: 100 }, data: { label: "Node 2" } },
-];
-const initialEdges = [{ id: "n1-n2", source: "n1", target: "n2" }];
-
 export function WorkflowCanvas({
   workflow,
   selectedNode,
   onSelectNode,
   onDeleteNode,
   onAddNode,
+  agents,
+  isAutoOrchestrating,
 }: WorkflowCanvasProps) {
   const [isMobile, setIsMobile] = useState(false);
-  const [nodes, setNodes] = useState(initialNodes);
-  const [edges, setEdges] = useState(initialEdges);
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [edges, setEdges] = useState<any[]>([]);
+
+  // Initialize nodes based on agents
+  useEffect(() => {
+    if (agents) {
+      const agentNodes = Object.entries(agents).map(([name, agent], index) => ({
+        id: `agent-${name}`,
+        position: { x: 100 + (index % 3) * 200, y: 100 + Math.floor(index / 3) * 150 },
+        data: {
+          label: agent.name || name,
+          role: agent.role,
+          capabilities: agent.capabilities
+        },
+        type: 'agent'
+      }));
+      
+      console.log(agentNodes  , "agentNodes")
+      
+      setNodes(agentNodes);
+    }
+  }, [agents]);
 
   const onNodesChange = useCallback(
     (changes: any) =>
@@ -127,6 +143,27 @@ export function WorkflowCanvas({
       }}
       onTouchEnd={isMobile ? handleCanvasTap : undefined}
     >
+      {/* Auto Orchestrate Loading Bar */}
+      {isAutoOrchestrating && (
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gray-200 z-50">
+          <div
+            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-r-full transition-all duration-300 ease-out"
+            style={{ width: '100%', animation: 'progress-animation 3s ease-in-out infinite' }}
+          ></div>
+        </div>
+      )}
+      
+      <div style={{ width: "100vw", height: "100vh" }} className="absolute top-0">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          fitView
+        />
+      </div>
+      
       {/* Grid background */}
       <div
         className="absolute inset-0 opacity-10"
@@ -138,20 +175,18 @@ export function WorkflowCanvas({
           backgroundSize: isMobile ? "15px 15px" : "20px 20px",
         }}
       ></div>
-
-      <div style={{ width: "100vw", height: "100vh" }}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          fitView
-        />
-      </div>
+      
+      {/* Add CSS animation for the progress bar */}
+      <style jsx>{`
+        @keyframes progress-animation {
+          0% { width: 0%; }
+          50% { width: 100%; }
+          100% { width: 100%; }
+        }
+      `}</style>
 
       {/* Empty Canvas Message */}
-      {workflow.nodes.length === 0 && (
+      {/* {nodes.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center p-4">
           <div className="text-center max-w-sm">
             <div
@@ -190,10 +225,10 @@ export function WorkflowCanvas({
             )}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Nodes */}
-      <div className={isMobile ? "p-2" : ""}>
+      {/* <div className={isMobile ? "p-2" : ""}>
         {workflow.nodes.map((node: WorkflowNode) => (
           <WorkflowNodeComponent
             key={node.id}
@@ -204,7 +239,7 @@ export function WorkflowCanvas({
             isMobile={isMobile}
           />
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }
@@ -222,10 +257,14 @@ function WorkflowNodeComponent({
   onDelete: (nodeId: string) => void;
   isMobile?: boolean;
 }) {
+  // Extract label and role from node data or use fallbacks
+  const label = node.data?.label || node.label || "Unnamed Agent";
+  const role = node.data?.role || "Agent";
+
   return (
     <div
       className={`absolute cursor-pointer group ${isSelected ? "z-10" : "z-0"}`}
-      style={{ left: node.x, top: node.y }}
+      style={{ left: node.position?.x || node.x || 0, top: node.position?.y || node.y || 0 }}
       onClick={onClick}
     >
       <div
@@ -253,12 +292,12 @@ function WorkflowNodeComponent({
                 isMobile ? "text-xs" : "text-sm"
               }`}
             >
-              {node.label}
+              {label}
             </div>
             <div
               className={`theme-text-muted ${isMobile ? "text-xs" : "text-xs"}`}
             >
-              Agent
+              {role}
             </div>
           </div>
         </div>

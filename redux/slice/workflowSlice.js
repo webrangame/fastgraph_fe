@@ -14,6 +14,9 @@ const workflowSlice = createSlice({
     removeWorkflow: (state, action) => {
       state.workflows = state.workflows.filter(workflow => workflow.id !== action.payload);
     },
+    removeAllWorkflows: (state) => {
+      state.workflows = [];
+    },
     updateWorkflow: (state, action) => {
       const index = state.workflows.findIndex(workflow => workflow.id === action.payload.id);
       if (index !== -1) {
@@ -26,5 +29,5 @@ const workflowSlice = createSlice({
   },
 });
 
-export const { addWorkflow, removeWorkflow, updateWorkflow, setWorkflows } = workflowSlice.actions;
+export const { addWorkflow, removeWorkflow, removeAllWorkflows, updateWorkflow, setWorkflows } = workflowSlice.actions;
 export default workflowSlice.reducer;
