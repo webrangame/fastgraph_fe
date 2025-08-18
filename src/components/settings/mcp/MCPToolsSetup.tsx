@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ChevronDown } from 'lucide-react';
 
 interface MCPConfig {
   serverName: string;
@@ -31,7 +31,7 @@ export default function MCPToolsSetup({
   const canConnect = config.serverName && config.serverUrl && !isConnecting;
 
   return (
-    <div className="theme-card-bg rounded-lg p-6 theme-border border theme-shadow">
+    <div className="theme-card-bg rounded-sm p-6 theme-border border theme-shadow">
       <h3 className="text-xl font-semibold theme-text-primary mb-6">MCP Configuration Panel</h3>
       
       <div className="space-y-6">
@@ -52,7 +52,7 @@ export default function MCPToolsSetup({
                 value={config.serverName}
                 onChange={(e) => onConfigChange('serverName', e.target.value)}
                 placeholder="e.g., weather-api-mcp"
-                className="w-full px-3 py-2 theme-border border rounded-lg theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 disabled={isConnecting}
               />
             </div>
@@ -66,7 +66,7 @@ export default function MCPToolsSetup({
                 value={config.serverId}
                 readOnly
                 placeholder="Auto-generated"
-                className="w-full px-3 py-2 theme-border border rounded-lg theme-input-bg bg-gray-50 cursor-not-allowed"
+                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg bg-gray-50 cursor-not-allowed"
               />
             </div>
           </div>
@@ -76,32 +76,38 @@ export default function MCPToolsSetup({
               <label className="block text-sm font-medium theme-text-primary mb-2">
                 Connection Type <span className="text-red-500">*</span>
               </label>
-              <select
-                value={config.serverType}
-                onChange={(e) => onConfigChange('serverType', e.target.value)}
-                className="w-full px-3 py-2 theme-border border rounded-lg theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                disabled={isConnecting}
-              >
-                <option value="">Select connection type</option>
-                <option value="http">HTTP/REST</option>
-                <option value="websocket">WebSocket</option>
-                <option value="stdio">Standard I/O</option>
-                <option value="tcp">TCP Socket</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={config.serverType}
+                  onChange={(e) => onConfigChange('serverType', e.target.value)}
+                  className="w-full px-3 py-2 pr-10 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors appearance-none"
+                  disabled={isConnecting}
+                >
+                  <option value="">Select connection type</option>
+                  <option value="http">HTTP/REST</option>
+                  <option value="websocket">WebSocket</option>
+                  <option value="stdio">Standard I/O</option>
+                  <option value="tcp">TCP Socket</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 theme-text-muted pointer-events-none" />
+              </div>
             </div>
             
             <div>
               <label className="block text-sm font-medium theme-text-primary mb-2">
                 MCP Protocol Version
               </label>
-              <select 
-                className="w-full px-3 py-2 theme-border border rounded-lg theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                disabled={isConnecting}
-              >
-                <option value="1.0">MCP 1.0</option>
-                <option value="0.9">MCP 0.9 (Beta)</option>
-                <option value="0.8">MCP 0.8 (Legacy)</option>
-              </select>
+              <div className="relative">
+                <select 
+                  className="w-full px-3 py-2 pr-10 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors appearance-none"
+                  disabled={isConnecting}
+                >
+                  <option value="1.0">MCP 1.0</option>
+                  <option value="0.9">MCP 0.9 (Beta)</option>
+                  <option value="0.8">MCP 0.8 (Legacy)</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 theme-text-muted pointer-events-none" />
+              </div>
             </div>
           </div>
 
@@ -114,7 +120,7 @@ export default function MCPToolsSetup({
               value={config.serverUrl}
               onChange={(e) => onConfigChange('serverUrl', e.target.value)}
               placeholder="https://api.example.com/mcp or ws://localhost:8080"
-              className="w-full px-3 py-2 theme-border border rounded-lg theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
               disabled={isConnecting}
             />
           </div>
@@ -128,7 +134,7 @@ export default function MCPToolsSetup({
               onChange={(e) => onConfigChange('description', e.target.value)}
               placeholder="Describe what this MCP server provides..."
               rows={3}
-              className="w-full px-3 py-2 theme-border border rounded-lg theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors resize-vertical"
+              className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors resize-vertical"
               disabled={isConnecting}
             />
           </div>
@@ -146,19 +152,22 @@ export default function MCPToolsSetup({
               <label className="block text-sm font-medium theme-text-primary mb-2">
                 Authentication Type
               </label>
-              <select
-                value={config.authType}
-                onChange={(e) => onConfigChange('authType', e.target.value)}
-                className="w-full px-3 py-2 theme-border border rounded-lg theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                disabled={isConnecting}
-              >
-                <option value="none">No Authentication</option>
-                <option value="api-key">API Key</option>
-                <option value="bearer">Bearer Token</option>
-                <option value="oauth2">OAuth 2.0</option>
-                <option value="basic">Basic Auth</option>
-                <option value="custom">Custom Headers</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={config.authType}
+                  onChange={(e) => onConfigChange('authType', e.target.value)}
+                  className="w-full px-3 py-2 pr-10 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors appearance-none"
+                  disabled={isConnecting}
+                >
+                  <option value="none">No Authentication</option>
+                  <option value="api-key">API Key</option>
+                  <option value="bearer">Bearer Token</option>
+                  <option value="oauth2">OAuth 2.0</option>
+                  <option value="basic">Basic Auth</option>
+                  <option value="custom">Custom Headers</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 theme-text-muted pointer-events-none" />
+              </div>
             </div>
             
             <div>
@@ -170,7 +179,7 @@ export default function MCPToolsSetup({
                 value={config.apiKey}
                 onChange={(e) => onConfigChange('apiKey', e.target.value)}
                 placeholder="Enter your API key or token"
-                className="w-full px-3 py-2 theme-border border rounded-lg theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 disabled={isConnecting}
               />
             </div>
@@ -187,7 +196,7 @@ export default function MCPToolsSetup({
                 onChange={(e) => onConfigChange('timeout', parseInt(e.target.value))}
                 min="1000"
                 max="300000"
-                className="w-full px-3 py-2 theme-border border rounded-lg theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 disabled={isConnecting}
               />
             </div>
@@ -202,7 +211,7 @@ export default function MCPToolsSetup({
                 onChange={(e) => onConfigChange('retries', parseInt(e.target.value))}
                 min="0"
                 max="10"
-                className="w-full px-3 py-2 theme-border border rounded-lg theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 disabled={isConnecting}
               />
             </div>
@@ -214,7 +223,7 @@ export default function MCPToolsSetup({
           <button
             onClick={onConnect}
             disabled={!canConnect}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+            className={`px-6 py-2 rounded-sm font-medium transition-colors flex items-center space-x-2 ${
               !canConnect
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-blue-600 text-white hover:bg-blue-700'

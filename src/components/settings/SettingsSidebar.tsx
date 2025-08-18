@@ -76,7 +76,7 @@ export default function SettingsSidebar({ activeSection, onSectionChange }: Sett
                   <button
                     key={subSection.id}
                     onClick={() => onSectionChange(subSection.id)}
-                    className={`w-full text-left p-2 rounded-lg transition-colors text-sm ${
+                    className={`w-full text-left p-2 rounded-lg transition-colors text-sm tracking-wide ${
                       activeSection === subSection.id
                         ? 'bg-blue-50 text-blue-700 font-medium border border-blue-200'
                         : 'theme-text-secondary theme-hover-bg hover:text-blue-600'

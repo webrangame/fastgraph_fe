@@ -43,8 +43,8 @@ export default function SettingsPage() {
       {/* Desktop Header */}
       <header className="hidden lg:block theme-header-bg px-6 py-4 theme-border theme-shadow border-b">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Settings</h1>
-          <p className="theme-text-secondary">Configure your application settings here.</p>
+          <h1 className="text-xl font-bold">Settings</h1>
+          <p className="theme-text-secondary text-sm">Configure your application settings here.</p>
         </div>
       </header>
 
