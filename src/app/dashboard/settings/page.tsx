@@ -7,7 +7,8 @@ import GeneralSettings from '@/components/settings/GeneralSettings';
 import AdvancedSettings from '@/components/settings/AdvancedSettings';
 
 export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  // Set 'general' as the default active section instead of null
+  const [activeSection, setActiveSection] = useState<string | null>('general');
 
   const renderContent = () => {
     switch (activeSection) {

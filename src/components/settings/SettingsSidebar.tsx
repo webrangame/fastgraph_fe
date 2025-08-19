@@ -34,6 +34,16 @@ const settingsSections = [
 export default function SettingsSidebar({ activeSection, onSectionChange }: SettingsSidebarProps) {
   const [expandedSections, setExpandedSections] = useState<string[]>(['mcp']);
 
+  const handleSectionClick = (section: any) => {
+    if (section.subSections.length > 0) {
+      // If section has subsections, toggle expansion
+      toggleSection(section.id);
+    } else {
+      // If section has no subsections, select it directly
+      onSectionChange(section.id);
+    }
+  };
+
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => 
       prev.includes(sectionId) 
@@ -52,12 +62,24 @@ export default function SettingsSidebar({ activeSection, onSectionChange }: Sett
         {settingsSections.map((section) => (
           <div key={section.id} className="mb-2">
             <button
-              onClick={() => toggleSection(section.id)}
-              className="w-full flex items-center justify-between p-3 rounded-lg theme-hover-bg transition-colors group"
+              onClick={() => handleSectionClick(section)}
+              className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors group ${
+                activeSection === section.id && section.subSections.length === 0
+                  ? 'bg-blue-50 text-blue-700 font-medium border border-blue-200'
+                  : 'theme-hover-bg'
+              }`}
             >
               <div className="flex items-center space-x-3">
-                <section.icon className="w-5 h-5 theme-text-secondary group-hover:text-blue-600 transition-colors" />
-                <span className="font-medium theme-text-primary group-hover:text-blue-600 transition-colors">
+                <section.icon className={`w-5 h-5 transition-colors ${
+                  activeSection === section.id && section.subSections.length === 0
+                    ? 'text-blue-600'
+                    : 'theme-text-secondary group-hover:text-blue-600'
+                }`} />
+                <span className={`font-medium transition-colors ${
+                  activeSection === section.id && section.subSections.length === 0
+                    ? 'text-blue-700'
+                    : 'theme-text-primary group-hover:text-blue-600'
+                }`}>
                   {section.title}
                 </span>
               </div>
