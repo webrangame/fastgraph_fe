@@ -14,6 +14,15 @@ export interface WorkflowNode {
   label: string;
   x: number;
   y: number;
+  position?: {
+    x: number;
+    y: number;
+  };
+  data?: {
+    label?: string;
+    role?: string;
+    capabilities?: string[];
+  };
 }
 
 export interface Connection {
@@ -28,6 +37,7 @@ export interface Workflow {
   lastModified: string;
   nodes: WorkflowNode[];
   connections: Connection[];
+  description: string;
 }
 
 export interface WorkflowNodeProps {
@@ -43,6 +53,9 @@ export interface WorkflowCanvasProps {
   onSelectNode: (nodeId: string | null) => void;
   onDeleteNode: (nodeId: string) => void;
   onAddNode: (nodeData: any, position: { x: number; y: number }) => void;
+  agents?: Record<string, AutoOrchestrateAgent>;
+  connections?: any[];
+  isAutoOrchestrating?: boolean;
 }
 
 export interface PromptMessage {
@@ -58,4 +71,13 @@ export interface AgentData {
   icon: LucideIcon;
   color: string;
   category: string;
+}
+
+export interface AutoOrchestrateAgent {
+  name: string;
+  role: string;
+  capabilities: string[];
+  inputs: string[];
+  outputs: string[];
+  // Add other properties as needed based on the API response
 }
