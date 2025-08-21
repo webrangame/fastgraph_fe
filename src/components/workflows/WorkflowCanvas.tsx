@@ -39,6 +39,14 @@ const getNodeStyle = (role: string) => {
         icon: Calculator,
         emoji: '🔢'
       };
+    case 'End':
+      return {
+        background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
+        borderColor: '#ff6b6b',
+        textColor: 'white',
+        icon: Zap,
+        emoji: '🏁'
+      };
     default:
       return {
         background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
@@ -78,22 +86,33 @@ const CustomAgentNode = ({ data, selected, id }: { data: any; selected?: boolean
           left: -3
         }}
       />
-      <Handle
-        type="source"
-        position={Position.Right}
-        style={{
-          background: '#10b981',
-          width: 6,
-          height: 6,
-          border: '1px solid white',
-          right: -3
-        }}
-      />
+      {/* End nodes only need target handle, regular agents need both */}
+      {data.role !== 'End' && (
+        <Handle
+          type="source"
+          position={Position.Right}
+          style={{
+            background: '#10b981',
+            width: 6,
+            height: 6,
+            border: '1px solid white',
+            right: -3
+          }}
+        />
+      )}
       
       {/* Compact agent content */}
       <div className="flex items-center space-x-1.5">
-        <div className="p-0.5 rounded bg-blue-500 flex-shrink-0">
-          <Bot className="w-2.5 h-2.5 text-white" />
+        <div className={`p-0.5 rounded flex-shrink-0 ${
+          data.role === 'End' 
+            ? 'bg-red-500' 
+            : 'bg-blue-500'
+        }`}>
+          {data.role === 'End' ? (
+            <Zap className="w-2.5 h-2.5 text-white" />
+          ) : (
+            <Bot className="w-2.5 h-2.5 text-white" />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="theme-text-primary font-medium text-[9px] leading-tight truncate">
@@ -154,11 +173,52 @@ function WorkflowCanvasInner({
         }
       }));
       
-      console.log('Setting agent nodes:', agentNodes);
-      setNodes(agentNodes);
+      // Add end node
+      const endNode: Node = {
+        id: 'end-node',
+        position: {
+          x: 100 + (Object.keys(agents).length % 3) * 180,
+          y: 150 + Math.floor(Object.keys(agents).length / 3) * 100 + 100 // Position below last agent
+        },
+        data: {
+          label: 'End',
+          role: 'End',
+          capabilities: []
+        },
+        type: 'agent',
+        style: {
+          width: 100,
+          height: 50
+        }
+      };
+      
+      const allNodes = [...agentNodes, endNode];
+      console.log('Setting agent nodes with end node:', allNodes);
+      setNodes(allNodes);
 
       // Create connections based on agent input/output relationships
-      if (agents && Object.keys(agents).length > 1) {
+      if (agents && Object.keys(agents).length === 1) {
+        // Single agent case - connect directly to end node
+        const [agentName] = Object.keys(agents);
+        const singleAgentConnection: Edge = {
+          id: `${agentName}-to-end`,
+          source: `agent-${agentName}`,
+          target: 'end-node',
+          type: 'smoothstep',
+          animated: true,
+          style: {
+            stroke: '#ff6b6b',
+            strokeWidth: 2,
+          },
+          markerEnd: {
+            type: 'arrowclosed' as const,
+            width: 15,
+            height: 15,
+            color: '#ff6b6b',
+          },
+        };
+        setEdges([singleAgentConnection]);
+      } else if (agents && Object.keys(agents).length > 1) {
         const agentEntries = Object.entries(agents);
         const generatedConnections: Edge[] = [];
         
@@ -221,7 +281,7 @@ function WorkflowCanvasInner({
                 strokeWidth: 2,
               },
               markerEnd: {
-                type: 'arrowclosed',
+                type: 'arrowclosed' as const,
                 width: 15,
                 height: 15,
                 color: '#6366f1',
@@ -230,6 +290,46 @@ function WorkflowCanvasInner({
             });
           }
         }
+        
+        // Connect the terminal agent(s) to the end node
+        // Find agents that are targets but not sources (terminal agents in the workflow)
+        const terminalAgents = agentEntries
+          .map(([name]) => name)
+          .filter(agentName => {
+            const isTarget = generatedConnections.some(conn => conn.target === `agent-${agentName}`);
+            const isSource = generatedConnections.some(conn => conn.source === `agent-${agentName}`);
+            // Terminal agent: is a target but not a source, OR has no incoming connections (start nodes)
+            return isTarget && !isSource;
+          });
+        
+        // If no terminal agents found based on connections, use the last agent in execution order
+        if (terminalAgents.length === 0 && agentEntries.length > 0) {
+          // For sequential workflows, the last agent is typically the terminal one
+          terminalAgents.push(agentEntries[agentEntries.length - 1][0]);
+        }
+        
+        console.log('Terminal agents found for end connection:', terminalAgents);
+        console.log('All generated connections before end:', generatedConnections);
+        
+        terminalAgents.forEach((agentName) => {
+          generatedConnections.push({
+            id: `${agentName}-to-end`,
+            source: `agent-${agentName}`,
+            target: 'end-node',
+            type: 'smoothstep',
+            animated: true,
+            style: {
+              stroke: '#ff6b6b',
+              strokeWidth: 2,
+            },
+            markerEnd: {
+              type: 'arrowclosed',
+              width: 15,
+              height: 15,
+              color: '#ff6b6b',
+            },
+          });
+        });
         
         console.log('Generated connections:', generatedConnections);
         setEdges(generatedConnections);
@@ -251,20 +351,38 @@ function WorkflowCanvasInner({
               strokeWidth: 3,
             },
             markerEnd: {
-              type: 'arrowclosed',
+              type: 'arrowclosed' as const,
               width: 15,
               height: 15,
               color: '#ef4444',
             },
-
           };
           
-          setEdges([testConnection]);
+          // Connect last agent to end node
+          const endConnection: Edge = {
+            id: `${secondName}-to-end`,
+            source: `agent-${secondName}`,
+            target: 'end-node',
+            type: 'smoothstep',
+            animated: true,
+            style: {
+              stroke: '#ff6b6b',
+              strokeWidth: 2,
+            },
+            markerEnd: {
+              type: 'arrowclosed',
+              width: 15,
+              height: 15,
+              color: '#ff6b6b',
+            },
+          };
+          
+          setEdges([testConnection, endConnection]);
         }
       }
     }
     
-    // Also handle explicit connections if provided (takes priority)
+    // Also handle explicit connections if provided (but still add end node connections)
     if (connections && connections.length > 0) {
       console.log('Using explicit connections:', connections);
       const reactFlowEdges: Edge[] = connections.map((connection, index) => ({
@@ -278,16 +396,54 @@ function WorkflowCanvasInner({
           strokeWidth: 2,
         },
         markerEnd: {
-          type: 'arrowclosed',
+          type: 'arrowclosed' as const,
           width: 15,
           height: 15,
           color: '#6366f1',
         },
-
       }));
       
+      // Find terminal agents from explicit connections and add end node connections
+      if (agents) {
+        const agentNames = Object.keys(agents);
+        const terminalAgents = agentNames.filter(agentName => {
+          const agentId = `agent-${agentName}`;
+          // Agent is terminal if it's not a source in any connection
+          return !reactFlowEdges.some(edge => edge.source === agentId);
+        });
+        
+        // If no terminal agents, use the last agent
+        if (terminalAgents.length === 0 && agentNames.length > 0) {
+          terminalAgents.push(agentNames[agentNames.length - 1]);
+        }
+        
+        // Add connections to end node
+        terminalAgents.forEach(agentName => {
+          reactFlowEdges.push({
+            id: `${agentName}-to-end`,
+            source: `agent-${agentName}`,
+            target: 'end-node',
+            type: 'smoothstep',
+            animated: true,
+            style: {
+              stroke: '#ff6b6b',
+              strokeWidth: 2,
+            },
+            markerEnd: {
+              type: 'arrowclosed' as const,
+              width: 15,
+              height: 15,
+              color: '#ff6b6b',
+            },
+          });
+        });
+        
+        console.log('Terminal agents for explicit connections:', terminalAgents);
+        console.log('Final edges with end node connections:', reactFlowEdges);
+      }
+      
       setEdges(reactFlowEdges);
-      return; // Use explicit connections and skip auto-generation
+      return; // Use explicit connections with end node connections
     }
   }, [agents, connections]);
 
