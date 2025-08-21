@@ -2,7 +2,7 @@
 
 import { Bot, X, PenTool, Calculator, Zap } from "lucide-react";
 import { Workflow, WorkflowNode, WorkflowCanvasProps } from "@/types/workflow";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   ReactFlow,
   applyNodeChanges,
@@ -15,6 +15,8 @@ import {
   Connection,
   Handle,
   Position,
+  useReactFlow,
+  ReactFlowProvider,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -49,7 +51,7 @@ const getNodeStyle = (role: string) => {
 };
 
 // Smaller React Flow node component with proper handles
-const CustomAgentNode = ({ data, selected }: { data: any; selected?: boolean }) => {
+const CustomAgentNode = ({ data, selected, id }: { data: any; selected?: boolean; id: string }) => {
   return (
     <div 
       className={`relative theme-card-bg rounded-lg border-2 transition-all theme-shadow cursor-pointer group ${
@@ -58,10 +60,10 @@ const CustomAgentNode = ({ data, selected }: { data: any; selected?: boolean }) 
           : 'theme-border hover:border-gray-400'
       }`}
       style={{
-        padding: '8px 12px',
-        minWidth: '120px',
-        maxWidth: '140px',
-        fontSize: '11px'
+        padding: '6px 8px',
+        minWidth: '100px',
+        maxWidth: '120px',
+        fontSize: '9px'
       }}
     >
       {/* React Flow Handles - Essential for connections */}
@@ -70,10 +72,10 @@ const CustomAgentNode = ({ data, selected }: { data: any; selected?: boolean }) 
         position={Position.Left}
         style={{
           background: '#6366f1',
-          width: 8,
-          height: 8,
-          border: '2px solid white',
-          left: -4
+          width: 6,
+          height: 6,
+          border: '1px solid white',
+          left: -3
         }}
       />
       <Handle
@@ -81,23 +83,23 @@ const CustomAgentNode = ({ data, selected }: { data: any; selected?: boolean }) 
         position={Position.Right}
         style={{
           background: '#10b981',
-          width: 8,
-          height: 8,
-          border: '2px solid white',
-          right: -4
+          width: 6,
+          height: 6,
+          border: '1px solid white',
+          right: -3
         }}
       />
       
       {/* Compact agent content */}
-      <div className="flex items-center space-x-2">
-        <div className="p-1 rounded-md bg-blue-500 flex-shrink-0">
-          <Bot className="w-3 h-3 text-white" />
+      <div className="flex items-center space-x-1.5">
+        <div className="p-0.5 rounded bg-blue-500 flex-shrink-0">
+          <Bot className="w-2.5 h-2.5 text-white" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="theme-text-primary font-medium text-xs leading-tight truncate">
+          <div className="theme-text-primary font-medium text-[9px] leading-tight truncate">
             {data.label}
           </div>
-          <div className="theme-text-muted text-xs leading-tight truncate">
+          <div className="theme-text-muted text-[8px] leading-tight truncate mt-0.5">
             {data.role}
           </div>
         </div>
@@ -111,7 +113,8 @@ const nodeTypes = {
   agent: CustomAgentNode,
 };
 
-export function WorkflowCanvas({
+// Main WorkflowCanvas component wrapped with ReactFlowProvider
+function WorkflowCanvasInner({
   workflow,
   selectedNode,
   onSelectNode,
@@ -125,6 +128,10 @@ export function WorkflowCanvas({
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [panelPosition, setPanelPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const reactFlowInstance = useReactFlow();
 
   // Initialize nodes based on agents and edges based on connections
   useEffect(() => {
@@ -132,8 +139,8 @@ export function WorkflowCanvas({
       const agentNodes: Node[] = Object.entries(agents).map(([name, agent], index) => ({
         id: `agent-${name}`,
         position: { 
-          x: 100 + (index % 3) * 200, // Better spacing for smaller nodes
-          y: 150 + Math.floor(index / 3) * 120 
+          x: 100 + (index % 3) * 180, // Adjusted spacing for smaller nodes
+          y: 150 + Math.floor(index / 3) * 100 
         },
         data: {
           label: agent.name || name,
@@ -142,8 +149,8 @@ export function WorkflowCanvas({
         },
         type: 'agent',
         style: {
-          width: 120,
-          height: 60
+          width: 100,
+          height: 50
         }
       }));
       
@@ -187,18 +194,7 @@ export function WorkflowCanvas({
                         height: 15,
                         color: '#6366f1',
                       },
-                      label: output,
-                      labelStyle: {
-                        fontSize: 10,
-                        fontWeight: 500,
-                      },
-                      labelBgPadding: [8, 4],
-                      labelBgBorderRadius: 4,
-                      labelBgStyle: {
-                        fill: '#f8fafc',
-                        color: '#475569',
-                        fillOpacity: 0.9,
-                      },
+
                     });
                   }
                 }
@@ -230,18 +226,7 @@ export function WorkflowCanvas({
                 height: 15,
                 color: '#6366f1',
               },
-              label: 'sequential',
-              labelStyle: {
-                fontSize: 10,
-                fontWeight: 500,
-              },
-              labelBgPadding: [8, 4],
-              labelBgBorderRadius: 4,
-              labelBgStyle: {
-                fill: '#f8fafc',
-                color: '#475569',
-                fillOpacity: 0.9,
-              },
+
             });
           }
         }
@@ -271,19 +256,7 @@ export function WorkflowCanvas({
               height: 15,
               color: '#ef4444',
             },
-            label: 'test connection',
-            labelStyle: {
-              fontSize: 10,
-              fontWeight: 500,
-              color: '#ef4444'
-            },
-            labelBgPadding: [8, 4],
-            labelBgBorderRadius: 4,
-            labelBgStyle: {
-              fill: '#fef2f2',
-              color: '#ef4444',
-              fillOpacity: 0.9,
-            },
+
           };
           
           setEdges([testConnection]);
@@ -310,18 +283,7 @@ export function WorkflowCanvas({
           height: 15,
           color: '#6366f1',
         },
-        label: connection.label || 'data flow',
-        labelStyle: {
-          fontSize: 10,
-          fontWeight: 500,
-        },
-        labelBgPadding: [8, 4],
-        labelBgBorderRadius: 4,
-        labelBgStyle: {
-          fill: '#f8fafc',
-          color: '#475569',
-          fillOpacity: 0.9,
-        },
+
       }));
       
       setEdges(reactFlowEdges);
@@ -369,6 +331,33 @@ export function WorkflowCanvas({
       onSelectNode(node.id);
     }
   }, [onSelectNode]);
+
+  // Improved hover positioning using ReactFlow's coordinate system
+  const handleNodeMouseEnter = useCallback((event: React.MouseEvent, node: Node) => {
+    setHoveredNode(node.id);
+    
+    if (reactFlowWrapper.current && reactFlowInstance) {
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const viewport = reactFlowInstance.getViewport();
+      
+      // Transform node position to screen coordinates
+      const screenX = node.position.x * viewport.zoom + viewport.x + reactFlowBounds.left;
+      const screenY = node.position.y * viewport.zoom + viewport.y + reactFlowBounds.top;
+      
+      // Position panel to the right of the node with a small gap
+      const nodeWidth = 120; // Adjusted for smaller node width
+      const gap = 8;
+      
+      setPanelPosition({
+        x: screenX + (nodeWidth * viewport.zoom) + gap,
+        y: screenY
+      });
+    }
+  }, [reactFlowInstance]);
+
+  const handleNodeMouseLeave = useCallback(() => {
+    setHoveredNode(null);
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -447,6 +436,7 @@ export function WorkflowCanvas({
 
   return (
     <div
+      ref={reactFlowWrapper}
       className="flex-1 theme-bg relative overflow-hidden"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
@@ -479,12 +469,9 @@ export function WorkflowCanvas({
       <div style={{ width: "100%", height: "100%" }} className="relative">
         {/* Debug info */}
         {(nodes.length > 0 || edges.length > 0) && (
-          <div className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded text-xs z-50">
+          <div className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded text-xs z-50 min-w-[100px]">
             <div>Nodes: {nodes.length}</div>
             <div>Edges: {edges.length}</div>
-            {edges.length > 0 && (
-              <div>Connections: {edges.map(e => `${e.source}→${e.target}`).join(', ')}</div>
-            )}
           </div>
         )}
         
@@ -495,6 +482,8 @@ export function WorkflowCanvas({
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={onNodeClick}
+          onNodeMouseEnter={handleNodeMouseEnter}
+          onNodeMouseLeave={handleNodeMouseLeave}
           nodeTypes={nodeTypes}
           fitView
           fitViewOptions={{ 
@@ -518,7 +507,6 @@ export function WorkflowCanvas({
           }}
           snapToGrid={true}
           snapGrid={[20, 20]}
-          // Force edge rendering
           deleteKeyCode={['Backspace', 'Delete']}
           multiSelectionKeyCode={['Meta', 'Ctrl']}
           panOnScroll={false}
@@ -555,44 +543,61 @@ export function WorkflowCanvas({
         }
       `}</style>
 
-      {/* Compact agent details panel */}
-      {selectedAgent && agents && (
-        <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 max-w-xs border theme-border z-50">
-          <div className="flex items-center justify-between mb-2">
+      {/* Fixed positioning node details panel - rendered at document level */}
+      {hoveredNode && agents && (
+        <div 
+          className="fixed theme-card-bg rounded-lg shadow-xl p-3 max-w-xs border theme-border z-[9999] pointer-events-none transition-all duration-200 ease-out"
+          style={{
+            left: `${Math.min(panelPosition.x, window.innerWidth - 320)}px`, // Prevent overflow
+            top: `${Math.max(10, Math.min(panelPosition.y, window.innerHeight - 200))}px`, // Prevent overflow
+            transform: 'translateY(-50%)', // Center vertically relative to node
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05)'
+          }}
+        >
+          <div className="mb-2">
             <h3 className="font-medium text-sm theme-text-primary">
-              {agents[selectedAgent.replace('agent-', '')]?.name || 'Agent Details'}
+              {agents[hoveredNode.replace('agent-', '')]?.name || 'Agent Details'}
             </h3>
-            <button
-              onClick={() => setSelectedAgent(null)}
-              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
-            >
-              <X className="w-3 h-3" />
-            </button>
           </div>
           
           {(() => {
-            const agent = agents[selectedAgent.replace('agent-', '')];
+            const agent = agents[hoveredNode.replace('agent-', '')];
             if (!agent) return null;
             
             return (
-              <div className="space-y-1 text-xs">
-                <div>
-                  <span className="theme-text-secondary">Role:</span>
-                  <span className="ml-2 theme-text-primary">{agent.role}</span>
+              <div className="space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="theme-text-secondary font-medium min-w-0">Role:</span>
+                  <span className="theme-text-primary font-medium text-right ml-2">{agent.role}</span>
                 </div>
+                
                 {agent.capabilities && agent.capabilities.length > 0 && (
-                  <div>
-                    <span className="theme-text-secondary">Capabilities:</span>
-                    <div className="mt-1">
-                      <span className="theme-text-muted text-xs">
-                        {agent.capabilities.join(', ')}
-                      </span>
+                  <div className="space-y-2">
+                    <span className="theme-text-secondary font-medium block">Capabilities:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {agent.capabilities.slice(0, 3).map((cap, idx) => (
+                        <span 
+                          key={idx}
+                          className="theme-input-bg theme-text-primary border theme-border px-2 py-1 rounded-md text-[10px] font-medium"
+                        >
+                          {cap}
+                        </span>
+                      ))}
+                      {agent.capabilities.length > 3 && (
+                        <span className="theme-text-muted text-[10px] self-center">
+                          +{agent.capabilities.length - 3} more
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
-                <div>
-                  <span className="theme-text-secondary">Status:</span>
-                  <span className="ml-2 text-green-600">Connected</span>
+                
+                <div className="flex items-center justify-between pt-2 border-t theme-border">
+                  <span className="theme-text-secondary font-medium">Status:</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-green-600 dark:text-green-400 font-medium text-right">Connected</span>
+                  </div>
                 </div>
               </div>
             );
@@ -642,5 +647,14 @@ export function WorkflowCanvas({
         </div>
       )}
     </div>
+  );
+}
+
+// Export the wrapped component
+export function WorkflowCanvas(props: WorkflowCanvasProps) {
+  return (
+    <ReactFlowProvider>
+      <WorkflowCanvasInner {...props} />
+    </ReactFlowProvider>
   );
 }
