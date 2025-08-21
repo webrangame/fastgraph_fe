@@ -4,6 +4,7 @@ export function createNewWorkflowData(index: number): Workflow {
   return {
     id: index.toString(),
     name: `Workflow ${index}`,
+    description: '',
     status: 'draft',
     lastModified: 'Just now',
     nodes: [],

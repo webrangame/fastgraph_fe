@@ -121,7 +121,8 @@ export const initialWorkflows: Workflow[] = [
     status: 'active',
     lastModified: '2 hours ago',
     nodes: [],
-    connections: []
+    connections: [],
+    description: ''
   }
 ];
 
