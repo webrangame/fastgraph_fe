@@ -110,9 +110,28 @@ const authSlice = createSlice({
         state.user = null;
         state.accessToken = null;
         state.refreshToken = null;
+      })
+      // Google login mutation
+      .addMatcher(authApi.endpoints.googleLogin.matchPending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addMatcher(authApi.endpoints.googleLogin.matchFulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.user = action.payload.user || null;
+        state.accessToken = action.payload.access_token;
+        state.refreshToken = action.payload.refresh_token;
+        state.error = null;
+      })
+      .addMatcher(authApi.endpoints.googleLogin.matchRejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message || 'Google login failed';
       });
   },
 });
 
 export const { setCredentials, logout } = authSlice.actions;
+
+export const selectCurrentUser = (state) => state.auth.user;
+
 export default authSlice.reducer;
