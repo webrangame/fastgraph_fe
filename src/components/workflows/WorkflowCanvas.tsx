@@ -20,44 +20,6 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-// Custom node types for different agent roles
-const getNodeStyle = (role: string) => {
-  switch (role) {
-    case 'Creative Writer':
-      return {
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        borderColor: '#667eea',
-        textColor: 'white',
-        icon: PenTool,
-        emoji: '✏️'
-      };
-    case 'Word Counter':
-      return {
-        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        borderColor: '#f093fb', 
-        textColor: 'white',
-        icon: Calculator,
-        emoji: '🔢'
-      };
-    case 'End':
-      return {
-        background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
-        borderColor: '#ff6b6b',
-        textColor: 'white',
-        icon: Zap,
-        emoji: '🏁'
-      };
-    default:
-      return {
-        background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-        borderColor: '#a8edea',
-        textColor: '#333',
-        icon: Bot,
-        emoji: '🤖'
-      };
-  }
-};
-
 // Smaller React Flow node component with proper handles
 const CustomAgentNode = ({ data, selected, id }: { data: any; selected?: boolean; id: string }) => {
   return (

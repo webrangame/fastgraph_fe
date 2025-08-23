@@ -7,7 +7,8 @@ export function createNewWorkflowData(index: number): Workflow {
     status: 'draft',
     lastModified: 'Just now',
     nodes: [],
-    connections: []
+    connections: [],
+    description: ''
   };
 }
 

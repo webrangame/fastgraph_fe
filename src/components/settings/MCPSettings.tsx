@@ -3,7 +3,7 @@ import React from 'react';
 import AvailableMCPs from '@/components/settings/mcp/AvailableMCPs';
 import MCPToolsSetup from '@/components/settings/mcp/MCPToolsSetup';
 import SuccessModal from '@/components/settings/mcp/SuccessModal';
-import { useMCPSettings } from '@/hooks/useMCPSettings';
+import { useMCPSettings } from '@/hooks/settings/useMCPSettings';
 
 interface MCPSettingsProps {
   activeSubSection: string;
