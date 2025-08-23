@@ -150,6 +150,44 @@ export default function WorkflowsPage() {
                           "temperature": 0.5
                         },
                         "type": "llm"
+                      },
+                      "quality_checker_agent": {
+                        "name": "quality_checker_agent",
+                        "role": "Quality Checker",
+                        "capabilities": [
+                          "llm",
+                          "validation"
+                        ],
+                        "inputs": [
+                          "word_count"
+                        ],
+                        "outputs": [
+                          "quality_report"
+                        ],
+                        "config": {
+                          "model": "gpt-4",
+                          "temperature": 0.3
+                        },
+                        "type": "llm"
+                      },
+                      "formatter_agent": {
+                        "name": "formatter_agent",
+                        "role": "Document Formatter",
+                        "capabilities": [
+                          "formatting",
+                          "export"
+                        ],
+                        "inputs": [
+                          "poem_output",
+                          "quality_report"
+                        ],
+                        "outputs": [
+                          "formatted_document"
+                        ],
+                        "config": {
+                          "format": "markdown"
+                        },
+                        "type": "formatter"
                       }
                     },
                     "workflow": {
@@ -176,6 +214,35 @@ export default function WorkflowsPage() {
                           ],
                           "outputs": [
                             "word_count"
+                          ],
+                          "transform": null,
+                          "filter": null,
+                          "timeout": null,
+                          "retry": null,
+                          "error_handler": null
+                        },
+                        {
+                          "agent": "quality_checker_agent",
+                          "inputs": [
+                            "word_count"
+                          ],
+                          "outputs": [
+                            "quality_report"
+                          ],
+                          "transform": null,
+                          "filter": null,
+                          "timeout": null,
+                          "retry": null,
+                          "error_handler": null
+                        },
+                        {
+                          "agent": "formatter_agent",
+                          "inputs": [
+                            "poem_output",
+                            "quality_report"
+                          ],
+                          "outputs": [
+                            "formatted_document"
                           ],
                           "transform": null,
                           "filter": null,
@@ -246,6 +313,27 @@ export default function WorkflowsPage() {
                           ],
                           "transform": null,
                           "filter": null
+                        },
+                        "quality_checker_agent": {
+                          "inputs": [
+                            "word_count"
+                          ],
+                          "outputs": [
+                            "quality_report"
+                          ],
+                          "transform": null,
+                          "filter": null
+                        },
+                        "formatter_agent": {
+                          "inputs": [
+                            "poem_output",
+                            "quality_report"
+                          ],
+                          "outputs": [
+                            "formatted_document"
+                          ],
+                          "transform": null,
+                          "filter": null
                         }
                       },
                       "error_handling": {},
@@ -255,6 +343,10 @@ export default function WorkflowsPage() {
                 }
               }
             };
+
+          // - poet_agent outputs: ["poem_output"]
+          // - word_counter_agent inputs: ["poem_output"] ✓ Connection created
+          // - formatter_agent inputs: ["poem_output", "quality_report"] ✓ Connection created
 
             // Extract agents from the response
             const swarmSpec = result.auto_orchestrate_response?.swarm_result?.swarm_spec;
