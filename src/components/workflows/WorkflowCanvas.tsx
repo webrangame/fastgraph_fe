@@ -110,7 +110,9 @@ function WorkflowCanvasInner({
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [endNodeHovered, setEndNodeHovered] = useState<boolean>(false);
   const [panelPosition, setPanelPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const endNodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
 
@@ -452,7 +454,18 @@ function WorkflowCanvasInner({
 
   // Improved hover positioning using ReactFlow's coordinate system
   const handleNodeMouseEnter = useCallback((event: React.MouseEvent, node: Node) => {
+    // Clear any existing timeout for end node
+    if (endNodeTimeoutRef.current) {
+      clearTimeout(endNodeTimeoutRef.current);
+      endNodeTimeoutRef.current = null;
+    }
+    
     setHoveredNode(node.id);
+    
+    // Special handling for end node
+    if (node.id === 'end-node') {
+      setEndNodeHovered(true);
+    }
     
     if (reactFlowWrapper.current && reactFlowInstance) {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
@@ -473,7 +486,24 @@ function WorkflowCanvasInner({
     }
   }, [reactFlowInstance]);
 
-  const handleNodeMouseLeave = useCallback(() => {
+  const handleNodeMouseLeave = useCallback((event: React.MouseEvent, node: Node) => {
+    // Special handling for end node - delay hiding for 1 second
+    if (node.id === 'end-node') {
+      endNodeTimeoutRef.current = setTimeout(() => {
+        setEndNodeHovered(false);
+        setHoveredNode(null);
+      }, 1000);
+    } else {
+      setHoveredNode(null);
+    }
+  }, []);
+
+  const handleCloseEndNodeCard = useCallback(() => {
+    if (endNodeTimeoutRef.current) {
+      clearTimeout(endNodeTimeoutRef.current);
+      endNodeTimeoutRef.current = null;
+    }
+    setEndNodeHovered(false);
     setHoveredNode(null);
   }, []);
 
@@ -485,6 +515,15 @@ function WorkflowCanvasInner({
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (endNodeTimeoutRef.current) {
+        clearTimeout(endNodeTimeoutRef.current);
+      }
+    };
   }, []);
 
   const addNodeToCanvas = (e: React.DragEvent, nodeData: any) => {
@@ -662,7 +701,7 @@ function WorkflowCanvasInner({
       `}</style>
 
       {/* Fixed positioning node details panel - rendered at document level */}
-      {hoveredNode && agents && (
+      {hoveredNode && agents && hoveredNode !== 'end-node' && (
         <div 
           className="fixed theme-card-bg rounded-lg shadow-xl p-3 max-w-xs border theme-border z-[9999] pointer-events-none transition-all duration-200 ease-out"
           style={{
@@ -720,6 +759,65 @@ function WorkflowCanvasInner({
               </div>
             );
           })()}
+        </div>
+      )}
+      
+      {/* Special hover card for end node with 1-second delay */}
+      {endNodeHovered && (
+        <div 
+          className="fixed theme-card-bg backdrop-blur-sm rounded-lg shadow-2xl p-4 max-w-sm border-2 theme-border z-[9999] transition-all duration-300 ease-out"
+          style={{
+            left: `${Math.min(panelPosition.x, window.innerWidth - 350)}px`,
+            top: `${Math.max(10, Math.min(panelPosition.y, window.innerHeight - 220))}px`,
+            transform: 'translateY(-50%)',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1)'
+          }}
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-red-500 rounded-lg">
+                <Zap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg theme-text-primary">Workflow End</h3>
+                <p className="theme-text-secondary text-sm">Final destination</p>
+              </div>
+            </div>
+            <button
+              onClick={handleCloseEndNodeCard}
+              className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-150 pointer-events-auto"
+            >
+              <X className="w-4 h-4 theme-text-muted hover:theme-text-primary" />
+            </button>
+          </div>
+          
+          <div className="space-y-3 text-sm">
+            <div className="theme-input-bg rounded-lg p-3 border theme-border">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium theme-text-secondary">Text output:</span>
+              </div>
+              <p className="theme-text-muted text-xs">
+                Add your final output here
+              </p>  
+            </div>
+            <div className="theme-input-bg rounded-lg p-3 border theme-border">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium theme-text-secondary">Media Links:</span>
+              </div>
+              <p className="theme-text-muted text-xs">
+                Add your Media Links here
+              </p>  
+            </div>
+            
+            <div className="border-t theme-border pt-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-ping"></div>
+                <span className="theme-text-muted text-xs">
+                  Workflow completes when this node is reached
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
