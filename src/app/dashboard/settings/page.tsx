@@ -5,6 +5,7 @@ import SettingsSidebar from '@/components/settings/SettingsSidebar';
 import MCPSettings from '@/components/settings/MCPSettings';
 import GeneralSettings from '@/components/settings/GeneralSettings';
 import AdvancedSettings from '@/components/settings/AdvancedSettings';
+import APIKeysSettings from '@/components/settings/APIKeysSettings';
 
 export default function SettingsPage() {
   // Set 'general' as the default active section instead of null
@@ -22,6 +23,8 @@ export default function SettingsPage() {
         );
       case 'general':
         return <GeneralSettings />;
+      case 'api-keys':
+        return <APIKeysSettings />;
       case 'advanced':
         return <AdvancedSettings />;
       default:

@@ -9,6 +9,7 @@ import {
   Bot, 
   BarChart3, 
   Settings,
+  CreditCard,
   ChevronDown,
   Sun,
   Moon
@@ -41,6 +42,11 @@ export const navigationItems = [
     name: 'Settings',
     href: '/dashboard/settings',
     icon: Settings,
+  },
+  {
+    name: 'Pricing',
+    href: '/dashboard/pricing',
+    icon: CreditCard,
   },
 ];
 

@@ -20,14 +20,6 @@
   }
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: calc(200px + 100%) 0;
-  }
-}
 
 /* Staggered animation for pricing cards */
 .pricing-card {
@@ -64,21 +56,6 @@
   margin-top: 1.5rem;
 }
 
-.popular-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -200px;
-  width: 200px;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  animation: shimmer 3s infinite;
-}
 
 /* Button enhancements */
 .pricing-button {
@@ -216,9 +193,6 @@
     transition: none;
   }
   
-  .popular-card::before {
-    animation: none;
-  }
   
   .savings-badge {
     animation: none;
