@@ -666,9 +666,9 @@ function WorkflowCanvasInner({
           snapGrid={[20, 20]}
           deleteKeyCode={['Backspace', 'Delete']}
           multiSelectionKeyCode={['Meta', 'Ctrl']}
-          panOnScroll={false}
+          panOnScroll={true}
           selectionOnDrag={false}
-          panOnDrag={[1]}
+          panOnDrag={true}
           selectNodesOnDrag={false}
         />
       </div>
