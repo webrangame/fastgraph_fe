@@ -224,7 +224,7 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
               
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 theme-text-muted hover:theme-text-primary transition-colors"
+                className="p-2 rounded-lg theme-hover-bg theme-text-muted hover:theme-text-primary transition-colors"
                 disabled={isProcessing}
               >
                 <Paperclip className="w-4 h-4" />
@@ -236,7 +236,7 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
                 className={`p-2 rounded-lg transition-all ${
                   inputValue.trim() && !isProcessing
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl'
-                    : 'bg-gray-200 dark:bg-gray-700 theme-text-muted cursor-not-allowed'
+                    : 'theme-input-bg theme-text-muted cursor-not-allowed'
                 }`}
               >
                 {isProcessing ? (
@@ -272,19 +272,19 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
           <div className="flex flex-wrap gap-2 justify-center">
             <button
               onClick={() => setInputValue('Add a customer service agent to handle inquiries')}
-              className="px-3 py-1.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 theme-text-muted hover:theme-text-primary transition-colors border theme-border"
+              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-text-muted hover:theme-text-primary transition-colors border theme-border"
             >
               Add Agent
             </button>
             <button
               onClick={() => setInputValue('Create a data processing pipeline')}
-              className="px-3 py-1.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 theme-text-muted hover:theme-text-primary transition-colors border theme-border"
+              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-text-muted hover:theme-text-primary transition-colors border theme-border"
             >
               Data Pipeline
             </button>
             <button
               onClick={() => setInputValue('Set up email notifications for workflow completion')}
-              className="px-3 py-1.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 theme-text-muted hover:theme-text-primary transition-colors border theme-border"
+              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-text-muted hover:theme-text-primary transition-colors border theme-border"
             >
               Notifications
             </button>

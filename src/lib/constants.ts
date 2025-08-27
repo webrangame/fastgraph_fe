@@ -122,7 +122,7 @@ export const initialWorkflows: Workflow[] = [
     lastModified: '2 hours ago',
     nodes: [],
     connections: [],
-    description: ''
+    description: 'Routes customer service requests to the appropriate agent'
   }
 ];
 

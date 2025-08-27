@@ -1,0 +1,306 @@
+'use client';
+
+import { useState } from 'react';
+import { Check, Star, Sparkles, Shield, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import './pricing.css';
+
+interface PlanFeature {
+  text: string;
+  highlighted?: boolean;
+  premium?: boolean;
+}
+
+interface PricingPlan {
+  name: string;
+  monthlyPrice: number;
+  annualPrice: number;
+  credits: string;
+  features: PlanFeature[];
+  cta: string;
+  popular?: boolean;
+  description: string;
+}
+
+const plans: PricingPlan[] = [
+  {
+    name: "Free",
+    monthlyPrice: 0,
+    annualPrice: 0,
+    credits: "1,000/month",
+    description: "Perfect for getting started with agent workflows",
+    features: [
+      { text: "3 Active Agents maximum" },
+      { text: "50,000 Tokens/month processing" },
+      { text: "1GB Memory per agent" },
+      { text: "Basic workflow creation" },
+      { text: "Agent node connections" },
+      { text: "Community support" },
+      { text: "Basic monitoring dashboard" },
+      { text: "Standard API access" }
+    ],
+    cta: "Get Started Free"
+  },
+  {
+    name: "Pro",
+    monthlyPrice: 49,
+    annualPrice: 39,
+    credits: "25,000/month",
+    description: "Scale your agent operations with advanced features",
+    popular: true,
+    features: [
+      { text: "25 Active Agents maximum" },
+      { text: "1M Tokens/month processing" },
+      { text: "8GB Memory per agent" },
+      { text: "Advanced workflow orchestration" },
+      { text: "Multi-level agent hierarchies" },
+      { text: "Offline Agent Support", highlighted: true },
+      { text: "Advanced Security & API", highlighted: true },
+      { text: "Priority Feature Updates", highlighted: true },
+      { text: "Advanced monitoring & analytics" },
+      { text: "Custom MCP server integrations" },
+      { text: "Email support" }
+    ],
+    cta: "Start Pro Trial"
+  },
+  {
+    name: "Premium",
+    monthlyPrice: 149,
+    annualPrice: 119,
+    credits: "100,000/month",
+    description: "Enterprise-grade agent management for unlimited scale",
+    features: [
+      { text: "Unlimited Active Agents" },
+      { text: "5M Tokens/month processing" },
+      { text: "32GB Memory per agent" },
+      { text: "Enterprise workflow management" },
+      { text: "Advanced agent swarm coordination" },
+      { text: "Offline Agent Support", highlighted: true },
+      { text: "Advanced Security & API", highlighted: true },
+      { text: "Early Access to New Features", highlighted: true },
+      { text: "24-hour Priority Support", premium: true },
+      { text: "Custom model integrations" },
+      { text: "Advanced compliance features" },
+      { text: "Dedicated account manager" },
+      { text: "Custom SLA agreements" }
+    ],
+    cta: "Upgrade to Premium"
+  }
+];
+
+const features = [
+  {
+    icon: "🤖",
+    title: "Agent Lifecycle Management",
+    description: "Complete control over agent creation, deployment, and monitoring"
+  },
+  {
+    icon: "🔗",
+    title: "Dynamic Agent Networks",
+    description: "Build complex multi-agent workflows with intelligent routing"
+  },
+  {
+    icon: "⚡",
+    title: "Real-time Monitoring",
+    description: "Track performance, usage, and health across your agent fleet"
+  },
+  {
+    icon: "🔧",
+    title: "MCP Integration",
+    description: "Seamless integration with Model Context Protocol servers"
+  }
+];
+
+const faqs = [
+  {
+    question: "What are compute credits?",
+    answer: "Compute credits are our unified measurement for agent processing power, including CPU time, memory usage, and token processing."
+  },
+  {
+    question: "Can I change plans anytime?",
+    answer: "Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately with prorated billing."
+  },
+  {
+    question: "Are there any limits on workflows?",
+    answer: "The only limits are on active agents and compute resources. You can create unlimited workflows within your plan's agent limits."
+  },
+  {
+    question: "Do you offer free trials?",
+    answer: "Yes! Pro and Premium plans include a 14-day free trial with full access to all features."
+  }
+];
+
+export default function PricingPage() {
+  const [isAnnual, setIsAnnual] = useState(false);
+
+  return (
+    <div className="min-h-screen theme-bg">
+      {/* Header Section */}
+      <div className="px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl text-center">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold theme-text-primary mb-6">
+            Choose Your Agent Plan
+          </h1>
+          <p className="text-lg md:text-xl theme-text-secondary mb-8 max-w-3xl mx-auto">
+            Scale your multi-agent workflows from simple automation to enterprise-grade orchestration
+          </p>
+
+          {/* Pricing Toggle */}
+          <div className="toggle-container inline-flex items-center theme-input-bg theme-border border rounded-full p-1 mb-12">
+            <button
+              onClick={() => setIsAnnual(false)}
+              className={`toggle-button px-6 py-3 rounded-full ${
+                !isAnnual 
+                  ? 'active theme-card-bg theme-text-primary' 
+                  : 'theme-text-secondary theme-hover-bg'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setIsAnnual(true)}
+              className={`toggle-button px-6 py-3 rounded-full relative ${
+                isAnnual 
+                  ? 'active theme-card-bg theme-text-primary' 
+                  : 'theme-text-secondary theme-hover-bg'
+              }`}
+            >
+              Annual
+              <span className="savings-badge absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                Save 20%
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Pricing Cards */}
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-12 md:gap-8 lg:gap-10 lg:grid-cols-3 pt-6">
+            {plans.map((plan, index) => (
+              <div
+                key={plan.name}
+                className={`pricing-card relative theme-card-bg rounded-2xl theme-shadow ${
+                  plan.popular 
+                    ? 'popular-card scale-105 border-4 border-blue-600 lg:scale-110' 
+                    : 'theme-border border'
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 z-10">
+                    <div className="bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-bold flex items-center gap-1 whitespace-nowrap shadow-lg">
+                      <Star className="w-4 h-4" />
+                      Most Popular
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-8">
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-bold theme-text-primary mb-2">{plan.name}</h3>
+                    <p className="theme-text-secondary mb-4">{plan.description}</p>
+                    <div className="mb-4">
+                      <span className="text-4xl font-bold theme-text-primary">
+                        ${isAnnual ? plan.annualPrice : plan.monthlyPrice}
+                      </span>
+                      <span className="theme-text-secondary">/month</span>
+                      {isAnnual && plan.monthlyPrice > 0 && (
+                        <div className="text-sm text-green-600 font-semibold">
+                          Save ${(plan.monthlyPrice - plan.annualPrice) * 12}/year
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <span className="theme-input-bg theme-text-primary px-3 py-1 rounded-full text-sm font-semibold">
+                        {plan.credits} compute credits
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 mb-8">
+                    {plan.features.map((feature, featureIndex) => (
+                      <div
+                        key={featureIndex}
+                        className={`feature-item flex items-start gap-3 ${
+                          feature.highlighted || feature.premium 
+                            ? 'feature-highlight -mx-2 px-2 py-2 rounded-lg' 
+                            : ''
+                        }`}
+                      >
+                        <Check 
+                          className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                            feature.premium 
+                              ? 'text-yellow-500' 
+                              : feature.highlighted 
+                                ? 'text-blue-600' 
+                                : 'text-green-600'
+                          }`} 
+                        />
+                        <span 
+                          className={`theme-text-primary ${
+                            feature.highlighted || feature.premium ? 'font-semibold' : ''
+                          }`}
+                        >
+                          {feature.text}
+                          {feature.premium && <Sparkles className="inline w-4 h-4 ml-1 text-yellow-500" />}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    variant={plan.name === 'Free' ? 'secondary' : 'primary'}
+                    className="pricing-button w-full justify-center"
+                  >
+                    {plan.cta}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Feature Grid */}
+        <div className="mx-auto max-w-6xl mt-20">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            {features.map((feature, index) => (
+              <div key={index} className="feature-grid-item text-center">
+                <div className="emoji text-4xl mb-4">{feature.icon}</div>
+                <h3 className="text-xl font-bold theme-text-primary mb-2">{feature.title}</h3>
+                <p className="theme-text-secondary">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Enterprise Section */}
+        <div className="mx-auto max-w-4xl mt-20">
+          <div className="theme-card-bg theme-border border rounded-2xl p-8 text-center">
+            <h3 className="text-2xl font-bold theme-text-primary mb-4">Need Something More?</h3>
+            <p className="theme-text-secondary mb-6 max-w-2xl mx-auto">
+              Enterprise customers can customize their plan with dedicated infrastructure, 
+              advanced compliance features, and priority support.
+            </p>
+            <Button variant="primary">
+              Contact Sales
+            </Button>
+          </div>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="mx-auto max-w-4xl mt-20">
+          <div className="theme-input-bg theme-border border rounded-2xl p-8">
+            <h3 className="text-2xl font-bold theme-text-primary mb-8 text-center">Frequently Asked Questions</h3>
+            <div className="grid gap-6 md:grid-cols-2">
+              {faqs.map((faq, index) => (
+                <div key={index} className="faq-item space-y-3">
+                  <h4 className="text-lg font-semibold theme-text-primary">{faq.question}</h4>
+                  <p className="theme-text-secondary">{faq.answer}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
