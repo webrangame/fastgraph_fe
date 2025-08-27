@@ -701,7 +701,7 @@ function WorkflowCanvasInner({
       `}</style>
 
       {/* Fixed positioning node details panel - rendered at document level */}
-      {hoveredNode && agents && hoveredNode !== 'end-node' && (
+      {hoveredNode && agents && hoveredNode !== 'end-node' && hoveredNode.startsWith('agent-') && (
         <div 
           className="fixed theme-card-bg rounded-lg shadow-xl p-3 max-w-xs border theme-border z-[9999] pointer-events-none transition-all duration-200 ease-out"
           style={{
@@ -763,7 +763,7 @@ function WorkflowCanvasInner({
       )}
       
       {/* Special hover card for end node with 1-second delay */}
-      {endNodeHovered && (
+      {endNodeHovered && hoveredNode === 'end-node' && (
         <div 
           className="fixed theme-card-bg backdrop-blur-sm rounded-lg shadow-2xl p-4 max-w-sm border-2 theme-border z-[9999] transition-all duration-300 ease-out"
           style={{
