@@ -37,13 +37,15 @@ export function useAutoOrchestrate({
       }
       
       if (workflows.length > 0) {
+
+        console.log("iii")
         const firstWorkflowDescription = workflows[0]?.description;
         if (firstWorkflowDescription) {
           console.log('Auto orchestrating with command:', firstWorkflowDescription);
           try {
             // Using hardcoded example for now - replace with actual API call when ready
-            // const result = await autoOrchestrate({ command: firstWorkflowDescription }).unwrap();
-            const result = mockAutoOrchestrateResult;
+              const result = await autoOrchestrate({ command: firstWorkflowDescription }).unwrap();
+             //const result = mockAutoOrchestrateResult;
 
             // Process agents and connections
             const { agents: processedAgents, connections: processedConnections } = 
