@@ -3,6 +3,7 @@
 import { Bot, X, PenTool, Calculator, Zap } from "lucide-react";
 import { Workflow, WorkflowNode, WorkflowCanvasProps } from "@/types/workflow";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { LogStreamingPopup } from "./LogStreamingPopup";
 import {
   ReactFlow,
   applyNodeChanges,
@@ -871,136 +872,18 @@ function WorkflowCanvasInner({
         </div>
       )}
 
-      {/* Node Details Popup Modal */}
+      {/* Log Streaming Popup */}
       {showNodePopup && popupAgent && agents && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
-          <div className="theme-card-bg rounded-xl shadow-2xl border-2 theme-border max-w-md w-full max-h-[90vh] overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b theme-border">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-500 rounded-lg">
-                  <Bot className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold theme-text-primary">
-                    {agents[popupAgent.replace('agent-', '')]?.name || 'Agent Details'}
-                  </h2>
-                  <p className="theme-text-secondary text-sm">
-                    {agents[popupAgent.replace('agent-', '')]?.role || 'Agent'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowNodePopup(false);
-                  setPopupAgent(null);
-                }}
-                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              >
-                <X className="w-5 h-5 theme-text-muted" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(90vh-80px)]">
-              {(() => {
-                const agent = agents[popupAgent.replace('agent-', '')];
-                if (!agent) return null;
-
-                return (
-                  <>
-                    {/* Capabilities */}
-                    {agent.capabilities && agent.capabilities.length > 0 && (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold theme-text-primary text-sm">Capabilities</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {agent.capabilities.map((cap, idx) => (
-                            <span 
-                              key={idx}
-                              className="theme-input-bg theme-text-primary border theme-border px-3 py-1.5 rounded-lg text-sm font-medium"
-                            >
-                              {cap}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Inputs */}
-                    {agent.inputs && agent.inputs.length > 0 && (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold theme-text-primary text-sm">Inputs</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {agent.inputs.map((input, idx) => (
-                            <span 
-                              key={idx}
-                              className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium"
-                            >
-                              {input}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Outputs */}
-                    {agent.outputs && agent.outputs.length > 0 && (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold theme-text-primary text-sm">Outputs</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {agent.outputs.map((output, idx) => (
-                            <span 
-                              key={idx}
-                              className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-700 px-3 py-1.5 rounded-lg text-sm font-medium"
-                            >
-                              {output}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Logs */}
-                    <div className="space-y-3">
-                      <h3 className="font-semibold theme-text-primary text-sm">Recent Logs</h3>
-                      <div className="theme-input-bg rounded-lg border theme-border">
-                        <div className="p-3 max-h-40 overflow-y-auto">
-                          {agent.logs && agent.logs.length > 0 ? (
-                            <div className="space-y-2">
-                              {agent.logs.slice(-10).map((log: any, idx: number) => (
-                                <div key={idx} className="theme-text-muted text-sm">
-                                  {typeof log === 'object' && log.timestamp && (
-                                    <span className="text-blue-500 dark:text-blue-400 text-xs mr-2">
-                                      {new Date(log.timestamp).toLocaleTimeString()}
-                                    </span>
-                                  )}
-                                  <span>{typeof log === 'object' ? log.message : log}</span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="theme-text-muted text-sm text-center py-4">
-                              No logs available
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex items-center justify-between pt-3 border-t theme-border">
-                      <span className="theme-text-secondary font-medium">Status</span>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-green-600 dark:text-green-400 font-medium">Connected</span>
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
+        <LogStreamingPopup
+          isOpen={showNodePopup}
+          onClose={() => {
+            setShowNodePopup(false);
+            setPopupAgent(null);
+          }}
+          agentId={popupAgent}
+          agentName={agents[popupAgent.replace('agent-', '')]?.name || 'Agent'}
+          agentRole={agents[popupAgent.replace('agent-', '')]?.role || 'Agent'}
+        />
       )}
     </div>
   );
