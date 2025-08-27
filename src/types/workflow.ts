@@ -79,5 +79,9 @@ export interface AutoOrchestrateAgent {
   capabilities: string[];
   inputs: string[];
   outputs: string[];
+  logs?: Array<{
+    timestamp?: string;
+    message: string;
+  }> | string[];
   // Add other properties as needed based on the API response
 }
