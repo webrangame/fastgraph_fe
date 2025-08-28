@@ -88,6 +88,12 @@ export default function WorkflowsPage() {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  const handleAgentFeedback = (agentId: string, agentName: string) => {
+    // TODO: Implement feedback functionality
+    console.log('Feedback requested for:', { agentId, agentName });
+    // This could open a feedback modal, send to an API, etc.
+  };
+
   // Use Redux workflows if available, otherwise fallback to workflow manager
   const displayWorkflows = workflows.length > 0 ? workflows : workflowManagerWorkflows;
 
@@ -140,6 +146,7 @@ export default function WorkflowsPage() {
           agents={agents || undefined}
           connections={connections || undefined}
           isAutoOrchestrating={isAutoOrchestrating}
+          onAgentFeedback={handleAgentFeedback}
         />
       </div>
 
