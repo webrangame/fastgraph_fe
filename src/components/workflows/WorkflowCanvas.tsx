@@ -4,6 +4,7 @@ import { Bot, X, PenTool, Calculator, Zap, MessageCircle } from "lucide-react";
 import { Workflow, WorkflowNode, WorkflowCanvasProps } from "@/types/workflow";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { LogSidebar } from "./LogSidebar";
+import { FeedbackPopup } from "./FeedbackPopup";
 import {
   ReactFlow,
   applyNodeChanges,
@@ -116,6 +117,8 @@ function WorkflowCanvasInner({
   const [panelPosition, setPanelPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showLogSidebar, setShowLogSidebar] = useState<boolean>(false);
   const [sidebarAgent, setSidebarAgent] = useState<string | null>(null);
+  const [showFeedbackPopup, setShowFeedbackPopup] = useState<boolean>(false);
+  const [feedbackAgent, setFeedbackAgent] = useState<{ id: string; name: string } | null>(null);
   const endNodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -561,6 +564,35 @@ function WorkflowCanvasInner({
     }, 200);
   }, []);
 
+  // Feedback popup handlers
+  const handleShowFeedbackPopup = useCallback((agentId: string, agentName: string) => {
+    setFeedbackAgent({ id: agentId, name: agentName });
+    setShowFeedbackPopup(true);
+    // Clear hover state when opening feedback
+    setHoveredNode(null);
+  }, []);
+
+  const handleCloseFeedbackPopup = useCallback(() => {
+    setShowFeedbackPopup(false);
+    setFeedbackAgent(null);
+  }, []);
+
+  const handleSaveFeedback = useCallback(async (feedback: string) => {
+    if (feedbackAgent && onAgentFeedback) {
+      console.log('Saving feedback for agent:', feedbackAgent.id, feedback);
+      // Call the parent's feedback handler with save action
+      onAgentFeedback(feedbackAgent.id, feedbackAgent.name, 'save', feedback);
+    }
+  }, [feedbackAgent, onAgentFeedback]);
+
+  const handleEvolveFeedback = useCallback(async (feedback: string) => {
+    if (feedbackAgent && onAgentFeedback) {
+      console.log('Evolving agent with feedback:', feedbackAgent.id, feedback);
+      // Call the parent's feedback handler with evolve action
+      onAgentFeedback(feedbackAgent.id, feedbackAgent.name, 'evolve', feedback);
+    }
+  }, [feedbackAgent, onAgentFeedback]);
+
   const addNodeToCanvas = (e: React.DragEvent, nodeData: any) => {
     e.preventDefault();
     const rect = e.currentTarget.getBoundingClientRect();
@@ -795,7 +827,7 @@ function WorkflowCanvasInner({
                       onClick={(e) => {
                         e.stopPropagation();
                         const agentName = agents[hoveredNode.replace('agent-', '')]?.name || 'Agent';
-                        onAgentFeedback(hoveredNode, agentName);
+                        handleShowFeedbackPopup(hoveredNode, agentName);
                       }}
                       className="flex items-center justify-center gap-2 w-full px-3 py-2 theme-button-bg theme-text-primary hover:theme-button-hover rounded-lg transition-all duration-200 text-xs font-medium hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md dark:shadow-lg dark:hover:shadow-xl border border-transparent dark:border-white/20"
                       title="Send Feedback"
@@ -936,6 +968,18 @@ function WorkflowCanvasInner({
             outputs: agents[sidebarAgent.replace('agent-', '')]?.outputs,
             capabilities: agents[sidebarAgent.replace('agent-', '')]?.capabilities
           }}
+        />
+      )}
+
+      {/* Feedback Popup */}
+      {feedbackAgent && (
+        <FeedbackPopup
+          isOpen={showFeedbackPopup}
+          onClose={handleCloseFeedbackPopup}
+          agentId={feedbackAgent.id}
+          agentName={feedbackAgent.name}
+          onSave={handleSaveFeedback}
+          onEvolve={handleEvolveFeedback}
         />
       )}
     </div>

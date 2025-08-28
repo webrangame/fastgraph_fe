@@ -88,10 +88,23 @@ export default function WorkflowsPage() {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const handleAgentFeedback = (agentId: string, agentName: string) => {
-    // TODO: Implement feedback functionality
-    console.log('Feedback requested for:', { agentId, agentName });
-    // This could open a feedback modal, send to an API, etc.
+  const handleAgentFeedback = (agentId: string, agentName: string, action?: string, feedback?: string) => {
+    console.log('Feedback action:', action, 'for agent:', { agentId, agentName }, 'feedback:', feedback);
+    
+    if (action === 'save') {
+      // Save feedback to database/API
+      console.log('Saving feedback to system...');
+      // You can implement API call here to save feedback
+      // Example: await saveFeedbackAPI(agentId, feedback);
+    } else if (action === 'evolve') {
+      // Use feedback to evolve/improve the agent
+      console.log('Evolving agent based on feedback...');
+      // You can implement API call here to trigger agent evolution
+      // Example: await evolveAgentAPI(agentId, feedback);
+    } else {
+      // Legacy handling for backward compatibility
+      console.log('Legacy feedback request - opening popup');
+    }
   };
 
   // Use Redux workflows if available, otherwise fallback to workflow manager

@@ -56,7 +56,7 @@ export interface WorkflowCanvasProps {
   agents?: Record<string, AutoOrchestrateAgent>;
   connections?: any[];
   isAutoOrchestrating?: boolean;
-  onAgentFeedback?: (agentId: string, agentName: string) => void;
+  onAgentFeedback?: (agentId: string, agentName: string, action?: string, feedback?: string) => void;
 }
 
 export interface PromptMessage {
