@@ -760,9 +760,11 @@ function WorkflowCanvasInner({
             
             return (
               <div className="space-y-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="theme-text-secondary font-medium min-w-0">Role:</span>
-                  <span className="theme-text-primary font-medium text-right ml-2">{agent.role}</span>
+                <div className="pt-2 border-t theme-border">
+                  <div className="flex items-center">
+                    <span className="theme-text-secondary font-medium min-w-0">Role:</span>
+                    <span className="theme-text-primary font-medium text-right ml-2">{agent.role}</span>
+                  </div>
                 </div>
                 
                 {agent.capabilities && agent.capabilities.length > 0 && (
@@ -788,18 +790,18 @@ function WorkflowCanvasInner({
                 
                 {/* Feedback Button */}
                 {onAgentFeedback && (
-                  <div className="flex justify-center pt-2">
+                  <div className="flex justify-center pt-3 border-t theme-border">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         const agentName = agents[hoveredNode.replace('agent-', '')]?.name || 'Agent';
                         onAgentFeedback(hoveredNode, agentName);
                       }}
-                      className="flex items-center space-x-2 px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors duration-150 group text-xs font-medium theme-text-secondary hover:theme-text-primary"
+                      className="flex items-center justify-center gap-2 w-full px-3 py-2 theme-button-bg theme-text-primary hover:theme-button-hover rounded-lg transition-all duration-200 text-xs font-medium hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md dark:shadow-lg dark:hover:shadow-xl border border-transparent dark:border-white/20"
                       title="Send Feedback"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
-                      <span>Feedback</span>
+                      <span>Send Feedback</span>
                     </button>
                   </div>
                 )}
