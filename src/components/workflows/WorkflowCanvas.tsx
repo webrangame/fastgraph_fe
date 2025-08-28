@@ -117,6 +117,7 @@ function WorkflowCanvasInner({
   const [showLogSidebar, setShowLogSidebar] = useState<boolean>(false);
   const [sidebarAgent, setSidebarAgent] = useState<string | null>(null);
   const endNodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
 
@@ -464,10 +465,14 @@ function WorkflowCanvasInner({
 
   // Improved hover positioning using ReactFlow's coordinate system
   const handleNodeMouseEnter = useCallback((event: React.MouseEvent, node: Node) => {
-    // Clear any existing timeout for end node
+    // Clear any existing timeouts
     if (endNodeTimeoutRef.current) {
       clearTimeout(endNodeTimeoutRef.current);
       endNodeTimeoutRef.current = null;
+    }
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
     }
     
     setHoveredNode(node.id);
@@ -504,7 +509,10 @@ function WorkflowCanvasInner({
         setHoveredNode(null);
       }, 1000);
     } else {
-      setHoveredNode(null);
+      // Add delay for regular nodes to allow mouse interaction with hover card
+      hoverTimeoutRef.current = setTimeout(() => {
+        setHoveredNode(null);
+      }, 200);
     }
   }, []);
 
@@ -527,13 +535,30 @@ function WorkflowCanvasInner({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Cleanup timeout on component unmount
+  // Cleanup timeouts on component unmount
   useEffect(() => {
     return () => {
       if (endNodeTimeoutRef.current) {
         clearTimeout(endNodeTimeoutRef.current);
       }
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
     };
+  }, []);
+
+  // Handle hover card mouse events
+  const handleHoverCardMouseEnter = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+  }, []);
+
+  const handleHoverCardMouseLeave = useCallback(() => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredNode(null);
+    }, 200);
   }, []);
 
   const addNodeToCanvas = (e: React.DragEvent, nodeData: any) => {
@@ -720,6 +745,8 @@ function WorkflowCanvasInner({
             transform: 'translateY(-50%)', // Center vertically relative to node
             boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05)'
           }}
+          onMouseEnter={handleHoverCardMouseEnter}
+          onMouseLeave={handleHoverCardMouseLeave}
         >
           <div className="mb-2">
             <h3 className="font-medium text-sm theme-text-primary">
