@@ -10,14 +10,14 @@ import {
   REGISTER,
 } from 'redux-persist';
 import sessionStorage from 'redux-persist/lib/storage/session';
-import authReducer from '@/redux/slice/authSlice';
-import cartReducer from '@/redux/reducer/CartReducer';
-import workflowReducer from '@/redux/slice/workflowSlice';
+import authReducer from './slice/authSlice';
+import cartReducer from './reducer/CartReducer';
+import workflowReducer from './slice/workflowSlice';
 import { authApi } from '../lib/api/authApi';
-import { categoryApi } from '@/redux/api/category/categoryApi';
-import { lessonApi } from '@/redux/api/lesson/lessonApi';
-import { courseApi } from '@/redux/api/course/courseApi';
-import { autoOrchestrateApi } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
+import { categoryApi } from './api/category/categoryApi';
+import { lessonApi } from './api/lesson/lessonApi';
+import { courseApi } from './api/course/courseApi';
+import { autoOrchestrateApi } from './api/autoOrchestrate/autoOrchestrateApi';
 
 
 
