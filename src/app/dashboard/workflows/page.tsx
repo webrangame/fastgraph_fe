@@ -9,7 +9,7 @@ import { useWorkflowManager } from '@/hooks/workflows/useWorkflowManager';
 import { usePromptHandler } from '@/hooks/workflows/usePromptHandler';
 import { useAutoOrchestrate } from '@/hooks/workflows/useAutoOrchestrate';
 import { useWorkflowPersistence } from '@/hooks/workflows/useWorkflowPersistence';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export default function WorkflowsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -20,12 +20,15 @@ export default function WorkflowsPage() {
   // Custom hooks for workflow management
   const { workflows, workflowStatus, workflowError, saveWorkflow, deleteWorkflowById } = useWorkflowPersistence();
   
+  // Memoize the callback to prevent infinite re-renders
+  const handleAgentsProcessed = useCallback((processedAgents: Record<string, any>, processedConnections: any[]) => {
+    setAgents(processedAgents);
+    setConnections(processedConnections);
+  }, []);
+  
   const { isAutoOrchestrating } = useAutoOrchestrate({
     workflows,
-    onAgentsProcessed: (processedAgents, processedConnections) => {
-      setAgents(processedAgents);
-      setConnections(processedConnections);
-    }
+    onAgentsProcessed: handleAgentsProcessed
   });
 
   const {
