@@ -732,6 +732,50 @@ function WorkflowCanvasInner({
             
             return (
               <div className="space-y-3 text-xs">
+                {/* Inputs */}
+                {agent.inputs && agent.inputs.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="theme-text-secondary font-medium block">Inputs:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {agent.inputs.slice(0, 2).map((input, idx) => (
+                        <span 
+                          key={idx}
+                          className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 px-2 py-1 rounded-md text-[10px] font-medium"
+                        >
+                          {input}
+                        </span>
+                      ))}
+                      {agent.inputs.length > 2 && (
+                        <span className="theme-text-muted text-[10px] self-center">
+                          +{agent.inputs.length - 2} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Outputs */}
+                {agent.outputs && agent.outputs.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="theme-text-secondary font-medium block">Outputs:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {agent.outputs.slice(0, 2).map((output, idx) => (
+                        <span 
+                          key={idx}
+                          className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-700 px-2 py-1 rounded-md text-[10px] font-medium"
+                        >
+                          {output}
+                        </span>
+                      ))}
+                      {agent.outputs.length > 2 && (
+                        <span className="theme-text-muted text-[10px] self-center">
+                          +{agent.outputs.length - 2} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
                 <div className="flex items-center justify-between">
                   <span className="theme-text-secondary font-medium min-w-0">Role:</span>
                   <span className="theme-text-primary font-medium text-right ml-2">{agent.role}</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Bot, Circle, MessageSquare, Clock } from "lucide-react";
+import { X, Bot, MessageSquare, Activity, CheckCircle, AlertCircle, XCircle, Trash2, Maximize2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useLogStreaming } from "@/hooks/workflows/useLogStreaming";
 
@@ -28,169 +28,201 @@ export function LogStreamingPopup({
   agentRole 
 }: LogStreamingPopupProps) {
   const { logs, isConnected, clearLogs } = useLogStreaming(agentId);
+  const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Always auto scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && !isMinimized) {
       messagesEndRef.current.scrollIntoView({ 
         behavior: 'smooth',
         block: 'end'
       });
     }
-  }, [logs]);
+  }, [logs, isMinimized]);
 
-  const getMessageIcon = (type: LogMessage['type']) => {
+  // Use all logs since we removed filtering
+  const filteredLogs = logs;
+
+  const getLogIcon = (type: LogMessage['type']) => {
     switch (type) {
       case 'success':
-        return <Circle className="w-3 h-3 text-green-500 fill-current" />;
+        return <CheckCircle className="w-4 h-4 text-emerald-500" />;
       case 'error':
-        return <Circle className="w-3 h-3 text-red-500 fill-current" />;
+        return <XCircle className="w-4 h-4 text-red-500" />;
       case 'warning':
-        return <Circle className="w-3 h-3 text-yellow-500 fill-current" />;
+        return <AlertCircle className="w-4 h-4 text-amber-500" />;
       default:
-        return <Circle className="w-3 h-3 text-blue-500 fill-current" />;
+        return <Activity className="w-4 h-4 text-blue-500" />;
     }
   };
 
-  const getMessageColor = (type: LogMessage['type']) => {
+  const getLogColors = (type: LogMessage['type']) => {
     switch (type) {
       case 'success':
-        return 'text-green-600 dark:text-green-400';
+        return {
+          bg: 'bg-emerald-50 dark:bg-emerald-950/20',
+          border: 'border-emerald-200 dark:border-emerald-800/30',
+          text: 'text-emerald-900 dark:text-emerald-100'
+        };
       case 'error':
-        return 'text-red-600 dark:text-red-400';
+        return {
+          bg: 'bg-red-50 dark:bg-red-950/20',
+          border: 'border-red-200 dark:border-red-800/30',
+          text: 'text-red-900 dark:text-red-100'
+        };
       case 'warning':
-        return 'text-yellow-600 dark:text-yellow-400';
+        return {
+          bg: 'bg-amber-50 dark:bg-amber-950/20',
+          border: 'border-amber-200 dark:border-amber-800/30',
+          text: 'text-amber-900 dark:text-amber-100'
+        };
       default:
-        return 'theme-text-primary';
+        return {
+          bg: 'bg-blue-50 dark:bg-blue-950/20',
+          border: 'border-blue-200 dark:border-blue-800/30',
+          text: 'text-blue-900 dark:text-blue-100'
+        };
     }
   };
+
+  const formatTime = (timestamp: number) => {
+    return new Date(timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
-      <div className="theme-card-bg rounded-xl shadow-2xl border-2 theme-border max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b theme-border shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-500 rounded-lg">
-              <Bot className="w-5 h-5 text-white" />
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+      <div className={`bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 max-w-4xl w-full transition-all duration-300 ${
+        isMinimized ? 'max-h-20' : 'max-h-[85vh]'
+      } overflow-hidden flex flex-col`}>
+        
+        {/* Modern Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800 shrink-0">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <div className="p-3 bg-blue-500 rounded-xl">
+                <Bot className="w-6 h-6 text-white" />
+              </div>
+              <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${
+                isConnected ? 'bg-emerald-500' : 'bg-gray-400'
+              }`} />
             </div>
             <div>
-              <h2 className="text-lg font-bold theme-text-primary flex items-center space-x-2">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center space-x-3">
                 <span>{agentName}</span>
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                <div className={`flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                  isConnected 
+                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' 
+                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                    isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+                  }`} />
+                  {isConnected ? 'Live' : 'Offline'}
+                </div>
               </h2>
-              <p className="theme-text-secondary text-sm">
-                {agentRole} • {isConnected ? 'Connected' : 'Disconnected'}
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {agentRole} • {filteredLogs.length} logs
               </p>
             </div>
           </div>
+          
           <div className="flex items-center space-x-2">
             <button
-              onClick={clearLogs}
-              className="px-3 py-1.5 text-sm theme-text-muted hover:theme-text-primary border theme-border rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              onClick={() => setIsMinimized(!isMinimized)}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
-              Clear
+              <Maximize2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={clearLogs}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <Trash2 className="w-5 h-5" />
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
-              <X className="w-5 h-5 theme-text-muted" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Connection Status Bar */}
-        <div className={`px-4 py-2 text-xs border-b theme-border ${
-          isConnected 
-            ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' 
-            : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-        }`}>
-          <div className="flex items-center space-x-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${
-              isConnected ? 'bg-green-500 animate-ping' : 'bg-red-500'
-            }`} />
-            <span>
-              {isConnected ? 'Live log streaming active' : 'Connection lost - attempting to reconnect...'}
-            </span>
-          </div>
-        </div>
-
-        {/* Chat-style Log Container */}
-        <div 
-          className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50/50 dark:bg-gray-900/50"
-        >
-          {logs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-8">
-              <MessageSquare className="w-12 h-12 theme-text-muted mb-4" />
-              <h3 className="text-sm font-medium theme-text-primary mb-2">No logs yet</h3>
-              <p className="text-xs theme-text-muted">
-                Logs will appear here in real-time when the agent starts processing
-              </p>
-            </div>
-          ) : (
-            logs.map((log, index) => (
-              <div
-                key={log.id || index}
-                className="flex items-start space-x-3 p-3 theme-card-bg rounded-lg border theme-border hover:shadow-sm transition-all duration-200"
-              >
-                <div className="flex-shrink-0 mt-0.5">
-                  {getMessageIcon(log.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-sm font-medium ${getMessageColor(log.type)}`}>
-                      {log.type.charAt(0).toUpperCase() + log.type.slice(1)}
-                    </span>
-                    <div className="flex items-center space-x-1 text-xs theme-text-muted">
-                      <Clock className="w-3 h-3" />
-                      <span>
-                        {new Date(log.timestamp).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit',
-                          second: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-sm theme-text-secondary leading-relaxed break-words">
-                    {log.message}
+        {!isMinimized && (
+          <>
+            {/* Modern Log Container */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-gray-50/50 dark:bg-gray-950/50">
+              {filteredLogs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  <MessageSquare className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    No logs yet
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 max-w-sm">
+                    Logs will appear here as the agent processes tasks
                   </p>
-                  {log.status && (
-                    <div className="mt-2">
-                      <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${
-                        log.status === 'completed' 
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                          : log.status === 'failed'
-                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                          : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                      }`}>
-                        {log.status.charAt(0).toUpperCase() + log.status.slice(1)}
-                      </span>
-                    </div>
-                  )}
                 </div>
-              </div>
-            ))
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Footer with message count */}
-        {logs.length > 0 && (
-          <div className="px-4 py-3 border-t theme-border shrink-0 bg-gray-50/30 dark:bg-gray-900/30">
-            <div className="flex items-center justify-between">
-              <div className="text-xs theme-text-muted">
-                {logs.length} message{logs.length !== 1 ? 's' : ''}
-              </div>
-              <div className="text-xs text-blue-600 dark:text-blue-400">
-                Auto-scroll ON
-              </div>
+              ) : (
+                filteredLogs.map((log, index) => {
+                  const colors = getLogColors(log.type);
+                  return (
+                    <div
+                      key={log.id}
+                      className={`group relative ${colors.bg} ${colors.border} border rounded-xl p-4 transition-all duration-200 hover:shadow-sm animate-in slide-in-from-left-4 fade-in`}
+                      style={{
+                        animationDelay: `${index * 50}ms`,
+                        animationDuration: '400ms',
+                        animationFillMode: 'both'
+                      }}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 mt-0.5">
+                          {getLogIcon(log.type)}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`text-xs font-semibold uppercase tracking-wider ${colors.text} opacity-70`}>
+                              {log.type}
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              {log.status && (
+                                <span className={`inline-flex items-center px-2 py-0.5 text-xs font-mono rounded-full ${
+                                  log.status === 'completed' 
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300'
+                                    : log.status === 'failed'
+                                    ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
+                                    : 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                                }`}>
+                                  {log.status}
+                                </span>
+                              )}
+                              <span className={`text-xs ${colors.text} opacity-60`}>
+                                {formatTime(log.timestamp)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <p className={`text-sm leading-relaxed ${colors.text}`}>
+                            {log.message}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
