@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, MessageCircle, Save, Zap, ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface FeedbackPopupProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export function FeedbackPopup({
   onSave, 
   onEvolve 
 }: FeedbackPopupProps) {
+  const { theme } = useTheme();
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState<WizardStep>('feedback');
@@ -114,7 +116,7 @@ export function FeedbackPopup({
   };
 
   const renderStepIndicator = () => (
-    <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center justify-center">
       {wizardSteps.map((step, index) => {
         const isActive = step.key === currentStep;
         const isCompleted = getCurrentStepIndex() > index;
@@ -122,29 +124,61 @@ export function FeedbackPopup({
 
         return (
           <div key={step.key} className="flex items-center">
-            <div
-              className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all duration-200 ${
-                isActive
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : isCompleted
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 theme-text-muted'
-              } ${isAccessible ? 'cursor-pointer hover:scale-105' : 'cursor-default'}`}
-              onClick={() => isAccessible && isEvolving && setCurrentStep(step.key)}
-            >
-              {isCompleted ? (
-                <CheckCircle className="w-4 h-4" />
-              ) : (
-                index + 1
-              )}
+            {/* Step Circle */}
+            <div className="flex flex-col items-center">
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold transition-all duration-300 border-2 ${
+                  isActive
+                    ? 'bg-blue-500 text-white border-blue-500 shadow-lg scale-110'
+                    : isCompleted
+                    ? 'bg-green-500 text-white border-green-500 shadow-md'
+                    : `${theme === 'dark' ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'} theme-text-muted shadow-sm`
+                } ${isAccessible ? 'cursor-pointer hover:scale-105' : 'cursor-default'}`}
+                onClick={() => isAccessible && isEvolving && setCurrentStep(step.key)}
+              >
+                {isCompleted ? (
+                  <CheckCircle className="w-5 h-5" />
+                ) : (
+                  <span className="font-bold">{index + 1}</span>
+                )}
+              </div>
+              
+              {/* Step Label */}
+              <div className="mt-1.5 text-center max-w-[120px]">
+                <div className={`text-xs font-medium ${
+                  isActive 
+                    ? 'text-blue-600 dark:text-blue-400' 
+                    : isCompleted 
+                    ? 'text-green-600 dark:text-green-400' 
+                    : 'theme-text-muted'
+                }`}>
+                  {step.title.split(' ').slice(0, 2).join(' ')}
+                </div>
+              </div>
             </div>
+
+            {/* Connection Line */}
             {index < wizardSteps.length - 1 && (
-              <div className="flex-1 h-0.5 mx-2 bg-gray-200 dark:bg-gray-700 min-w-[20px]">
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    isCompleted ? 'bg-green-500 w-full' : 'bg-gray-200 dark:bg-gray-700 w-0'
-                  }`}
-                />
+              <div className="flex-1 px-6 flex items-center">
+                <div className={`h-0.5 w-full relative ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'}`}>
+                  <div
+                    className={`absolute top-0 left-0 h-full transition-all duration-500 ease-in-out ${
+                      isCompleted 
+                        ? 'bg-green-500 w-full' 
+                        : isActive && index === 0 
+                        ? 'bg-blue-500 w-1/2' 
+                        : 'w-0'
+                    }`}
+                  />
+                  {/* Animated dots for active connection */}
+                  {isActive && index === 0 && (
+                    <div className="absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 flex space-x-1">
+                      <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+                      <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -167,14 +201,11 @@ export function FeedbackPopup({
                 Agent Evolution Wizard
               </h2>
               <p className="theme-text-secondary text-sm">{agentName}</p>
-              <p className="text-xs theme-text-muted">
-                {wizardSteps.find(s => s.key === currentStep)?.description}
-              </p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-lg transition-colors theme-hover-bg"
             disabled={isSubmitting}
           >
             <X className="w-5 h-5 theme-text-muted hover:theme-text-primary" />
@@ -182,7 +213,7 @@ export function FeedbackPopup({
         </div>
 
         {/* Step Indicator - Always show */}
-        <div className="p-6 border-b theme-border bg-gray-50 dark:bg-gray-800/30">
+        <div className={`py-3 px-6 border-b theme-border flex justify-center ${theme === 'dark' ? 'bg-gray-800/30' : 'bg-gray-50'}`}>
           {renderStepIndicator()}
         </div>
 
@@ -239,10 +270,10 @@ export function FeedbackPopup({
         </div>
 
         {/* Footer with Action Buttons */}
-        <div className="flex items-center justify-between p-6 border-t theme-border bg-gray-50 dark:bg-gray-800/30">
+        <div className={`flex items-center justify-between p-6 border-t theme-border ${theme === 'dark' ? 'bg-gray-800/30' : 'bg-gray-50'}`}>
           <button
             onClick={handleClose}
-            className="px-4 py-2 theme-text-secondary hover:theme-text-primary border theme-border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+            className="px-4 py-2 theme-text-secondary hover:theme-text-primary border theme-border rounded-lg theme-hover-bg transition-all duration-200"
             disabled={isSubmitting}
           >
             Cancel
@@ -253,7 +284,7 @@ export function FeedbackPopup({
               <button
                 onClick={handlePrevious}
                 disabled={isSubmitting}
-                className="flex items-center space-x-2 px-4 py-2 theme-text-secondary hover:theme-text-primary border theme-border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                className="flex items-center space-x-2 px-4 py-2 theme-text-secondary hover:theme-text-primary border theme-border rounded-lg theme-hover-bg transition-all duration-200"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Previous</span>
