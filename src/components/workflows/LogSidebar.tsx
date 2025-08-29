@@ -187,23 +187,6 @@ export function LogSidebar({
                 </div>
               </div>
             )}
-
-            {/* Outputs */}
-            {agentData.outputs && agentData.outputs.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 block">Outputs:</span>
-                <div className="flex flex-wrap gap-2">
-                  {agentData.outputs.map((output, idx) => (
-                    <span 
-                      key={idx}
-                      className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-700 px-3 py-1.5 rounded-lg text-xs font-medium"
-                    >
-                      {output}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
