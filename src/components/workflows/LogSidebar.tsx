@@ -1,7 +1,7 @@
 "use client";
 
-import { X, Bot, MessageSquare, Activity, CheckCircle, AlertCircle, XCircle, Trash2 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { X, Bot, MessageSquare, Activity, CheckCircle, AlertCircle, XCircle, Trash2, GripVertical } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLogStreaming } from "@/hooks/workflows/useLogStreaming";
 
 interface LogSidebarProps {
@@ -15,6 +15,8 @@ interface LogSidebarProps {
     outputs?: string[];
     capabilities?: string[];
   };
+  initialWidth?: number;
+  onWidthChange?: (width: number) => void;
 }
 
 interface LogMessage {
@@ -31,10 +33,63 @@ export function LogSidebar({
   agentId, 
   agentName, 
   agentRole,
-  agentData
+  agentData,
+  initialWidth = 400,
+  onWidthChange
 }: LogSidebarProps) {
   const { logs, isConnected, clearLogs } = useLogStreaming(agentId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const isResizingRef = useRef(false);
+  const animationFrameRef = useRef<number | null>(null);
+  
+  // State for sidebar width with localStorage persistence
+  const [width, setWidth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('logSidebarWidth');
+      return saved ? parseInt(saved, 10) : initialWidth;
+    }
+    return initialWidth;
+  });
+  
+  // State for tracking resize activity
+  const [isActivelyResizing, setIsActivelyResizing] = useState(false);
+  
+  // Constraints for resizing
+  const MIN_WIDTH = 300;
+  const MAX_WIDTH = 800;
+
+  // Debounced localStorage save to avoid excessive writes during resize
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Clear previous timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      // Debounce localStorage writes
+      saveTimeoutRef.current = setTimeout(() => {
+        localStorage.setItem('logSidebarWidth', width.toString());
+      }, 300);
+    }
+    
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [width]);
+
+  // Cleanup animation frames on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
 
   // Always auto scroll to bottom when new messages arrive
   useEffect(() => {
@@ -45,6 +100,60 @@ export function LogSidebar({
       });
     }
   }, [logs]);
+
+  // Handle resizing
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isResizingRef.current = true;
+    setIsActivelyResizing(true);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.body.style.pointerEvents = 'none';
+    
+    // Add active state to sidebar for visual feedback
+    if (sidebarRef.current) {
+      sidebarRef.current.style.transition = 'none';
+    }
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    
+    if (!isResizingRef.current) return;
+    
+    // Cancel previous animation frame to avoid stacking
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    // Use requestAnimationFrame for smooth performance
+    animationFrameRef.current = requestAnimationFrame(() => {
+      const newWidth = window.innerWidth - e.clientX;
+      const constrainedWidth = Math.min(Math.max(newWidth, MIN_WIDTH), MAX_WIDTH);
+      
+      setWidth(constrainedWidth);
+      onWidthChange?.(constrainedWidth);
+    });
+  }, [MIN_WIDTH, MAX_WIDTH, onWidthChange]);
+
+  const handleMouseUp = useCallback(() => {
+    isResizingRef.current = false;
+    setIsActivelyResizing(false);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    document.body.style.pointerEvents = '';
+    
+    // Cancel any pending animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    // Restore transition for smooth width changes when not resizing
+    if (sidebarRef.current) {
+      sidebarRef.current.style.transition = 'transform 300ms ease-in-out';
+    }
+  }, []);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -59,6 +168,19 @@ export function LogSidebar({
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
   }, [isOpen, onClose]);
+
+  // Handle mouse events for resizing
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isOpen, handleMouseMove, handleMouseUp]);
 
   // Use all logs since we removed filtering
   const filteredLogs = logs;
@@ -114,9 +236,32 @@ export function LogSidebar({
   };
 
   return (
-    <div className={`fixed top-0 right-0 h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-xl z-[10000] transition-transform duration-300 ease-in-out flex flex-col ${
-      isOpen ? 'translate-x-0' : 'translate-x-full'
-    }`} style={{ width: '400px' }}>
+    <div 
+      ref={sidebarRef}
+      className={`fixed top-0 right-0 h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-xl z-[10000] transition-transform duration-300 ease-in-out flex flex-col ${
+        isOpen ? 'translate-x-0' : 'translate-x-full'
+      }`} 
+      style={{ width: `${width}px` }}
+    >
+      {/* Resize Handle */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-500/20 active:bg-blue-500/30 transition-all duration-150 group z-10"
+        onMouseDown={handleMouseDown}
+        style={{
+          background: isActivelyResizing ? 'rgba(59, 130, 246, 0.3)' : undefined
+        }}
+      >
+        {/* Visual indicator */}
+        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-600 group-hover:bg-blue-500 transition-colors duration-150" />
+        
+        {/* Grip icon */}
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-150 scale-90 group-hover:scale-100">
+          <GripVertical className="w-3 h-3 text-blue-500 drop-shadow-sm" />
+        </div>
+        
+        {/* Hover area extension */}
+        <div className="absolute -left-1 -right-1 top-0 bottom-0" />
+      </div>
       
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 shrink-0">

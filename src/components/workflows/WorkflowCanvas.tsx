@@ -117,6 +117,7 @@ function WorkflowCanvasInner({
   const [panelPosition, setPanelPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showLogSidebar, setShowLogSidebar] = useState<boolean>(false);
   const [sidebarAgent, setSidebarAgent] = useState<string | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(400);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState<boolean>(false);
   const [feedbackAgent, setFeedbackAgent] = useState<{ id: string; name: string } | null>(null);
   const endNodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -968,6 +969,8 @@ function WorkflowCanvasInner({
             outputs: agents[sidebarAgent.replace('agent-', '')]?.outputs,
             capabilities: agents[sidebarAgent.replace('agent-', '')]?.capabilities
           }}
+          initialWidth={sidebarWidth}
+          onWidthChange={setSidebarWidth}
         />
       )}
 
