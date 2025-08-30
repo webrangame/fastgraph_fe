@@ -1,9 +1,10 @@
 "use client";
 
-import { Bot, X, PenTool, Calculator, Zap } from "lucide-react";
+import { Bot, X, PenTool, Calculator, Zap, MessageCircle } from "lucide-react";
 import { Workflow, WorkflowNode, WorkflowCanvasProps } from "@/types/workflow";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { LogStreamingPopup } from "./LogStreamingPopup";
+import { LogSidebar } from "./LogSidebar";
+import { FeedbackPopup } from "./FeedbackPopup";
 import {
   ReactFlow,
   applyNodeChanges,
@@ -105,6 +106,7 @@ function WorkflowCanvasInner({
   agents,
   connections,
   isAutoOrchestrating,
+  onAgentFeedback,
 }: WorkflowCanvasProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -113,9 +115,13 @@ function WorkflowCanvasInner({
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [endNodeHovered, setEndNodeHovered] = useState<boolean>(false);
   const [panelPosition, setPanelPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [showNodePopup, setShowNodePopup] = useState<boolean>(false);
-  const [popupAgent, setPopupAgent] = useState<string | null>(null);
+  const [showLogSidebar, setShowLogSidebar] = useState<boolean>(false);
+  const [sidebarAgent, setSidebarAgent] = useState<string | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(400);
+  const [showFeedbackPopup, setShowFeedbackPopup] = useState<boolean>(false);
+  const [feedbackAgent, setFeedbackAgent] = useState<{ id: string; name: string } | null>(null);
   const endNodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
 
@@ -454,19 +460,23 @@ function WorkflowCanvasInner({
       onSelectNode(node.id);
     }
     
-    // Show popup for agent nodes (not end node)
+    // Show sidebar for agent nodes (not end node)
     if (node.id !== 'end-node' && node.id.startsWith('agent-')) {
-      setPopupAgent(node.id);
-      setShowNodePopup(true);
+      setSidebarAgent(node.id);
+      setShowLogSidebar(true);
     }
   }, [onSelectNode]);
 
   // Improved hover positioning using ReactFlow's coordinate system
   const handleNodeMouseEnter = useCallback((event: React.MouseEvent, node: Node) => {
-    // Clear any existing timeout for end node
+    // Clear any existing timeouts
     if (endNodeTimeoutRef.current) {
       clearTimeout(endNodeTimeoutRef.current);
       endNodeTimeoutRef.current = null;
+    }
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
     }
     
     setHoveredNode(node.id);
@@ -503,7 +513,10 @@ function WorkflowCanvasInner({
         setHoveredNode(null);
       }, 1000);
     } else {
-      setHoveredNode(null);
+      // Add delay for regular nodes to allow mouse interaction with hover card
+      hoverTimeoutRef.current = setTimeout(() => {
+        setHoveredNode(null);
+      }, 200);
     }
   }, []);
 
@@ -526,14 +539,60 @@ function WorkflowCanvasInner({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Cleanup timeout on component unmount
+  // Cleanup timeouts on component unmount
   useEffect(() => {
     return () => {
       if (endNodeTimeoutRef.current) {
         clearTimeout(endNodeTimeoutRef.current);
       }
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
     };
   }, []);
+
+  // Handle hover card mouse events
+  const handleHoverCardMouseEnter = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+  }, []);
+
+  const handleHoverCardMouseLeave = useCallback(() => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredNode(null);
+    }, 200);
+  }, []);
+
+  // Feedback popup handlers
+  const handleShowFeedbackPopup = useCallback((agentId: string, agentName: string) => {
+    setFeedbackAgent({ id: agentId, name: agentName });
+    setShowFeedbackPopup(true);
+    // Clear hover state when opening feedback
+    setHoveredNode(null);
+  }, []);
+
+  const handleCloseFeedbackPopup = useCallback(() => {
+    setShowFeedbackPopup(false);
+    setFeedbackAgent(null);
+  }, []);
+
+  const handleSaveFeedback = useCallback(async (feedback: string) => {
+    if (feedbackAgent && onAgentFeedback) {
+      console.log('Saving feedback for agent:', feedbackAgent.id, feedback);
+      // Call the parent's feedback handler with save action
+      onAgentFeedback(feedbackAgent.id, feedbackAgent.name, 'save', feedback);
+    }
+  }, [feedbackAgent, onAgentFeedback]);
+
+  const handleEvolveFeedback = useCallback(async (feedback: string) => {
+    if (feedbackAgent && onAgentFeedback) {
+      console.log('Evolving agent with feedback:', feedbackAgent.id, feedback);
+      // Call the parent's feedback handler with evolve action
+      onAgentFeedback(feedbackAgent.id, feedbackAgent.name, 'evolve', feedback);
+    }
+  }, [feedbackAgent, onAgentFeedback]);
 
   const addNodeToCanvas = (e: React.DragEvent, nodeData: any) => {
     e.preventDefault();
@@ -712,13 +771,15 @@ function WorkflowCanvasInner({
       {/* Fixed positioning node details panel - rendered at document level */}
       {hoveredNode && agents && hoveredNode !== 'end-node' && hoveredNode.startsWith('agent-') && (
         <div 
-          className="fixed theme-card-bg rounded-lg shadow-xl p-3 max-w-xs border theme-border z-[9999] pointer-events-none transition-all duration-200 ease-out"
+          className="fixed theme-card-bg rounded-lg shadow-xl p-3 max-w-xs border theme-border z-[9999] transition-all duration-200 ease-out"
           style={{
             left: `${Math.min(panelPosition.x, window.innerWidth - 320)}px`, // Prevent overflow
             top: `${Math.max(10, Math.min(panelPosition.y, window.innerHeight - 200))}px`, // Prevent overflow
             transform: 'translateY(-50%)', // Center vertically relative to node
             boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05)'
           }}
+          onMouseEnter={handleHoverCardMouseEnter}
+          onMouseLeave={handleHoverCardMouseLeave}
         >
           <div className="mb-2">
             <h3 className="font-medium text-sm theme-text-primary">
@@ -732,53 +793,11 @@ function WorkflowCanvasInner({
             
             return (
               <div className="space-y-3 text-xs">
-                {/* Inputs */}
-                {agent.inputs && agent.inputs.length > 0 && (
-                  <div className="space-y-2">
-                    <span className="theme-text-secondary font-medium block">Inputs:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {agent.inputs.slice(0, 2).map((input, idx) => (
-                        <span 
-                          key={idx}
-                          className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 px-2 py-1 rounded-md text-[10px] font-medium"
-                        >
-                          {input}
-                        </span>
-                      ))}
-                      {agent.inputs.length > 2 && (
-                        <span className="theme-text-muted text-[10px] self-center">
-                          +{agent.inputs.length - 2} more
-                        </span>
-                      )}
-                    </div>
+                <div className="pt-2 border-t theme-border">
+                  <div className="flex items-center">
+                    <span className="theme-text-secondary font-medium min-w-0">Role:</span>
+                    <span className="theme-text-primary font-medium text-right ml-2">{agent.role}</span>
                   </div>
-                )}
-
-                {/* Outputs */}
-                {agent.outputs && agent.outputs.length > 0 && (
-                  <div className="space-y-2">
-                    <span className="theme-text-secondary font-medium block">Outputs:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {agent.outputs.slice(0, 2).map((output, idx) => (
-                        <span 
-                          key={idx}
-                          className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-700 px-2 py-1 rounded-md text-[10px] font-medium"
-                        >
-                          {output}
-                        </span>
-                      ))}
-                      {agent.outputs.length > 2 && (
-                        <span className="theme-text-muted text-[10px] self-center">
-                          +{agent.outputs.length - 2} more
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between">
-                  <span className="theme-text-secondary font-medium min-w-0">Role:</span>
-                  <span className="theme-text-primary font-medium text-right ml-2">{agent.role}</span>
                 </div>
                 
                 {agent.capabilities && agent.capabilities.length > 0 && (
@@ -799,6 +818,24 @@ function WorkflowCanvasInner({
                         </span>
                       )}
                     </div>
+                  </div>
+                )}
+                
+                {/* Feedback Button */}
+                {onAgentFeedback && (
+                  <div className="flex justify-center pt-3 border-t theme-border">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const agentName = agents[hoveredNode.replace('agent-', '')]?.name || 'Agent';
+                        handleShowFeedbackPopup(hoveredNode, agentName);
+                      }}
+                      className="flex items-center justify-center gap-2 w-full px-3 py-2 theme-button-bg theme-text-primary hover:theme-button-hover rounded-lg transition-all duration-200 text-xs font-medium hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md dark:shadow-lg dark:hover:shadow-xl border border-transparent dark:border-white/20"
+                      title="Send Feedback"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>Send Feedback</span>
+                    </button>
                   </div>
                 )}
                 
@@ -916,17 +953,36 @@ function WorkflowCanvasInner({
         </div>
       )}
 
-      {/* Log Streaming Popup */}
-      {showNodePopup && popupAgent && agents && (
-        <LogStreamingPopup
-          isOpen={showNodePopup}
+      {/* Log Sidebar */}
+      {showLogSidebar && sidebarAgent && agents && (
+        <LogSidebar
+          isOpen={showLogSidebar}
           onClose={() => {
-            setShowNodePopup(false);
-            setPopupAgent(null);
+            setShowLogSidebar(false);
+            setSidebarAgent(null);
           }}
-          agentId={popupAgent}
-          agentName={agents[popupAgent.replace('agent-', '')]?.name || 'Agent'}
-          agentRole={agents[popupAgent.replace('agent-', '')]?.role || 'Agent'}
+          agentId={sidebarAgent}
+          agentName={agents[sidebarAgent.replace('agent-', '')]?.name || 'Agent'}
+          agentRole={agents[sidebarAgent.replace('agent-', '')]?.role || 'Agent'}
+          agentData={{
+            inputs: agents[sidebarAgent.replace('agent-', '')]?.inputs,
+            outputs: agents[sidebarAgent.replace('agent-', '')]?.outputs,
+            capabilities: agents[sidebarAgent.replace('agent-', '')]?.capabilities
+          }}
+          initialWidth={sidebarWidth}
+          onWidthChange={setSidebarWidth}
+        />
+      )}
+
+      {/* Feedback Popup */}
+      {feedbackAgent && (
+        <FeedbackPopup
+          isOpen={showFeedbackPopup}
+          onClose={handleCloseFeedbackPopup}
+          agentId={feedbackAgent.id}
+          agentName={feedbackAgent.name}
+          onSave={handleSaveFeedback}
+          onEvolve={handleEvolveFeedback}
         />
       )}
     </div>

@@ -9,7 +9,7 @@ import { useWorkflowManager } from '@/hooks/workflows/useWorkflowManager';
 import { usePromptHandler } from '@/hooks/workflows/usePromptHandler';
 import { useAutoOrchestrate } from '@/hooks/workflows/useAutoOrchestrate';
 import { useWorkflowPersistence } from '@/hooks/workflows/useWorkflowPersistence';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export default function WorkflowsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -20,12 +20,15 @@ export default function WorkflowsPage() {
   // Custom hooks for workflow management
   const { workflows, workflowStatus, workflowError, saveWorkflow, deleteWorkflowById } = useWorkflowPersistence();
   
+  // Memoize the callback to prevent infinite re-renders
+  const handleAgentsProcessed = useCallback((processedAgents: Record<string, any>, processedConnections: any[]) => {
+    setAgents(processedAgents);
+    setConnections(processedConnections);
+  }, []);
+  
   const { isAutoOrchestrating } = useAutoOrchestrate({
     workflows,
-    onAgentsProcessed: (processedAgents, processedConnections) => {
-      setAgents(processedAgents);
-      setConnections(processedConnections);
-    }
+    onAgentsProcessed: handleAgentsProcessed
   });
 
   const {
@@ -85,6 +88,25 @@ export default function WorkflowsPage() {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  const handleAgentFeedback = (agentId: string, agentName: string, action?: string, feedback?: string) => {
+    console.log('Feedback action:', action, 'for agent:', { agentId, agentName }, 'feedback:', feedback);
+    
+    if (action === 'save') {
+      // Save feedback to database/API
+      console.log('Saving feedback to system...');
+      // You can implement API call here to save feedback
+      // Example: await saveFeedbackAPI(agentId, feedback);
+    } else if (action === 'evolve') {
+      // Use feedback to evolve/improve the agent
+      console.log('Evolving agent based on feedback...');
+      // You can implement API call here to trigger agent evolution
+      // Example: await evolveAgentAPI(agentId, feedback);
+    } else {
+      // Legacy handling for backward compatibility
+      console.log('Legacy feedback request - opening popup');
+    }
+  };
+
   // Use Redux workflows if available, otherwise fallback to workflow manager
   const displayWorkflows = workflows.length > 0 ? workflows : workflowManagerWorkflows;
 
@@ -137,6 +159,7 @@ export default function WorkflowsPage() {
           agents={agents || undefined}
           connections={connections || undefined}
           isAutoOrchestrating={isAutoOrchestrating}
+          onAgentFeedback={handleAgentFeedback}
         />
       </div>
 
