@@ -6,15 +6,25 @@ import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '@/redux/slice/authSlice';
 import GoogleLoginButton from '@/components/ui/GoogleLoginButton';
+import Cookies from 'js-cookie';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('webranga@gmail.com');
+  const [email, setEmail] = useState('itranga@gmail.com');
   const [password, setPassword] = useState('it@371Ananda');
   const [login, { isLoading, isSuccess, isError, error }] = useLoginMutation();
   const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
   const router = useRouter();
   const user = useSelector(selectCurrentUser);
 
+  // Redirect if user is already authenticated
+  useEffect(() => {
+    const accessToken = Cookies.get('access_token');
+    const refreshToken = Cookies.get('refresh_token');
+    
+    if (user || accessToken || refreshToken) {
+      router.replace('/dashboard');
+    }
+  }, [user, router]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,7 +32,7 @@ const LoginPage = () => {
     try {
       await login({ email, password }).unwrap();
       // Redirect to dashboard after successful login
-      router.push('/dashboard');
+      router.replace('/dashboard');
     } catch (err) {
       console.error('Failed to login:', err);
     }
@@ -40,7 +50,7 @@ const LoginPage = () => {
               // We need to send this as access_token to match your backend API
               await googleLogin({ access_token: response.credential }).unwrap();
               // Redirect to dashboard after successful Google login
-              router.push('/dashboard');
+              router.replace('/dashboard');
             } catch (err) {
               console.error('Google login failed:', err);
             }

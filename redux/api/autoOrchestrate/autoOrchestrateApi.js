@@ -8,7 +8,7 @@ export const autoOrchestrateApi = createApi({
   endpoints: (builder) => ({
     autoOrchestrate: builder.mutation({
       query: ({ command }) => ({
-        url: '/autoOrchestrate',
+        url: 'https://fatgraph-main-289021246668.us-central1.run.app/autoOrchestrate',
         method: 'POST',
         body: { command },
       }),
