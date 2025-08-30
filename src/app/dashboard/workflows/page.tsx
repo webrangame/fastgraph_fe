@@ -88,6 +88,25 @@ export default function WorkflowsPage() {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  const handleAgentFeedback = (agentId: string, agentName: string, action?: string, feedback?: string) => {
+    console.log('Feedback action:', action, 'for agent:', { agentId, agentName }, 'feedback:', feedback);
+    
+    if (action === 'save') {
+      // Save feedback to database/API
+      console.log('Saving feedback to system...');
+      // You can implement API call here to save feedback
+      // Example: await saveFeedbackAPI(agentId, feedback);
+    } else if (action === 'evolve') {
+      // Use feedback to evolve/improve the agent
+      console.log('Evolving agent based on feedback...');
+      // You can implement API call here to trigger agent evolution
+      // Example: await evolveAgentAPI(agentId, feedback);
+    } else {
+      // Legacy handling for backward compatibility
+      console.log('Legacy feedback request - opening popup');
+    }
+  };
+
   // Use Redux workflows if available, otherwise fallback to workflow manager
   const displayWorkflows = workflows.length > 0 ? workflows : workflowManagerWorkflows;
 
@@ -140,6 +159,7 @@ export default function WorkflowsPage() {
           agents={agents || undefined}
           connections={connections || undefined}
           isAutoOrchestrating={isAutoOrchestrating}
+          onAgentFeedback={handleAgentFeedback}
         />
       </div>
 

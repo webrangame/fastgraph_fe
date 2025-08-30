@@ -56,6 +56,7 @@ export interface WorkflowCanvasProps {
   agents?: Record<string, AutoOrchestrateAgent>;
   connections?: any[];
   isAutoOrchestrating?: boolean;
+  onAgentFeedback?: (agentId: string, agentName: string, action?: string, feedback?: string) => void;
 }
 
 export interface PromptMessage {
@@ -79,5 +80,9 @@ export interface AutoOrchestrateAgent {
   capabilities: string[];
   inputs: string[];
   outputs: string[];
+  logs?: Array<{
+    timestamp?: string;
+    message: string;
+  }> | string[];
   // Add other properties as needed based on the API response
 }
