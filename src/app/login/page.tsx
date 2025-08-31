@@ -3,10 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLoginMutation, useGoogleLoginMutation } from '../../../lib/api/authApi';
 import { useRouter } from 'next/navigation';
-import { useSelector } from 'react-redux';
-import { selectCurrentUser } from '@/redux/slice/authSlice';
 import GoogleLoginButton from '@/components/ui/GoogleLoginButton';
-import Cookies from 'js-cookie';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('itranga@gmail.com');
@@ -14,18 +11,6 @@ const LoginPage = () => {
   const [login, { isLoading, isSuccess, isError, error }] = useLoginMutation();
   const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
   const router = useRouter();
-  const user = useSelector(selectCurrentUser);
-
-  // Redirect if user is already authenticated
-  useEffect(() => {
-    const accessToken = Cookies.get('access_token');
-    const refreshToken = Cookies.get('refresh_token');
-    
-    if (user || accessToken || refreshToken) {
-      router.replace('/dashboard');
-    }
-  }, [user, router]);
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
