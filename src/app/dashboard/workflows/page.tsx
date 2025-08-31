@@ -139,6 +139,7 @@ export default function WorkflowsPage() {
         <MobileAgentDrawer 
           isOpen={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
+          agents={agents || undefined}
         />
       )}
       
@@ -146,7 +147,7 @@ export default function WorkflowsPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Agent Sidebar - Hidden on mobile */}
         {!isMobile && (
-          <AgentSidebar />
+          <AgentSidebar agents={agents || undefined} />
         )}
         
         {/* Workflow Canvas - Responsive */}
