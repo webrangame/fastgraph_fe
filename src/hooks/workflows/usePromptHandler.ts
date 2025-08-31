@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Workflow, PromptMessage } from '@/types/workflow';
-import { useAutoOrchestrateMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
 
 interface UsePromptHandlerProps {
   currentWorkflow: Workflow | undefined;
@@ -10,6 +9,7 @@ interface UsePromptHandlerProps {
   addNodeToWorkflow: (nodeData: any, position: { x: number; y: number }) => void;
   deleteNode: (nodeId: string) => void;
   executeWorkflow: () => void;
+  triggerAutoOrchestrate: (command: string) => Promise<string>; // New parameter
 }
 
 export function usePromptHandler({
@@ -17,12 +17,12 @@ export function usePromptHandler({
   selectedNode,
   addNodeToWorkflow,
   deleteNode,
-  executeWorkflow
+  executeWorkflow,
+  triggerAutoOrchestrate // New parameter
 }: UsePromptHandlerProps) {
-  const [autoOrchestrate] = useAutoOrchestrateMutation();
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [messages, setMessages] = useState<PromptMessage[]>([]);
-
+  
   const handlePromptSubmit = async (message: string) => {
     setIsProcessing(true);
     
@@ -35,17 +35,15 @@ export function usePromptHandler({
     };
     setMessages(prev => [...prev, userMessage]);
 
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
     // Process the command based on message content
     let responseText = '';
     
     if (message.toLowerCase().includes('auto') || message.toLowerCase().includes('orchestrate')) {
-      // Use auto-orchestration API
+
+     
+      // Use the centralized auto-orchestration function
       try {
-        const result = await autoOrchestrate({ command: message }).unwrap();
-        responseText = result.response || 'Auto-orchestration completed successfully!';
+        responseText = await triggerAutoOrchestrate(message);
       } catch (error) {
         responseText = 'Failed to auto-orchestrate. Please try again.';
       }

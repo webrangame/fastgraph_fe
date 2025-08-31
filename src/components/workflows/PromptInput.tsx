@@ -127,24 +127,26 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
             </div>
           </div>
 
-          <button
-            onClick={handleSubmit}
-            disabled={!inputValue.trim() || isProcessing}
-            className={`w-full py-3 rounded-lg transition-all font-medium ${
-              inputValue.trim() && !isProcessing
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'theme-input-bg theme-text-muted cursor-not-allowed'
-            }`}
-          >
-            {isProcessing ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Processing...
-              </div>
-            ) : (
-              'Add to Workflow'
-            )}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSubmit}
+              disabled={!inputValue.trim() || isProcessing}
+              className={`flex-1 py-3 rounded-lg transition-all font-medium ${
+                inputValue.trim() && !isProcessing
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'theme-input-bg theme-text-muted cursor-not-allowed'
+              }`}
+            >
+              {isProcessing ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </div>
+              ) : (
+                'Add to Workflow'
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Processing Status - Mobile */}

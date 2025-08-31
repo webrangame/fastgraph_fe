@@ -18,7 +18,7 @@ export default function WorkflowsPage() {
   const [connections, setConnections] = useState<any[] | null>(null);
 
   // Custom hooks for workflow management
-  const { workflows, workflowStatus, workflowError, saveWorkflow, deleteWorkflowById } = useWorkflowPersistence();
+  const { workflows, workflowStatus, workflowError, saveWorkflow, saveAutoOrchestrateWorkflow, deleteWorkflowById, isSaving } = useWorkflowPersistence();
   
   // Memoize the callback to prevent infinite re-renders
   const handleAgentsProcessed = useCallback((processedAgents: Record<string, any>, processedConnections: any[]) => {
@@ -26,7 +26,7 @@ export default function WorkflowsPage() {
     setConnections(processedConnections);
   }, []);
   
-  const { isAutoOrchestrating } = useAutoOrchestrate({
+  const { isAutoOrchestrating, triggerAutoOrchestrate } = useAutoOrchestrate({
     workflows,
     onAgentsProcessed: handleAgentsProcessed
   });
@@ -53,7 +53,8 @@ export default function WorkflowsPage() {
     selectedNode,
     addNodeToWorkflow,
     deleteNode,
-    executeWorkflow
+    executeWorkflow,
+    triggerAutoOrchestrate // Pass the centralized function
   });
 
   // Mobile detection
@@ -164,11 +165,11 @@ export default function WorkflowsPage() {
       </div>
 
       {/* Prompt Input - Mobile optimized */}
-      <PromptInput 
-        onSubmit={handlePromptSubmit}
-        isProcessing={isProcessing}
-        isMobile={isMobile}
-      />
+              <PromptInput 
+          onSubmit={handlePromptSubmit}
+          isProcessing={isProcessing}
+          isMobile={isMobile}
+        />
     </div>
   );
 }

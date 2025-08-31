@@ -5,6 +5,7 @@ import { Workflow, WorkflowNode, WorkflowCanvasProps } from "@/types/workflow";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { LogSidebar } from "./LogSidebar";
 import { FeedbackPopup } from "./FeedbackPopup";
+import { toast } from 'react-hot-toast';
 import {
   ReactFlow,
   applyNodeChanges,

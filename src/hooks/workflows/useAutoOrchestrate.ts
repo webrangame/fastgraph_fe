@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAutoOrchestrateMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
 import { mockAutoOrchestrateResult } from '@/services/workflows/mockData';
 import { processAgentsFromResponse } from '@/services/workflows/agentProcessor';
@@ -14,6 +14,7 @@ interface UseAutoOrchestrateReturn {
   autoOrchestrateError: any;
   agents: Record<string, ProcessedAgent> | null;
   connections: AgentConnection[] | null;
+  triggerAutoOrchestrate: (command: string) => Promise<string>; // New function
 }
 
 export function useAutoOrchestrate({ 
@@ -28,6 +29,30 @@ export function useAutoOrchestrate({
     isLoading: isAutoOrchestrating,
     error: autoOrchestrateError
   }] = useAutoOrchestrateMutation();
+
+  // New function that can be called from usePromptHandler
+  const triggerAutoOrchestrate = useCallback(async (command: string): Promise<string> => {
+    try {
+      console.log('Triggering auto-orchestration with command:', command);
+      const result = await autoOrchestrate({ command }).unwrap();
+      
+      // Process agents and connections
+      const { agents: processedAgents, connections: processedConnections } = 
+        processAgentsFromResponse(result);
+      
+      console.log('Setting agents:', processedAgents);
+      console.log('Setting connections:', processedConnections);
+      
+      setAgents(processedAgents);
+      setConnections(processedConnections);
+      onAgentsProcessed(processedAgents, processedConnections);
+      
+      return result.response || 'Auto-orchestration completed successfully!';
+    } catch (error) {
+      console.error('Auto orchestrate failed:', error);
+      throw new Error('Failed to auto-orchestrate. Please try again.');
+    }
+  }, [autoOrchestrate, onAgentsProcessed]);
 
   useEffect(() => {
     const autoOrchestrateFirstWorkflow = async () => {
@@ -44,7 +69,8 @@ export function useAutoOrchestrate({
           console.log('Auto orchestrating with command:', firstWorkflowDescription);
           try {
             // Using hardcoded example for now - replace with actual API call when ready
-              const result = await autoOrchestrate({ command: firstWorkflowDescription }).unwrap();
+
+            const result = await autoOrchestrate({ command: firstWorkflowDescription }).unwrap();
              //const result = mockAutoOrchestrateResult;
 
             // Process agents and connections
@@ -74,6 +100,7 @@ export function useAutoOrchestrate({
     isAutoOrchestrating,
     autoOrchestrateError,
     agents,
-    connections
+    connections,
+    triggerAutoOrchestrate, // Export the new function
   };
 }
