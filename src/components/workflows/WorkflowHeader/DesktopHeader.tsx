@@ -73,6 +73,7 @@ export function DesktopHeader({
         
         <WorkflowActions
           currentWorkflow={currentWorkflow}
+          agentCount={agentCount}
           isRunning={isRunning}
           onExecute={onExecute}
           onStop={onStop}

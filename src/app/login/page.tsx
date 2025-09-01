@@ -7,7 +7,7 @@ import GoogleLoginButton from '@/components/ui/GoogleLoginButton';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('itranga@gmail.com');
-  const [password, setPassword] = useState('it@371Ananda');
+  const [password, setPassword] = useState('it371ananda');
   const [login, { isLoading, isSuccess, isError, error }] = useLoginMutation();
   const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
   const router = useRouter();

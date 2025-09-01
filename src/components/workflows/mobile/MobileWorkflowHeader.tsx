@@ -119,7 +119,7 @@ export function MobileWorkflowHeader({
                 disabled={!currentWorkflow}
                 className="w-full justify-start text-sm px-2 py-1"
               >
-                Delete 11
+                Delete 
               </Button>
             </div>
           </div>

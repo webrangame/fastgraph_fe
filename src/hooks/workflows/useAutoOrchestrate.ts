@@ -15,6 +15,7 @@ interface UseAutoOrchestrateReturn {
   agents: Record<string, ProcessedAgent> | null;
   connections: AgentConnection[] | null;
   triggerAutoOrchestrate: (command: string) => Promise<string>; // New function
+  resetAutoOrchestration: () => void; // New function
 }
 
 export function useAutoOrchestrate({ 
@@ -33,7 +34,15 @@ export function useAutoOrchestrate({
   // New function that can be called from usePromptHandler
   const triggerAutoOrchestrate = useCallback(async (command: string): Promise<string> => {
     try {
-      console.log('Triggering auto-orchestration with command:', command);
+      console.log('🔵 triggerAutoOrchestrate called with command:', command);
+      console.log('🔵 hasAutoOrchestrated.current:', hasAutoOrchestrated.current);
+      
+      // Prevent duplicate executions
+      if (hasAutoOrchestrated.current) {
+        console.log('🔵 Skipping execution - already auto-orchestrated');
+        return 'Auto-orchestration already completed';
+      }
+      
       const result = await autoOrchestrate({ command }).unwrap();
       
       // Process agents and connections
@@ -47,6 +56,10 @@ export function useAutoOrchestrate({
       setConnections(processedConnections);
       onAgentsProcessed(processedAgents, processedConnections);
       
+      // Mark as executed to prevent future calls
+      hasAutoOrchestrated.current = true;
+      console.log('🔵 Auto-orchestration completed, hasAutoOrchestrated set to true');
+      
       return result.response || 'Auto-orchestration completed successfully!';
     } catch (error) {
       console.error('Auto orchestrate failed:', error);
@@ -54,47 +67,57 @@ export function useAutoOrchestrate({
     }
   }, [autoOrchestrate, onAgentsProcessed]);
 
+  // Reset function to allow manual reset of auto-orchestration state
+  const resetAutoOrchestration = useCallback(() => {
+    console.log('🔄 Resetting auto-orchestration state');
+    hasAutoOrchestrated.current = false;
+    setAgents(null);
+    setConnections(null);
+  }, []);
+
   useEffect(() => {
     const autoOrchestrateFirstWorkflow = async () => {
+      console.log('🟡 useEffect: autoOrchestrateFirstWorkflow called');
+      console.log('🟡 workflows.length:', workflows.length);
+      console.log('🟡 hasAutoOrchestrated.current:', hasAutoOrchestrated.current);
+      
       // Prevent multiple executions in development due to React strict mode
       if (hasAutoOrchestrated.current) {
+        console.log('🟡 Skipping - already auto-orchestrated');
         return;
       }
       
       if (workflows.length > 0) {
-
-        console.log("iii")
         const firstWorkflowDescription = workflows[0]?.description;
+        console.log('🟡 First workflow description:', firstWorkflowDescription);
+        
         if (firstWorkflowDescription) {
-          console.log('Auto orchestrating with command:', firstWorkflowDescription);
+          console.log('🟡 Starting auto-orchestration with command:', firstWorkflowDescription);
           try {
-            // Using hardcoded example for now - replace with actual API call when ready
-
-            const result = await autoOrchestrate({ command: firstWorkflowDescription }).unwrap();
-             //const result = mockAutoOrchestrateResult;
-
-            // Process agents and connections
-            const { agents: processedAgents, connections: processedConnections } = 
-              processAgentsFromResponse(result);
+            // Use the centralized triggerAutoOrchestrate function instead of direct API call
+            await triggerAutoOrchestrate(firstWorkflowDescription);
             
-            console.log('Setting agents:', processedAgents);
-            console.log('Setting connections:', processedConnections);
+            // Note: triggerAutoOrchestrate already handles:
+            // - API call
+            // - Processing agents and connections
+            // - Setting agents and connections state
+            // - Calling onAgentsProcessed
+            // - Setting hasAutoOrchestrated.current = true
             
-            setAgents(processedAgents);
-            setConnections(processedConnections);
-            onAgentsProcessed(processedAgents, processedConnections);
-            
-            // Mark as executed to prevent multiple calls
-            hasAutoOrchestrated.current = true;
+            console.log('🟡 Auto-orchestration completed successfully');
           } catch (error) {
-            console.error('Auto orchestrate failed:', error);
+            console.error('🟡 Auto orchestrate failed:', error);
           }
+        } else {
+          console.log('🟡 No workflow description found');
         }
+      } else {
+        console.log('🟡 No workflows available');
       }
     };
 
     autoOrchestrateFirstWorkflow();
-  }, [workflows.length, autoOrchestrate, onAgentsProcessed]);
+  }, [workflows.length, triggerAutoOrchestrate]);
 
   return {
     isAutoOrchestrating,
@@ -102,5 +125,6 @@ export function useAutoOrchestrate({
     agents,
     connections,
     triggerAutoOrchestrate, // Export the new function
+    resetAutoOrchestration, // Export the reset function
   };
 }
