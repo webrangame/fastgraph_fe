@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Bot, MessageSquare, Activity, CheckCircle, AlertCircle, XCircle, Trash2, GripVertical, Settings } from "lucide-react";
+import { X, Bot, MessageSquare, Activity, Trash2, GripVertical, Settings } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLogStreaming } from "@/hooks/workflows/useLogStreaming";
 import { useTheme } from "@/components/ThemeProvider"; // Theme provider import
@@ -207,49 +207,6 @@ export function LogSidebar({
   // Use all logs since we removed filtering
   const filteredLogs = effectiveLogs;
 
-  const getLogIcon = (type: LogMessage['type']) => {
-    switch (type) {
-      case 'success':
-        return <CheckCircle className="w-4 h-4 text-emerald-500" />;
-      case 'error':
-        return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'warning':
-        return <AlertCircle className="w-4 h-4 text-amber-500" />;
-      default:
-        return <Activity className="w-4 h-4 text-blue-500" />;
-    }
-  };
-
-      const getLogColors = (type: LogMessage['type']) => {
-      const isDark = theme === 'dark';
-      switch (type) {
-        case 'success':
-          return {
-            bg: isDark ? 'bg-emerald-950/20' : 'bg-emerald-50',
-            border: isDark ? 'border-emerald-800/30' : 'border-emerald-200',
-            text: isDark ? 'text-emerald-100' : 'text-emerald-900'
-          };
-        case 'error':
-          return {
-            bg: isDark ? 'bg-red-950/20' : 'bg-red-50',
-            border: isDark ? 'border-red-800/30' : 'border-red-200',
-            text: isDark ? 'text-red-100' : 'text-red-900'
-          };
-        case 'warning':
-          return {
-            bg: isDark ? 'bg-amber-950/20' : 'bg-amber-50',
-            border: isDark ? 'border-amber-800/30' : 'border-amber-200',
-            text: isDark ? 'text-amber-100' : 'text-amber-900'
-          };
-        default:
-          return {
-            bg: isDark ? 'bg-blue-950/20' : 'bg-blue-50',
-            border: isDark ? 'border-blue-800/30' : 'border-blue-200',
-            text: isDark ? 'text-blue-100' : 'text-blue-900'
-          };
-      }
-    };
-
   const formatTime = (timestamp: number | string) => {
     const date = typeof timestamp === 'number' ? new Date(timestamp) : undefined;
     if (!date) return String(timestamp);
@@ -378,7 +335,7 @@ export function LogSidebar({
       )}
 
       {/* Log Container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 theme-bg">
+      <div className="flex-1 overflow-y-auto p-3 theme-bg font-mono text-xs">
         {filteredLogs.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="p-4 theme-card-bg rounded-full mb-4">
@@ -392,60 +349,23 @@ export function LogSidebar({
             </p>
           </div>
         ) : (
-          filteredLogs.map((log, index) => {
-            const colors = getLogColors(log.type);
-            return (
-              <div
-                key={log.id}
-                className={`group relative ${colors.bg} ${colors.border} border rounded-xl p-4 transition-all duration-200 hover:shadow-lg hover:scale-[1.01] animate-in slide-in-from-right-2 fade-in cursor-default`}
-                style={{
-                  animationDelay: `${index * 50}ms`,
-                  animationDuration: '400ms',
-                  animationFillMode: 'both'
-                }}
-              >
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 mt-0.5 p-1 rounded-full theme-sidebar-bg shadow-sm">
-                    {getLogIcon(log.type)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-xs font-bold uppercase tracking-wider ${colors.text} opacity-80`}>
-                        {log.type}
-                      </span>
-                      <div className="flex items-center space-x-2">
-                        {log.status && (
-                                                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full shadow-sm ${
-                              log.status === 'completed' 
-                                ? (theme === 'dark' ? 'bg-emerald-900/50 text-emerald-300 border border-emerald-700' : 'bg-emerald-100 text-emerald-800 border border-emerald-200')
-                                : log.status === 'failed'
-                                ? (theme === 'dark' ? 'bg-red-900/50 text-red-300 border border-red-700' : 'bg-red-100 text-red-800 border border-red-200')
-                                : (theme === 'dark' ? 'bg-amber-900/50 text-amber-300 border border-amber-700' : 'bg-amber-100 text-amber-800 border border-amber-200')
-                            }`}>
-                            {log.status === 'pending' && <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse mr-1" />}
-                            {log.status}
-                          </span>
-                        )}
-                        <span className={`text-xs ${colors.text} opacity-70 font-mono theme-sidebar-bg px-2 py-0.5 rounded-md`}>
-                          {formatTime(log.timestamp)}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <p className={`text-sm leading-relaxed ${colors.text} font-medium`}>
-                      {log.message}
-                    </p>
-                  </div>
+          <div className="space-y-1">
+            {filteredLogs.map((log) => {
+              const typeColor =
+                log.type === 'error' ? 'text-red-400' :
+                log.type === 'warning' ? 'text-amber-400' :
+                log.type === 'success' ? 'text-emerald-400' :
+                'text-blue-400';
+              return (
+                <div key={log.id} className="whitespace-pre-wrap break-words">
+                  <span className="text-gray-500">[{formatTime(log.timestamp)}]</span>{' '}
+                  <span className={`${typeColor} uppercase`}>{log.type}</span>{' '}
+                  <span className="text-gray-500">-</span>{' '}
+                  <span className="theme-text-primary">{log.message}</span>
                 </div>
-
-                {/* Hover indicator */}
-                <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                  <div className="absolute top-2 right-2 w-2 h-2 bg-blue-400 rounded-full shadow-lg"></div>
-                </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>
