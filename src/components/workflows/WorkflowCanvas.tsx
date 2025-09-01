@@ -967,8 +967,25 @@ function WorkflowCanvasInner({
           agentData={{
             inputs: agents[sidebarAgent.replace('agent-', '')]?.inputs,
             outputs: agents[sidebarAgent.replace('agent-', '')]?.outputs,
-            capabilities: agents[sidebarAgent.replace('agent-', '')]?.capabilities
+            capabilities: agents[sidebarAgent.replace('agent-', '')]?.capabilities,
+            inputValues: agents[sidebarAgent.replace('agent-', '')]?.inputValues
           }}
+          logsOverride={(() => {
+            const selectedKey = sidebarAgent.replace('agent-', '');
+            const rawLogs = (agents[selectedKey]?.logs ?? []) as any[];
+            if (Array.isArray(rawLogs) && rawLogs.length > 0) {
+              if (typeof rawLogs[0] === 'string') {
+                return (rawLogs as string[]).map((message, idx) => ({
+                  id: `${selectedKey}-log-${idx}`,
+                  message,
+                  timestamp: Date.now(),
+                  type: 'info' as const,
+                }));
+              }
+              return rawLogs as Array<{ id?: string; message: string; timestamp?: number | string; type?: 'info' | 'warning' | 'error' | 'success'; status?: 'pending' | 'completed' | 'failed'; }>;
+            }
+            return [];
+          })()}
           initialWidth={sidebarWidth}
           onWidthChange={setSidebarWidth}
         />

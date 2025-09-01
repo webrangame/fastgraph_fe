@@ -15,15 +15,23 @@ interface LogSidebarProps {
     inputs?: string[];
     outputs?: string[];
     capabilities?: string[];
+    inputValues?: Record<string, any>;
   };
   initialWidth?: number;
   onWidthChange?: (width: number) => void;
+  logsOverride?: Array<{
+    id?: string;
+    message: string;
+    timestamp?: number | string;
+    type?: 'info' | 'warning' | 'error' | 'success';
+    status?: 'pending' | 'completed' | 'failed';
+  }>;
 }
 
 interface LogMessage {
   id: string;
   message: string;
-  timestamp: number;
+  timestamp: number | string;
   type: 'info' | 'warning' | 'error' | 'success';
   status?: 'pending' | 'completed' | 'failed';
 }
@@ -36,7 +44,8 @@ export function LogSidebar({
   agentRole,
   agentData,
   initialWidth = 400,
-  onWidthChange
+  onWidthChange,
+  logsOverride
 }: LogSidebarProps) {
   const { logs, isConnected, clearLogs } = useLogStreaming(agentId);
   const { theme, isLoaded } = useTheme();
@@ -93,6 +102,17 @@ export function LogSidebar({
     };
   }, []);
 
+  // Normalize logs when override is provided
+  const effectiveLogs: LogMessage[] = (logsOverride && logsOverride.length > 0)
+    ? logsOverride.map((l, idx) => ({
+        id: l.id || `${agentId}-${idx}`,
+        message: l.message,
+        timestamp: l.timestamp ?? Date.now(),
+        type: (l.type as LogMessage['type']) || 'info',
+        status: l.status,
+      }))
+    : logs;
+
   // Always auto scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -101,7 +121,7 @@ export function LogSidebar({
         block: 'end'
       });
     }
-  }, [logs]);
+  }, [effectiveLogs]);
 
   // Handle resizing
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -184,7 +204,7 @@ export function LogSidebar({
   }, [isOpen, handleMouseMove, handleMouseUp]);
 
   // Use all logs since we removed filtering
-  const filteredLogs = logs;
+  const filteredLogs = effectiveLogs;
 
   const getLogIcon = (type: LogMessage['type']) => {
     switch (type) {
@@ -229,8 +249,10 @@ export function LogSidebar({
       }
     };
 
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
+  const formatTime = (timestamp: number | string) => {
+    const date = typeof timestamp === 'number' ? new Date(timestamp) : undefined;
+    if (!date) return String(timestamp);
+    return date.toLocaleTimeString([], { 
       hour: '2-digit', 
       minute: '2-digit',
       second: '2-digit'
@@ -315,7 +337,7 @@ export function LogSidebar({
       </div>
 
       {/* Agent Details Section */}
-      {agentData && (agentData.inputs?.length || agentData.outputs?.length) && (
+      {agentData && (agentData.inputs?.length || agentData.outputs?.length || (agentData.inputValues && Object.keys(agentData.inputValues).length > 0)) && (
         <div className="theme-border p-4 theme-header-bg" style={{ borderBottomWidth: '1px' }}>
           <div className="space-y-3">
             {/* Inputs */}
@@ -337,6 +359,24 @@ export function LogSidebar({
                     >
                       {input}
                     </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Input Values */}
+            {agentData.inputValues && Object.keys(agentData.inputValues).length > 0 && (
+              <div className="space-y-2">
+                <span className="text-sm font-semibold theme-text-primary flex items-center">
+                  <Settings className="w-3 h-3 mr-1" />
+                  Input Values:
+                </span>
+                <div className="space-y-1 text-xs theme-text-secondary">
+                  {Object.entries(agentData.inputValues).map(([key, value]) => (
+                    <div key={key} className="flex items-start justify-between gap-2">
+                      <span className="font-medium theme-text-primary">{key}:</span>
+                      <span className="theme-text-secondary break-all text-right">{typeof value === 'string' ? value : JSON.stringify(value)}</span>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -655,8 +695,10 @@ export function LogSidebarLightDemo() {
       }
     };
 
-    const formatTime = (timestamp: number) => {
-      return new Date(timestamp).toLocaleTimeString([], { 
+    const formatTime = (timestamp: number | string) => {
+      const date = typeof timestamp === 'number' ? new Date(timestamp) : undefined;
+      if (!date) return String(timestamp);
+      return date.toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit',
         second: '2-digit'

@@ -4,6 +4,14 @@ export interface ProcessedAgent {
   capabilities: string[];
   inputs: string[];
   outputs: string[];
+  logs?: Array<{
+    id?: string;
+    timestamp?: number | string;
+    message: string;
+    type?: 'info' | 'warning' | 'error' | 'success';
+    status?: 'pending' | 'completed' | 'failed';
+  }> | string[];
+  inputValues?: Record<string, any>;
 }
 
 export interface AgentConnection {
@@ -23,6 +31,8 @@ export interface AgentProcessingResult {
 export function processAgentsFromResponse(result: any): AgentProcessingResult {
   const swarmSpec = result.auto_orchestrate_response?.swarm_result?.swarm_spec;
   const executionPlan = result.auto_orchestrate_response?.swarm_result?.swarm_spec?.execution_plan;
+  const finalData = result.auto_orchestrate_response?.swarm_result?.final_data || {};
+  const executionResults = result.auto_orchestrate_response?.swarm_result?.execution_results?.results || {};
   
   if (!swarmSpec?.agents || !executionPlan?.data_flow) {
     return { agents: {}, connections: [] };
@@ -38,7 +48,9 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
       role: agent.role || "Agent",
       capabilities: agent.capabilities || [],
       inputs: [],
-      outputs: []
+      outputs: [],
+      logs: [],
+      inputValues: {}
     };
   });
   
@@ -47,6 +59,14 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
     if (agentsRecord[name]) {
       agentsRecord[name].inputs = data.inputs || [];
       agentsRecord[name].outputs = data.outputs || [];
+      // Attach input values from final_data if present
+      const inputValues: Record<string, any> = {};
+      (data.inputs || []).forEach((inputKey: string) => {
+        if (finalData && Object.prototype.hasOwnProperty.call(finalData, inputKey)) {
+          inputValues[inputKey] = (finalData as any)[inputKey];
+        }
+      });
+      agentsRecord[name].inputValues = inputValues;
     } else {
       // If agent not in swarm_spec, create minimal entry
       agentsRecord[name] = {
@@ -54,8 +74,58 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
         role: "Agent",
         capabilities: [],
         inputs: data.inputs || [],
-        outputs: data.outputs || []
+        outputs: data.outputs || [],
+        inputValues: (data.inputs || []).reduce((acc: Record<string, any>, key: string) => {
+          if (finalData && Object.prototype.hasOwnProperty.call(finalData, key)) {
+            acc[key] = (finalData as any)[key];
+          }
+          return acc;
+        }, {})
       };
+    }
+  });
+
+  // Attach execution logs per agent if available
+  Object.entries(agentsRecord).forEach(([agentName, agent]) => {
+    const exec = (executionResults as any)[agentName];
+    const collectedLogs: Array<{ id: string; timestamp?: number | string; message: string; type?: 'info' | 'warning' | 'error' | 'success'; status?: 'pending' | 'completed' | 'failed'; }> = [];
+
+    if (exec) {
+      // Top-level execution_logs (array of strings)
+      if (Array.isArray(exec.execution_logs)) {
+        exec.execution_logs.forEach((line: string, idx: number) => {
+          const parsed = parseLogLine(line);
+          collectedLogs.push({ id: `${agentName}-exec-${idx}`, ...parsed });
+        });
+      }
+
+      // Output-specific logs
+      if (exec.outputs && typeof exec.outputs === 'object') {
+        Object.entries(exec.outputs).forEach(([outputKey, outputObj]: [string, any]) => {
+          const logs = outputObj?._execution_logs?.execution_logs;
+          if (Array.isArray(logs)) {
+            logs.forEach((line: string, idx: number) => {
+              const parsed = parseLogLine(line);
+              collectedLogs.push({ id: `${agentName}-${outputKey}-${idx}`, ...parsed });
+            });
+          }
+        });
+      }
+
+      // Add a final status log
+      if (typeof exec.success === 'boolean') {
+        collectedLogs.push({
+          id: `${agentName}-status`,
+          message: exec.success ? 'Agent execution completed successfully' : 'Agent execution failed',
+          type: exec.success ? 'success' : 'error',
+          status: exec.success ? 'completed' : 'failed',
+          timestamp: Date.now()
+        });
+      }
+    }
+
+    if (collectedLogs.length > 0) {
+      agent.logs = collectedLogs;
     }
   });
   
@@ -92,4 +162,22 @@ function createConnections(agentsRecord: Record<string, ProcessedAgent>): AgentC
   });
   
   return connections;
+}
+
+function parseLogLine(line: string): { message: string; timestamp?: number | string; type?: 'info' | 'warning' | 'error' | 'success' } {
+  // Example line: "[05:38:48.863] LLM inference completed in 5.559s"
+  const timeMatch = line.match(/^\[(.*?)\]\s*(.*)$/);
+  if (timeMatch) {
+    const [, time, rest] = timeMatch;
+    return { message: rest, timestamp: time, type: inferTypeFromMessage(rest) };
+  }
+  return { message: line, type: inferTypeFromMessage(line) };
+}
+
+function inferTypeFromMessage(message: string): 'info' | 'warning' | 'error' | 'success' {
+  const lower = message.toLowerCase();
+  if (lower.includes('error') || lower.includes('failed')) return 'error';
+  if (lower.includes('warning')) return 'warning';
+  if (lower.includes('success') || lower.includes('completed successfully')) return 'success';
+  return 'info';
 }

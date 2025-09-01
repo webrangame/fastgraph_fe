@@ -44,7 +44,7 @@ export function useAutoOrchestrate({
           console.log('Auto orchestrating with command:', firstWorkflowDescription);
           try {
             // Using hardcoded example for now - replace with actual API call when ready
-              const result = await autoOrchestrate({ command: firstWorkflowDescription }).unwrap();
+              const result = await autoOrchestrate({ command: firstWorkflowDescription, response_mode: 'full' }).unwrap();
              //const result = mockAutoOrchestrateResult;
 
             // Process agents and connections

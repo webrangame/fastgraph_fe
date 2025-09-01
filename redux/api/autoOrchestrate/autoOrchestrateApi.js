@@ -7,10 +7,10 @@ export const autoOrchestrateApi = createApi({
   tagTypes: ['AutoOrchestrate'],
   endpoints: (builder) => ({
     autoOrchestrate: builder.mutation({
-      query: ({ command }) => ({
+      query: ({ command, response_mode = 'full' }) => ({
         url: '/autoOrchestrate',
         method: 'POST',
-        body: { command },
+        body: { command, response_mode },
       }),
       invalidatesTags: ['AutoOrchestrate'],
     }),

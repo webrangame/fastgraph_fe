@@ -44,7 +44,7 @@ export function AgentSidebar({ isMobile = false, onAgentSelect, agents }: AgentS
         icon: Bot,
         color: getColorForAgent(key)
       }))
-    : createdAgents;
+    : [];
 
   return (
     <div className={`${isMobile ? 'w-full' : 'w-64'} theme-sidebar-bg ${!isMobile ? 'theme-border border-r' : ''}`}>
