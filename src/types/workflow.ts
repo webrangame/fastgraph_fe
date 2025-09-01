@@ -57,6 +57,8 @@ export interface WorkflowCanvasProps {
   connections?: any[];
   isAutoOrchestrating?: boolean;
   onAgentFeedback?: (agentId: string, agentName: string, action?: string, feedback?: string) => void;
+  finalData?: any;
+  finalizedResult?: any;
 }
 
 export interface PromptMessage {

@@ -1,0 +1,518 @@
+"use client";
+
+import { X, Zap, GripVertical, FileText, Link } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+
+interface EndNodeSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  sidebarType: 'output' | 'media';
+  finalData?: any;
+  initialWidth?: number;
+  onWidthChange?: (width: number) => void;
+}
+
+export function EndNodeSidebar({ 
+  isOpen, 
+  onClose, 
+  sidebarType,
+  finalData,
+  initialWidth = 400,
+  onWidthChange
+}: EndNodeSidebarProps) {
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const isResizingRef = useRef(false);
+  const animationFrameRef = useRef<number | null>(null);
+  
+  // State for sidebar width with localStorage persistence
+  const [width, setWidth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('endNodeSidebarWidth');
+      return saved ? parseInt(saved, 10) : initialWidth;
+    }
+    return initialWidth;
+  });
+  
+  // State for tracking resize activity
+  const [isActivelyResizing, setIsActivelyResizing] = useState(false);
+  
+  // Constraints for resizing
+  const MIN_WIDTH = 300;
+  const MAX_WIDTH = 800;
+
+  // Debounced localStorage save to avoid excessive writes during resize
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Clear previous timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      // Debounce localStorage writes
+      saveTimeoutRef.current = setTimeout(() => {
+        localStorage.setItem('endNodeSidebarWidth', width.toString());
+      }, 300);
+    }
+    
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [width]);
+
+  // Cleanup animation frames on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
+  // Handle resizing
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isResizingRef.current = true;
+    setIsActivelyResizing(true);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.body.style.pointerEvents = 'none';
+    
+    // Add active state to sidebar for visual feedback
+    if (sidebarRef.current) {
+      sidebarRef.current.style.transition = 'none';
+    }
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizingRef.current) return;
+    
+    // Cancel previous animation frame to avoid stacking
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    // Use requestAnimationFrame for smooth performance
+    animationFrameRef.current = requestAnimationFrame(() => {
+      const newWidth = window.innerWidth - e.clientX;
+      const constrainedWidth = Math.min(Math.max(newWidth, MIN_WIDTH), MAX_WIDTH);
+      
+      setWidth(constrainedWidth);
+      onWidthChange?.(constrainedWidth);
+    });
+  }, [MIN_WIDTH, MAX_WIDTH, onWidthChange]);
+
+  const handleMouseUp = useCallback(() => {
+    isResizingRef.current = false;
+    setIsActivelyResizing(false);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    document.body.style.pointerEvents = '';
+    
+    // Cancel any pending animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    // Restore transition for smooth width changes when not resizing
+    if (sidebarRef.current) {
+      sidebarRef.current.style.transition = 'transform 300ms ease-in-out';
+    }
+  }, []);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
+  // Handle mouse events for resizing
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isOpen, handleMouseMove, handleMouseUp]);
+
+  // Get content based on sidebar type
+  // Normalize finalData when it may arrive as a Python-style string (finalizedResult)
+  const normalizeFinalData = (data: any) => {
+    // If data is already an object, return as-is
+    if (typeof data === 'object' && data !== null) {
+      return data;
+    }
+    
+    // If data is a string, try to extract content using multiple strategies
+    if (typeof data === 'string') {
+      const raw = data as string;
+      
+      // Strategy 1: Extract the main result from poet_agent.outputs.poem_output.result
+      // This pattern handles the deeply nested structure with escaped quotes
+      const poemOutputMatch = raw.match(/'poem_output':\s*\{[\s\S]*?'result':\s*"([\s\S]*?)(?="[,}])/);
+      if (poemOutputMatch) {
+        let content = poemOutputMatch[1];
+        // Clean up escaped content
+        content = content.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        return { 
+          results: { 
+            poet_agent: { 
+              outputs: { 
+                poem_output: { 
+                  result: content 
+                } 
+              } 
+            } 
+          } 
+        };
+      }
+      
+      // Strategy 2: Extract the first 'result' field that appears in the string
+      const genericResultMatch = raw.match(/'result':\s*"([\s\S]*?)(?="[,}])/);
+      if (genericResultMatch) {
+        let content = genericResultMatch[1];
+        content = content.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        return { result: content };
+      }
+      
+      // Strategy 3: Try to parse media_links array
+      const mediaLinksMatch = raw.match(/'media_links':\s*\[([\s\S]*?)\]/);
+      if (mediaLinksMatch) {
+        const items = mediaLinksMatch[1]
+          .split(',')
+          .map(s => s.trim())
+          .map(s => s.replace(/^'/, '').replace(/'$/, ''))
+          .filter(Boolean);
+        return { media_links: items };
+      }
+      
+      // Strategy 4: If we can't parse it, return it wrapped so our extraction logic can try
+      return { raw_string: raw };
+    }
+    
+    return data; // as-is if nothing matches
+  };
+
+  const getContent = () => {
+    const normalized = normalizeFinalData(finalData);
+    if (!normalized) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-center p-6">
+          <div className="p-4 theme-card-bg rounded-full mb-4">
+            {sidebarType === 'output' ? (
+              <FileText className="w-12 h-12 theme-text-muted" />
+            ) : (
+              <Link className="w-12 h-12 theme-text-muted" />
+            )}
+          </div>
+          <h3 className="text-base font-medium theme-text-primary mb-2">
+            No {sidebarType === 'output' ? 'output' : 'media links'} available
+          </h3>
+          <p className="theme-text-secondary text-sm max-w-xs">
+            {sidebarType === 'output' 
+              ? 'The workflow output will appear here when available'
+              : 'Media links will appear here when available'
+            }
+          </p>
+        </div>
+      );
+    }
+
+    if (sidebarType === 'output') {
+      // Enhanced function to extract output data from various structure patterns
+      const extractOutputData = (obj: any): any => {
+        if (!obj || typeof obj !== 'object') return undefined;
+        
+        // Pattern 1: finalizedResult structure - results.agent_name.outputs.output_name.result
+        if (obj.results && typeof obj.results === 'object') {
+          for (const agentKey of Object.keys(obj.results)) {
+            const agent = obj.results[agentKey];
+            
+            // Check for outputs with nested results
+            if (agent?.outputs && typeof agent.outputs === 'object') {
+              for (const outputKey of Object.keys(agent.outputs)) {
+                const output = agent.outputs[outputKey];
+                if (output?.result) {
+                  return output.result;
+                }
+              }
+            }
+            
+            // Check for direct agent result
+            if (agent?.result) {
+              return agent.result;
+            }
+          }
+        }
+        
+        // Pattern 2: Direct outputs structure
+        if (obj.outputs && typeof obj.outputs === 'object') {
+          for (const outputKey of Object.keys(obj.outputs)) {
+            const output = obj.outputs[outputKey];
+            if (output?.result) {
+              return output.result;
+            }
+          }
+        }
+        
+        // Pattern 3: final_data structure
+        if (obj.final_data && typeof obj.final_data === 'object') {
+          // Look for any output with result
+          for (const key of Object.keys(obj.final_data)) {
+            const value = obj.final_data[key];
+            if (value?.result) {
+              return value.result;
+            }
+          }
+        }
+        
+        // Pattern 4: Direct result field
+        if (obj.result) {
+          return obj.result;
+        }
+        
+        // Pattern 5: Legacy poem_output structure
+        if (obj.poem_output?.result) {
+          return obj.poem_output.result;
+        }
+        
+        // Pattern 6: Raw string fallback - try to extract any meaningful content
+        if (obj.raw_string && typeof obj.raw_string === 'string') {
+          const raw = obj.raw_string;
+          
+          // Look for any content that appears to be the main result
+          // Try to find patterns like 'result': "content" or "raw_output": "content"
+          const resultPatterns = [
+            /'raw_output':\s*"([\s\S]*?)(?="[,}])/,
+            /'result':\s*"([\s\S]*?)(?="[,}])/,
+            /"result":\s*"([\s\S]*?)(?="[,}])/,
+            // Look for any substantial text content in quotes
+            /"(ANALYSIS:[\s\S]*?)(?="[,}])/,
+            /'(ANALYSIS:[\s\S]*?)(?='[,}])/
+          ];
+          
+          for (const pattern of resultPatterns) {
+            const match = raw.match(pattern);
+            if (match && match[1] && match[1].length > 50) { // Ensure we get substantial content
+              let content = match[1];
+              content = content.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+              return content;
+            }
+          }
+          
+          // If no patterns match, return a truncated version of the raw string for debugging
+          return raw.length > 500 ? `${raw.substring(0, 500)}...` : raw;
+        }
+        
+        return undefined;
+      };
+
+      const outputData = extractOutputData(normalized) || 'No output data available';
+      
+      return (
+        <div className="p-4 space-y-4">
+          <div className="theme-card-bg rounded-lg p-4 border theme-border">
+            <h3 className="text-sm font-semibold theme-text-primary mb-3 flex items-center">
+              <FileText className="w-4 h-4 mr-2" />
+              Workflow Output
+            </h3>
+            <div className="text-sm theme-text-secondary whitespace-pre-wrap break-words">
+              {typeof outputData === 'string' ? outputData : JSON.stringify(outputData, null, 2)}
+            </div>
+          </div>
+        </div>
+      );
+    } else {
+      // Enhanced function to extract media links from various structure patterns
+      const extractMediaLinks = (obj: any): string[] => {
+        if (!obj || typeof obj !== 'object') return [];
+        
+        // Pattern 1: finalizedResult structure - results.agent_name.outputs.output_name (array of links)
+        if (obj.results && typeof obj.results === 'object') {
+          for (const agentKey of Object.keys(obj.results)) {
+            const agent = obj.results[agentKey];
+            
+            // Check for outputs with media_links
+            if (agent?.outputs && typeof agent.outputs === 'object') {
+              for (const outputKey of Object.keys(agent.outputs)) {
+                const output = agent.outputs[outputKey];
+                if (Array.isArray(output) && output.length > 0) {
+                  // Check if this looks like media links (URLs or file paths)
+                  const hasMediaLinks = output.some(item => 
+                    typeof item === 'string' && 
+                    (item.includes('http') || item.includes('.mp4') || item.includes('.jpg') || item.includes('.png'))
+                  );
+                  if (hasMediaLinks) return output;
+                }
+                if (Array.isArray(output?.media_links)) {
+                  return output.media_links;
+                }
+              }
+            }
+            
+            // Check for direct media_links in agent
+            if (Array.isArray(agent?.media_links)) {
+              return agent.media_links;
+            }
+          }
+        }
+        
+        // Pattern 2: Direct outputs structure
+        if (obj.outputs && typeof obj.outputs === 'object') {
+          for (const outputKey of Object.keys(obj.outputs)) {
+            const output = obj.outputs[outputKey];
+            if (Array.isArray(output?.media_links)) {
+              return output.media_links;
+            }
+          }
+        }
+        
+        // Pattern 3: final_data structure
+        if (obj.final_data && typeof obj.final_data === 'object') {
+          for (const key of Object.keys(obj.final_data)) {
+            const value = obj.final_data[key];
+            if (Array.isArray(value?.media_links)) {
+              return value.media_links;
+            }
+          }
+        }
+        
+        // Pattern 4: Direct media_links field
+        if (Array.isArray(obj.media_links)) {
+          return obj.media_links;
+        }
+        
+        return [];
+      };
+
+      const mediaLinks: string[] = extractMediaLinks(normalized);
+      return (
+        <div className="p-4 space-y-4">
+          <div className="theme-card-bg rounded-lg p-4 border theme-border">
+            <h3 className="text-sm font-semibold theme-text-primary mb-3 flex items-center">
+              <Link className="w-4 h-4 mr-2" />
+              Media Links
+            </h3>
+            {Array.isArray(mediaLinks) && mediaLinks.length > 0 ? (
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                {mediaLinks.map((m, idx) => (
+                  <li key={idx} className="break-all">
+                    {m}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-sm theme-text-secondary">
+                No media links available for this workflow.
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+  };
+
+  const getTitle = () => {
+    return sidebarType === 'output' ? 'Workflow Output' : 'Media Links';
+  };
+
+  const getIcon = () => {
+    return sidebarType === 'output' ? FileText : Link;
+  };
+
+  const Icon = getIcon();
+
+  return (
+    <div 
+      ref={sidebarRef}
+      className={`fixed top-0 right-0 h-full theme-sidebar-bg theme-border shadow-2xl z-[10000] transition-transform duration-300 ease-in-out flex flex-col ${
+        isOpen ? 'translate-x-0' : 'translate-x-full'
+      }`} 
+      style={{ width: `${width}px` }}
+    >
+      {/* Resize Handle */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-500/20 active:bg-blue-500/30 transition-all duration-150 group z-10"
+        onMouseDown={handleMouseDown}
+        style={{
+          background: isActivelyResizing ? 'rgba(59, 130, 246, 0.3)' : undefined
+        }}
+      >
+        {/* Visual indicator */}
+        <div className="absolute left-0 top-0 bottom-0 w-0.5 theme-border group-hover:bg-blue-500 transition-colors duration-150" />
+        
+        {/* Grip icon */}
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-150 scale-90 group-hover:scale-100">
+          <GripVertical className="w-3 h-3 text-blue-500 drop-shadow-sm" />
+        </div>
+        
+        {/* Hover area extension */}
+        <div className="absolute -left-1 -right-1 top-0 bottom-0" />
+      </div>
+      
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 theme-border shrink-0 theme-header-bg" style={{ borderBottomWidth: '1px' }}>
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <div className="p-2 bg-gradient-to-r from-red-500 to-orange-600 rounded-lg shadow-lg">
+              <Icon className="w-5 h-5 text-white" />
+            </div>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold theme-text-primary flex items-center space-x-2">
+              <span>{getTitle()}</span>
+            </h2>
+            <p className="text-xs theme-text-secondary">
+              Workflow End • Final Results
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={onClose}
+            className="p-2 theme-text-secondary theme-hover-bg rounded-lg transition-all duration-200 group"
+            title="Close sidebar"
+          >
+            <X className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
+          </button>
+        </div>
+      </div>
+
+      {/* Content Container */}
+      <div className="flex-1 overflow-y-auto theme-bg">
+        {getContent()}
+      </div>
+
+      {/* Status Bar */}
+      <div className="theme-border p-3 theme-header-bg flex items-center justify-between text-xs theme-text-secondary" style={{ borderTopWidth: '1px' }}>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1">
+            <Zap className="w-3 h-3" />
+            <span>Workflow completed</span>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="font-mono">{width}px</span>
+        </div>
+      </div>
+    </div>
+  );
+}

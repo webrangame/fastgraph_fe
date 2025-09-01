@@ -27,6 +27,8 @@ export interface AgentConnection {
 export interface AgentProcessingResult {
   agents: Record<string, ProcessedAgent>;
   connections: AgentConnection[];
+  finalData?: any;
+  finalizedResult?: any;
 }
 
 export function processAgentsFromResponse(result: any): AgentProcessingResult {
@@ -34,9 +36,52 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   const executionPlan = result.auto_orchestrate_response?.swarm_result?.swarm_spec?.execution_plan;
   const finalData = result.auto_orchestrate_response?.swarm_result?.final_data || {};
   const executionResults = result.auto_orchestrate_response?.swarm_result?.execution_results?.results || {};
+  const finalizedResultRaw = (result as any)?.finalizedResult;
+
+  // Attempt to parse finalizedResult if it's provided as a stringified Python-like dict
+  const parseFinalizedResult = (input: any): any => {
+    if (!input) return undefined;
+    if (typeof input === 'object') return input;
+    if (typeof input === 'string') {
+      // First, try JSON.parse directly
+      try {
+        return JSON.parse(input);
+      } catch (_) {
+        // Try a more comprehensive normalization for Python-like syntax
+        try {
+          let normalized = input
+            .replace(/\bTrue\b/g, 'true')
+            .replace(/\bFalse\b/g, 'false')
+            .replace(/\bNone\b/g, 'null');
+          
+          // Handle escaped quotes in nested strings
+          // First, protect already escaped quotes
+          normalized = normalized.replace(/\\"/g, '__ESCAPED_QUOTE__');
+          
+          // Replace single quotes around keys and string values
+          // Keys: 'key': -> "key":
+          normalized = normalized.replace(/'([^']*?)'\s*:/g, '"$1":');
+          // Values: : 'value' -> : "value" (but be careful with nested structures)
+          normalized = normalized.replace(/:\s*'([^']*)'/g, ': "$1"');
+          
+          // Restore escaped quotes but properly escaped for JSON
+          normalized = normalized.replace(/__ESCAPED_QUOTE__/g, '\\"');
+          
+          return JSON.parse(normalized);
+        } catch (parseError) {
+          console.warn('Failed to parse finalizedResult:', parseError);
+          // If all parsing fails, return the original string so the EndNodeSidebar can handle it
+          return input;
+        }
+      }
+    }
+    return undefined;
+  };
+
+  const finalizedResultParsed = parseFinalizedResult(finalizedResultRaw);
   
   if (!swarmSpec?.agents || !executionPlan?.data_flow) {
-    return { agents: {}, connections: [] };
+    return { agents: {}, connections: [], finalData, finalizedResult: finalizedResultParsed };
   }
 
   // Combine agent info from swarm_spec.agents and execution_plan.data_flow
@@ -139,7 +184,7 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   // Create connections based on input/output matching
   const connections = createConnections(agentsRecord);
   
-  return { agents: agentsRecord, connections };
+  return { agents: agentsRecord, connections, finalData, finalizedResult: finalizedResultParsed };
 }
 
 function createConnections(agentsRecord: Record<string, ProcessedAgent>): AgentConnection[] {

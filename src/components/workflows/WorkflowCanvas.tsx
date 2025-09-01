@@ -4,6 +4,7 @@ import { Bot, X, PenTool, Calculator, Zap, MessageCircle } from "lucide-react";
 import { Workflow, WorkflowNode, WorkflowCanvasProps } from "@/types/workflow";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { LogSidebar } from "./LogSidebar";
+import { EndNodeSidebar } from "./EndNodeSidebar";
 import { FeedbackPopup } from "./FeedbackPopup";
 import {
   ReactFlow,
@@ -107,6 +108,8 @@ function WorkflowCanvasInner({
   connections,
   isAutoOrchestrating,
   onAgentFeedback,
+  finalData,
+  finalizedResult,
 }: WorkflowCanvasProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -120,6 +123,9 @@ function WorkflowCanvasInner({
   const [sidebarWidth, setSidebarWidth] = useState<number>(400);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState<boolean>(false);
   const [feedbackAgent, setFeedbackAgent] = useState<{ id: string; name: string } | null>(null);
+  const [showEndNodeSidebar, setShowEndNodeSidebar] = useState<boolean>(false);
+  const [endNodeSidebarType, setEndNodeSidebarType] = useState<'output' | 'media'>('output');
+  const [endNodeSidebarWidth, setEndNodeSidebarWidth] = useState<number>(400);
   const endNodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -580,6 +586,24 @@ function WorkflowCanvasInner({
     }, 200); // Short delay before hiding
   }, []);
 
+  const handleGetOutput = useCallback(() => {
+    setEndNodeSidebarType('output');
+    setShowEndNodeSidebar(true);
+    setEndNodeHovered(false);
+    setHoveredNode(null);
+  }, []);
+
+  const handleGetMediaLinks = useCallback(() => {
+    setEndNodeSidebarType('media');
+    setShowEndNodeSidebar(true);
+    setEndNodeHovered(false);
+    setHoveredNode(null);
+  }, []);
+
+  const handleCloseEndNodeSidebar = useCallback(() => {
+    setShowEndNodeSidebar(false);
+  }, []);
+
   // Feedback popup handlers
   const handleShowFeedbackPopup = useCallback((agentId: string, agentName: string) => {
     setFeedbackAgent({ id: agentId, name: agentName });
@@ -902,7 +926,10 @@ function WorkflowCanvasInner({
             <div className="theme-input-bg rounded-lg p-3 border theme-border">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium theme-text-secondary">Text output:</span>
-                <button className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">
+                <button 
+                  onClick={handleGetOutput}
+                  className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                >
                   Get Output
                 </button>
               </div>
@@ -910,7 +937,10 @@ function WorkflowCanvasInner({
             <div className="theme-input-bg rounded-lg p-3 border theme-border">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium theme-text-secondary">Media Links:</span>
-                <button className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">
+                <button 
+                  onClick={handleGetMediaLinks}
+                  className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                >
                   Get Media Links
                 </button>
               </div>
@@ -1008,6 +1038,16 @@ function WorkflowCanvasInner({
           onWidthChange={setSidebarWidth}
         />
       )}
+
+      {/* End Node Sidebar */}
+      <EndNodeSidebar
+        isOpen={showEndNodeSidebar}
+        onClose={handleCloseEndNodeSidebar}
+        sidebarType={endNodeSidebarType}
+        finalData={finalizedResult || finalData}
+        initialWidth={endNodeSidebarWidth}
+        onWidthChange={setEndNodeSidebarWidth}
+      />
 
       {/* Feedback Popup */}
       {feedbackAgent && (
