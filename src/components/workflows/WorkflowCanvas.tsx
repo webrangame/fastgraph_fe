@@ -885,18 +885,18 @@ function WorkflowCanvasInner({
             <div className="theme-input-bg rounded-lg p-3 border theme-border">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium theme-text-secondary">Text output:</span>
+                <button className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">
+                  Add
+                </button>
               </div>
-              <p className="theme-text-muted text-xs">
-                Add your final output here
-              </p>  
             </div>
             <div className="theme-input-bg rounded-lg p-3 border theme-border">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium theme-text-secondary">Media Links:</span>
+                <button className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">
+                  Add
+                </button>
               </div>
-              <p className="theme-text-muted text-xs">
-                Add your Media Links here
-              </p>  
             </div>
             
             <div className="border-t theme-border pt-2">
