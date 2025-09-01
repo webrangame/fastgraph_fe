@@ -968,7 +968,8 @@ function WorkflowCanvasInner({
             inputs: agents[sidebarAgent.replace('agent-', '')]?.inputs,
             outputs: agents[sidebarAgent.replace('agent-', '')]?.outputs,
             capabilities: agents[sidebarAgent.replace('agent-', '')]?.capabilities,
-            inputValues: agents[sidebarAgent.replace('agent-', '')]?.inputValues
+            inputValues: agents[sidebarAgent.replace('agent-', '')]?.inputValues,
+            agentInput: (agents[sidebarAgent.replace('agent-', '')] as any)?.agentInput
           }}
           logsOverride={(() => {
             const selectedKey = sidebarAgent.replace('agent-', '');

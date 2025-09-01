@@ -12,6 +12,7 @@ export interface ProcessedAgent {
     status?: 'pending' | 'completed' | 'failed';
   }> | string[];
   inputValues?: Record<string, any>;
+  agentInput?: string;
 }
 
 export interface AgentConnection {
@@ -91,6 +92,12 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
     const collectedLogs: Array<{ id: string; timestamp?: number | string; message: string; type?: 'info' | 'warning' | 'error' | 'success'; status?: 'pending' | 'completed' | 'failed'; }> = [];
 
     if (exec) {
+      // Attach LLM input prompt if available
+      const inputPrompt = exec?.llm_inference?.input_prompt ?? exec?.llm_inference?.input_promp;
+      if (typeof inputPrompt === 'string' && inputPrompt.length > 0) {
+        agent.agentInput = inputPrompt;
+      }
+
       // Top-level execution_logs (array of strings)
       if (Array.isArray(exec.execution_logs)) {
         exec.execution_logs.forEach((line: string, idx: number) => {

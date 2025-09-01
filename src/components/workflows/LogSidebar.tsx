@@ -16,6 +16,7 @@ interface LogSidebarProps {
     outputs?: string[];
     capabilities?: string[];
     inputValues?: Record<string, any>;
+    agentInput?: string;
   };
   initialWidth?: number;
   onWidthChange?: (width: number) => void;
@@ -378,6 +379,19 @@ export function LogSidebar({
                       <span className="theme-text-secondary break-all text-right">{typeof value === 'string' ? value : JSON.stringify(value)}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Agent Input (LLM prompt) */}
+            {agentData.agentInput && (
+              <div className="space-y-2">
+                <span className="text-sm font-semibold theme-text-primary flex items-center">
+                  <Settings className="w-3 h-3 mr-1" />
+                  Agent Input:
+                </span>
+                <div className="text-xs theme-text-secondary whitespace-pre-wrap break-words">
+                  {agentData.agentInput}
                 </div>
               </div>
             )}
