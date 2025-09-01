@@ -125,33 +125,18 @@ export default function Sidebar({ isMobile = false, onNavigate }: SidebarProps) 
           disabled={isMobile}
         >
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-105 transition-transform">
-            <span className="text-white font-bold text-sm">AA</span>
+            <span className="text-white font-bold text-sm">{initials}</span>
           </div>
           {!isCollapsed && (
             <span className="theme-text-primary font-semibold text-lg tracking-tight group-hover:text-blue-600 transition-colors">
-              ADMIN
+              {firstName}
             </span>
           )}
         </button>
       </div>
 
       {/* User Profile Section */}
-      {!isCollapsed && (
-        <div className="p-4 theme-border" style={{ borderBottomWidth: '1px' }}>
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center shadow-md">
-              <span className="text-gray-700 font-semibold text-sm">{initials}</span>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center space-x-1">
-                <span className="theme-text-primary font-semibold text-sm">{firstName}</span>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-      )}
-
+     
       {/* Collapsed User Avatar */}
       {isCollapsed && (
         <div className="p-3 theme-border flex justify-center" style={{ borderBottomWidth: '1px' }}>

@@ -4,22 +4,29 @@ import React, { useState, useEffect } from 'react';
 import { useLoginMutation, useGoogleLoginMutation } from '../../../lib/api/authApi';
 import { useRouter } from 'next/navigation';
 import GoogleLoginButton from '@/components/ui/GoogleLoginButton';
+import toast from 'react-hot-toast';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('itranga@gmail.com');
-  const [password, setPassword] = useState('it371ananda');
+  const [email, setEmail] = useState('prageeth.mahendra@gmail.com');
+  const [password, setPassword] = useState('prageeth');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [login, { isLoading, isSuccess, isError, error }] = useLoginMutation();
   const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    
     try {
       await login({ email, password }).unwrap();
       // Redirect to dashboard after successful login
       router.replace('/dashboard');
     } catch (err) {
       console.error('Failed to login:', err);
+      toast.error('Login failed. Please check your credentials and try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -34,10 +41,12 @@ const LoginPage = () => {
               // The response.credential contains the JWT token from Google
               // We need to send this as access_token to match your backend API
               await googleLogin({ access_token: response.credential }).unwrap();
+              toast.success('Google login successful! Redirecting to dashboard...');
               // Redirect to dashboard after successful Google login
               router.replace('/dashboard');
             } catch (err) {
               console.error('Google login failed:', err);
+              toast.error('Google login failed. Please try again.');
             }
           },
         });
@@ -46,9 +55,11 @@ const LoginPage = () => {
         window.google.accounts.id.prompt();
       } else {
         console.error('Google OAuth not loaded');
+        toast.error('Google OAuth not available. Please try again.');
       }
     } catch (err) {
       console.error('Failed to initialize Google login:', err);
+      toast.error('Failed to initialize Google login. Please try again.');
     }
   };
 
@@ -70,6 +81,20 @@ const LoginPage = () => {
     };
   }, []);
 
+  // Show success toast when login is successful
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success('Login successful!');
+    }
+  }, [isSuccess]);
+
+  // Show error toast when login fails
+  useEffect(() => {
+    if (isError) {
+      toast.error('Login failed. Please check your credentials and try again.');
+    }
+  }, [isError]);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
@@ -86,6 +111,7 @@ const LoginPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={isSubmitting || isLoading}
             />
           </div>
           <div className="mb-6">
@@ -99,22 +125,22 @@ const LoginPage = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={isSubmitting || isLoading}
             />
           </div>
           <div className="flex items-center justify-between">
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              disabled={isLoading}
+              className={`font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors ${
+                isSubmitting || isLoading
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  : 'bg-blue-500 hover:bg-blue-700 text-white'
+              }`}
+              disabled={isSubmitting || isLoading}
             >
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isSubmitting || isLoading ? 'Logging in...' : 'Login'}
             </button>
           </div>
-          {isError && (
-            <p className="text-red-500 text-xs italic mt-4">
-              Login failed. Please check your credentials.
-            </p>
-          )}
         </form>
         
         <div className="mt-6">
@@ -131,7 +157,7 @@ const LoginPage = () => {
             <GoogleLoginButton
               onClick={handleGoogleLogin}
               isLoading={isGoogleLoading}
-              disabled={isLoading || isGoogleLoading}
+              disabled={isSubmitting || isLoading || isGoogleLoading}
             />
           </div>
         </div>
