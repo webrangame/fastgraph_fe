@@ -338,32 +338,10 @@ export function LogSidebar({
       </div>
 
       {/* Agent Details Section */}
-      {agentData && (agentData.inputs?.length || agentData.outputs?.length || (agentData.inputValues && Object.keys(agentData.inputValues).length > 0)) && (
-        <div className="theme-border p-4 theme-header-bg" style={{ borderBottomWidth: '1px' }}>
+      {agentData && ((agentData.inputValues && Object.keys(agentData.inputValues).length > 0) || agentData.agentInput) && (
+        <div className="flex-1 overflow-y-auto theme-border p-4 theme-header-bg" style={{ borderBottomWidth: '1px' }}>
           <div className="space-y-3">
-            {/* Inputs */}
-            {agentData.inputs && agentData.inputs.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-sm font-semibold theme-text-primary flex items-center">
-                  <Settings className="w-3 h-3 mr-1" />
-                  Inputs:
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {agentData.inputs.map((input, idx) => (
-                    <span 
-                      key={idx}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200 cursor-default ${
-                        theme === 'dark' 
-                          ? 'bg-blue-900/30 text-blue-300 border border-blue-700 hover:bg-blue-800/40'
-                          : 'bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200'
-                      }`}
-                    >
-                      {input}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+            
 
             {/* Input Values */}
             {agentData.inputValues && Object.keys(agentData.inputValues).length > 0 && (
