@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Bot, MessageSquare, Activity, Trash2, GripVertical, Settings } from "lucide-react";
+import { X, Bot, MessageSquare, Activity, Trash2, GripVertical, Settings, FileText, Terminal } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLogStreaming } from "@/hooks/workflows/useLogStreaming";
 import { useTheme } from "@/components/ThemeProvider"; // Theme provider import
@@ -44,7 +44,7 @@ export function LogSidebar({
   agentName, 
   agentRole,
   agentData,
-  initialWidth = 400,
+  initialWidth = 450,
   onWidthChange,
   logsOverride
 }: LogSidebarProps) {
@@ -54,6 +54,9 @@ export function LogSidebar({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isResizingRef = useRef(false);
   const animationFrameRef = useRef<number | null>(null);
+  
+  // Tab state management
+  const [activeTab, setActiveTab] = useState<'input' | 'logs'>('logs');
   
   // State for sidebar width with localStorage persistence
   const [width, setWidth] = useState(() => {
@@ -116,13 +119,20 @@ export function LogSidebar({
 
   // Always auto scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && activeTab === 'logs') {
       messagesEndRef.current.scrollIntoView({ 
         behavior: 'smooth',
         block: 'end'
       });
     }
-  }, [effectiveLogs]);
+  }, [effectiveLogs, activeTab]);
+
+  // Auto-switch to input tab if there's agent input data available
+  useEffect(() => {
+    if (agentData && (agentData.agentInput || (agentData.inputValues && Object.keys(agentData.inputValues).length > 0))) {
+      setActiveTab('input');
+    }
+  }, [agentData]);
 
   // Handle resizing
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -294,95 +304,167 @@ export function LogSidebar({
         </div>
       </div>
 
-      {/* Agent Details Section */}
-      {agentData && ((agentData.inputValues && Object.keys(agentData.inputValues).length > 0) || agentData.agentInput) && (
-        <div className="flex-1 overflow-y-auto theme-border p-4 theme-header-bg" style={{ borderBottomWidth: '1px' }}>
-          <div className="space-y-3">
-            
-
-            {/* Input Values */}
-            {agentData.inputValues && Object.keys(agentData.inputValues).length > 0 && (
-              <div className="space-y-2">
-                <span className="text-sm font-semibold theme-text-primary flex items-center">
-                  <Settings className="w-3 h-3 mr-1" />
-                  Input Values:
-                </span>
-                <div className="space-y-1 text-xs theme-text-secondary">
-                  {Object.entries(agentData.inputValues).map(([key, value]) => (
-                    <div key={key} className="flex items-start justify-between gap-2">
-                      <span className="font-medium theme-text-primary">{key}:</span>
-                      <span className="theme-text-secondary break-all text-right">{typeof value === 'string' ? value : JSON.stringify(value)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+      {/* Tab Navigation */}
+      <div className="theme-border theme-header-bg" style={{ borderBottomWidth: '1px' }}>
+        <div className="flex">
+          {/* Agent Input Tab */}
+          <button
+            onClick={() => setActiveTab('input')}
+            className={`flex-1 flex items-center justify-center px-4 py-3 text-sm font-medium transition-all duration-200 relative ${
+              !agentData || (!agentData.agentInput && (!agentData.inputValues || Object.keys(agentData.inputValues).length === 0))
+                ? 'text-gray-400 cursor-not-allowed'
+                : activeTab === 'input'
+                ? 'theme-text-primary bg-blue-500/10 border-b-2 border-blue-500'
+                : 'theme-text-secondary hover:theme-text-primary theme-hover-bg'
+            }`}
+            disabled={!agentData || (!agentData.agentInput && (!agentData.inputValues || Object.keys(agentData.inputValues).length === 0))}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Agent Input
+            {agentData && (agentData.agentInput || (agentData.inputValues && Object.keys(agentData.inputValues).length > 0)) && (
+              <div className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
             )}
-
-            {/* Agent Input (LLM prompt) */}
-            {agentData.agentInput && (
-              <div className="space-y-2">
-                <span className="text-sm font-semibold theme-text-primary flex items-center">
-                  <Settings className="w-3 h-3 mr-1" />
-                  Agent Input:
-                </span>
-                <div className="text-xs theme-text-secondary whitespace-pre-wrap break-words">
-                  {agentData.agentInput}
-                </div>
-              </div>
+          </button>
+          
+          {/* Logs Tab */}
+          <button
+            onClick={() => setActiveTab('logs')}
+            className={`flex-1 flex items-center justify-center px-4 py-3 text-sm font-medium transition-all duration-200 relative ${
+              activeTab === 'logs'
+                ? 'theme-text-primary bg-blue-500/10 border-b-2 border-blue-500'
+                : 'theme-text-secondary hover:theme-text-primary theme-hover-bg'
+            }`}
+          >
+            <Terminal className="w-4 h-4 mr-2" />
+            Logs ({filteredLogs.length})
+            {filteredLogs.length > 0 && (
+              <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>
             )}
-          </div>
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Log Container */}
-      <div className="flex-1 overflow-y-auto p-3 theme-bg font-mono text-xs">
-        {filteredLogs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="p-4 theme-card-bg rounded-full mb-4">
-              <MessageSquare className="w-12 h-12 theme-text-muted" />
-            </div>
-            <h3 className="text-base font-medium theme-text-primary mb-2">
-              No logs yet
-            </h3>
-            <p className="theme-text-secondary text-sm max-w-xs">
-              Logs will appear here as the agent processes tasks
-            </p>
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === 'input' ? (
+          /* Agent Input Tab Content */
+          <div className="p-4 theme-bg">
+            {agentData && ((agentData.inputValues && Object.keys(agentData.inputValues).length > 0) || agentData.agentInput) ? (
+              <div className="space-y-4">
+                {/* Input Values */}
+                {agentData.inputValues && Object.keys(agentData.inputValues).length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold theme-text-primary flex items-center">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Input Values
+                    </h3>
+                    <div className="theme-card-bg rounded-lg p-3 border theme-border">
+                      <div className="space-y-2 text-sm">
+                        {Object.entries(agentData.inputValues).map(([key, value]) => (
+                          <div key={key} className="space-y-1">
+                            <div className="font-medium theme-text-primary">{key}:</div>
+                            <div className="theme-text-secondary bg-gray-50 dark:bg-gray-800 rounded p-2 text-xs font-mono whitespace-pre-wrap break-words">
+                              {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Agent Input (LLM prompt) */}
+                {agentData.agentInput && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold theme-text-primary flex items-center">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Agent Prompt
+                    </h3>
+                    <div className="theme-card-bg rounded-lg p-3 border theme-border">
+                      <div className="text-sm theme-text-secondary whitespace-pre-wrap break-words font-mono bg-gray-50 dark:bg-gray-800 rounded p-3">
+                        {agentData.agentInput}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="p-4 theme-card-bg rounded-full mb-4">
+                  <FileText className="w-12 h-12 theme-text-muted" />
+                </div>
+                <h3 className="text-base font-medium theme-text-primary mb-2">
+                  No agent input data
+                </h3>
+                <p className="theme-text-secondary text-sm max-w-xs">
+                  Agent input and configuration will appear here when available
+                </p>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="space-y-1">
-            {filteredLogs.map((log) => {
-              const typeColor =
-                log.type === 'error' ? 'text-red-400' :
-                log.type === 'warning' ? 'text-amber-400' :
-                log.type === 'success' ? 'text-emerald-400' :
-                'text-blue-400';
-              return (
-                <div key={log.id} className="whitespace-pre-wrap break-words">
-                  <span className="text-gray-500">[{formatTime(log.timestamp)}]</span>{' '}
-                  <span className={`${typeColor} uppercase`}>{log.type}</span>{' '}
-                  <span className="text-gray-500">-</span>{' '}
-                  <span className="theme-text-primary">{log.message}</span>
+          /* Logs Tab Content */
+          <div className="p-3 theme-bg font-mono text-xs">
+            {filteredLogs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="p-4 theme-card-bg rounded-full mb-4">
+                  <MessageSquare className="w-12 h-12 theme-text-muted" />
                 </div>
-              );
-            })}
+                <h3 className="text-base font-medium theme-text-primary mb-2">
+                  No logs yet
+                </h3>
+                <p className="theme-text-secondary text-sm max-w-xs">
+                  Logs will appear here as the agent processes tasks
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {filteredLogs.map((log) => {
+                  const typeColor =
+                    log.type === 'error' ? 'text-red-400' :
+                    log.type === 'warning' ? 'text-amber-400' :
+                    log.type === 'success' ? 'text-emerald-400' :
+                    'text-blue-400';
+                  return (
+                    <div key={log.id} className="whitespace-pre-wrap break-words">
+                      <span className="text-gray-500">[{formatTime(log.timestamp)}]</span>{' '}
+                      <span className={`${typeColor} uppercase`}>{log.type}</span>{' '}
+                      <span className="text-gray-500">-</span>{' '}
+                      <span className="theme-text-primary">{log.message}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Status Bar */}
       <div className="theme-border p-3 theme-header-bg flex items-center justify-between text-xs theme-text-secondary" style={{ borderTopWidth: '1px' }}>
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-            <span>Auto-scroll enabled</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <Activity className="w-3 h-3" />
-            <span>{logs.filter(l => l.status === 'pending').length} pending</span>
-          </div>
+          {activeTab === 'logs' ? (
+            <>
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                <span>Auto-scroll enabled</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Activity className="w-3 h-3" />
+                <span>{logs.filter(l => l.status === 'pending').length} pending</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center space-x-1">
+              <FileText className="w-3 h-3" />
+              <span>Agent input & configuration</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center space-x-2">
+          <span className="capitalize font-medium">{activeTab}</span>
+          <span className="text-gray-400">•</span>
           <span className="font-mono">{width}px</span>
         </div>
       </div>
