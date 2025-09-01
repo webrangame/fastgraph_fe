@@ -565,6 +565,21 @@ function WorkflowCanvasInner({
     }, 200);
   }, []);
 
+  const handleEndCardMouseEnter = useCallback(() => {
+    if (endNodeTimeoutRef.current) {
+      clearTimeout(endNodeTimeoutRef.current);
+      endNodeTimeoutRef.current = null;
+    }
+    setEndNodeHovered(true); // Ensure it stays visible
+  }, []);
+
+  const handleEndCardMouseLeave = useCallback(() => {
+    endNodeTimeoutRef.current = setTimeout(() => {
+      setEndNodeHovered(false);
+      setHoveredNode(null);
+    }, 200); // Short delay before hiding
+  }, []);
+
   // Feedback popup handlers
   const handleShowFeedbackPopup = useCallback((agentId: string, agentName: string) => {
     setFeedbackAgent({ id: agentId, name: agentName });
@@ -862,6 +877,8 @@ function WorkflowCanvasInner({
             transform: 'translateY(-50%)',
             boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1)'
           }}
+          onMouseEnter={handleEndCardMouseEnter}
+          onMouseLeave={handleEndCardMouseLeave}
         >
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-3">
@@ -886,7 +903,7 @@ function WorkflowCanvasInner({
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium theme-text-secondary">Text output:</span>
                 <button className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">
-                  Add
+                  Get Output
                 </button>
               </div>
             </div>
@@ -894,7 +911,7 @@ function WorkflowCanvasInner({
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium theme-text-secondary">Media Links:</span>
                 <button className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">
-                  Add
+                  Get Media Links
                 </button>
               </div>
             </div>
