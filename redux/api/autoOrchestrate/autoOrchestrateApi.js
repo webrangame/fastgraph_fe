@@ -6,11 +6,12 @@ export const autoOrchestrateApi = createApi({
   baseQuery: baseQueryWithRefresh,
   tagTypes: ['AutoOrchestrate', 'Workflow'],
   endpoints: (builder) => ({
+    
     autoOrchestrate: builder.mutation({
-      query: ({ command }) => ({
+      query: ({ command  ,  response_mode = 'full'}) => ({
         url: 'https://fatgraph-main-289021246668.us-central1.run.app/autoOrchestrate',
         method: 'POST',
-        body: { command, response_mode },
+        body: { command, response_mode: 'json' },
       }),
       invalidatesTags: ['AutoOrchestrate'],
     }),

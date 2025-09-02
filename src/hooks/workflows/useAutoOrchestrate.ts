@@ -98,6 +98,7 @@ export function useAutoOrchestrate({
         if (firstWorkflowDescription) {
           console.log('🟡 Starting auto-orchestration with command:', firstWorkflowDescription);
           try {
+<<<<<<< HEAD
             // Use the centralized triggerAutoOrchestrate function instead of direct API call
             await triggerAutoOrchestrate(firstWorkflowDescription);
             
@@ -109,6 +110,7 @@ export function useAutoOrchestrate({
             // - Setting hasAutoOrchestrated.current = true
             
             console.log('🟡 Auto-orchestration completed successfully');
+=======
             // Using hardcoded example for now - replace with actual API call when ready
               const result = await autoOrchestrate({ command: firstWorkflowDescription, response_mode: 'full' }).unwrap();
              //const result = mockAutoOrchestrateResult;
@@ -129,6 +131,7 @@ export function useAutoOrchestrate({
             
             // Mark as executed to prevent multiple calls
             hasAutoOrchestrated.current = true;
+>>>>>>> 2b23a83d2cd9736e3331d24222043680a1ac0461
           } catch (error) {
             console.error('🟡 Auto orchestrate failed:', error);
           }
@@ -148,9 +151,12 @@ export function useAutoOrchestrate({
     autoOrchestrateError,
     agents,
     connections,
+<<<<<<< HEAD
     triggerAutoOrchestrate, // Export the new function
     resetAutoOrchestration, // Export the reset function
+=======
     finalData,
     finalizedResult
+>>>>>>> 2b23a83d2cd9736e3331d24222043680a1ac0461
   };
 }

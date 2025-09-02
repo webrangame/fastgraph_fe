@@ -29,7 +29,7 @@ export default function WorkflowsPage() {
     setFinalData(processedFinalData);
   }, []);
   
-  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult } = useAutoOrchestrate({
+  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult, triggerAutoOrchestrate } = useAutoOrchestrate({
     workflows,
     onAgentsProcessed: handleAgentsProcessed
   });
