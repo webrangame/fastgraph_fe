@@ -14,9 +14,6 @@ import authReducer from './slice/authSlice';
 import cartReducer from './reducer/CartReducer';
 import workflowReducer from './slice/workflowSlice';
 import { authApi } from '../lib/api/authApi';
-import { categoryApi } from './api/category/categoryApi';
-import { lessonApi } from './api/lesson/lessonApi';
-import { courseApi } from './api/course/courseApi';
 import { autoOrchestrateApi } from './api/autoOrchestrate/autoOrchestrateApi';
 
 
@@ -32,9 +29,6 @@ const rootReducer = combineReducers({
   CartReducer: cartReducer,
   workflows: workflowReducer,
   [authApi.reducerPath]: authApi.reducer,
-  [categoryApi.reducerPath]: categoryApi.reducer,
-  [lessonApi.reducerPath]: lessonApi.reducer,
-  [courseApi.reducerPath]: courseApi.reducer,
   [autoOrchestrateApi.reducerPath]: autoOrchestrateApi.reducer,
 });
 
@@ -47,7 +41,7 @@ export const Store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(authApi.middleware, categoryApi.middleware , lessonApi.middleware , courseApi.middleware, autoOrchestrateApi.middleware),
+    }).concat(authApi.middleware, autoOrchestrateApi.middleware),
   devTools: process.env.NODE_ENV !== 'production',
 });
 

@@ -16,17 +16,20 @@ export default function WorkflowsPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [agents, setAgents] = useState<Record<string, any> | null>(null);
   const [connections, setConnections] = useState<any[] | null>(null);
+  const [finalData, setFinalData] = useState<any>(null);
+  const [finalizedResult, setFinalizedResult] = useState<any>(null);
 
   // Custom hooks for workflow management
   const { workflows, workflowStatus, workflowError, saveWorkflow, deleteWorkflowById } = useWorkflowPersistence();
   
   // Memoize the callback to prevent infinite re-renders
-  const handleAgentsProcessed = useCallback((processedAgents: Record<string, any>, processedConnections: any[]) => {
+  const handleAgentsProcessed = useCallback((processedAgents: Record<string, any>, processedConnections: any[], processedFinalData?: any) => {
     setAgents(processedAgents);
     setConnections(processedConnections);
+    setFinalData(processedFinalData);
   }, []);
   
-  const { isAutoOrchestrating } = useAutoOrchestrate({
+  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult } = useAutoOrchestrate({
     workflows,
     onAgentsProcessed: handleAgentsProcessed
   });
@@ -139,6 +142,7 @@ export default function WorkflowsPage() {
         <MobileAgentDrawer 
           isOpen={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
+          agents={agents || undefined}
         />
       )}
       
@@ -146,7 +150,7 @@ export default function WorkflowsPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Agent Sidebar - Hidden on mobile */}
         {!isMobile && (
-          <AgentSidebar />
+          <AgentSidebar agents={agents || undefined} />
         )}
         
         {/* Workflow Canvas - Responsive */}
@@ -160,6 +164,8 @@ export default function WorkflowsPage() {
           connections={connections || undefined}
           isAutoOrchestrating={isAutoOrchestrating}
           onAgentFeedback={handleAgentFeedback}
+          finalData={finalData}
+          finalizedResult={orchestratedFinalizedResult}
         />
       </div>
 
