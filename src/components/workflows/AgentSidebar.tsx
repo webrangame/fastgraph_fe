@@ -2,13 +2,15 @@
 
 import { Bot } from 'lucide-react';
 import { createdAgents } from '@/lib/constants';
+import type { ProcessedAgent } from '@/services/workflows/agentProcessor';
 
 interface AgentSidebarProps {
   isMobile?: boolean;
   onAgentSelect?: () => void;
+  agents?: Record<string, ProcessedAgent>;
 }
 
-export function AgentSidebar({ isMobile = false, onAgentSelect }: AgentSidebarProps) {
+export function AgentSidebar({ isMobile = false, onAgentSelect, agents }: AgentSidebarProps) {
   const handleDragStart = (e: React.DragEvent, agentData: any) => {
     e.dataTransfer.setData('text/plain', JSON.stringify({
       type: 'agent',
@@ -24,6 +26,26 @@ export function AgentSidebar({ isMobile = false, onAgentSelect }: AgentSidebarPr
     }
   };
 
+  const colorPalette = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-teal-500'];
+  const getColorForAgent = (key: string) => {
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = (hash << 5) - hash + key.charCodeAt(i);
+      hash |= 0;
+    }
+    const index = Math.abs(hash) % colorPalette.length;
+    return colorPalette[index];
+  };
+
+  const availableAgents = agents
+    ? Object.entries(agents).map(([key, agent]) => ({
+        id: key,
+        name: agent.name || key,
+        icon: Bot,
+        color: getColorForAgent(key)
+      }))
+    : [];
+
   return (
     <div className={`${isMobile ? 'w-full' : 'w-64'} theme-sidebar-bg ${!isMobile ? 'theme-border border-r' : ''}`}>
       <div className="p-4">
@@ -34,7 +56,7 @@ export function AgentSidebar({ isMobile = false, onAgentSelect }: AgentSidebarPr
         )}
         
         <div className="space-y-2">
-          {createdAgents.map((agent) => {
+          {availableAgents.map((agent) => {
             const Icon = agent.icon;
             return (
               <div 

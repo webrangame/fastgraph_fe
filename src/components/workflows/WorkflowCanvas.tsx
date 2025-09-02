@@ -4,6 +4,7 @@ import { Bot, X, PenTool, Calculator, Zap, MessageCircle } from "lucide-react";
 import { Workflow, WorkflowNode, WorkflowCanvasProps } from "@/types/workflow";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { LogSidebar } from "./LogSidebar";
+import { EndNodeSidebar } from "./EndNodeSidebar";
 import { FeedbackPopup } from "./FeedbackPopup";
 import { toast } from 'react-hot-toast';
 import {
@@ -108,6 +109,8 @@ function WorkflowCanvasInner({
   connections,
   isAutoOrchestrating,
   onAgentFeedback,
+  finalData,
+  finalizedResult,
 }: WorkflowCanvasProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -121,6 +124,9 @@ function WorkflowCanvasInner({
   const [sidebarWidth, setSidebarWidth] = useState<number>(400);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState<boolean>(false);
   const [feedbackAgent, setFeedbackAgent] = useState<{ id: string; name: string } | null>(null);
+  const [showEndNodeSidebar, setShowEndNodeSidebar] = useState<boolean>(false);
+  const [endNodeSidebarType, setEndNodeSidebarType] = useState<'output' | 'media'>('output');
+  const [endNodeSidebarWidth, setEndNodeSidebarWidth] = useState<number>(400);
   const endNodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -566,6 +572,39 @@ function WorkflowCanvasInner({
     }, 200);
   }, []);
 
+  const handleEndCardMouseEnter = useCallback(() => {
+    if (endNodeTimeoutRef.current) {
+      clearTimeout(endNodeTimeoutRef.current);
+      endNodeTimeoutRef.current = null;
+    }
+    setEndNodeHovered(true); // Ensure it stays visible
+  }, []);
+
+  const handleEndCardMouseLeave = useCallback(() => {
+    endNodeTimeoutRef.current = setTimeout(() => {
+      setEndNodeHovered(false);
+      setHoveredNode(null);
+    }, 200); // Short delay before hiding
+  }, []);
+
+  const handleGetOutput = useCallback(() => {
+    setEndNodeSidebarType('output');
+    setShowEndNodeSidebar(true);
+    setEndNodeHovered(false);
+    setHoveredNode(null);
+  }, []);
+
+  const handleGetMediaLinks = useCallback(() => {
+    setEndNodeSidebarType('media');
+    setShowEndNodeSidebar(true);
+    setEndNodeHovered(false);
+    setHoveredNode(null);
+  }, []);
+
+  const handleCloseEndNodeSidebar = useCallback(() => {
+    setShowEndNodeSidebar(false);
+  }, []);
+
   // Feedback popup handlers
   const handleShowFeedbackPopup = useCallback((agentId: string, agentName: string) => {
     setFeedbackAgent({ id: agentId, name: agentName });
@@ -863,6 +902,8 @@ function WorkflowCanvasInner({
             transform: 'translateY(-50%)',
             boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1)'
           }}
+          onMouseEnter={handleEndCardMouseEnter}
+          onMouseLeave={handleEndCardMouseLeave}
         >
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-3">
@@ -886,18 +927,24 @@ function WorkflowCanvasInner({
             <div className="theme-input-bg rounded-lg p-3 border theme-border">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium theme-text-secondary">Text output:</span>
+                <button 
+                  onClick={handleGetOutput}
+                  className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                >
+                  Get Output
+                </button>
               </div>
-              <p className="theme-text-muted text-xs">
-                Add your final output here
-              </p>  
             </div>
             <div className="theme-input-bg rounded-lg p-3 border theme-border">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium theme-text-secondary">Media Links:</span>
+                <button 
+                  onClick={handleGetMediaLinks}
+                  className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                >
+                  Get Media Links
+                </button>
               </div>
-              <p className="theme-text-muted text-xs">
-                Add your Media Links here
-              </p>  
             </div>
             
             <div className="border-t theme-border pt-2">
@@ -968,12 +1015,40 @@ function WorkflowCanvasInner({
           agentData={{
             inputs: agents[sidebarAgent.replace('agent-', '')]?.inputs,
             outputs: agents[sidebarAgent.replace('agent-', '')]?.outputs,
-            capabilities: agents[sidebarAgent.replace('agent-', '')]?.capabilities
+            capabilities: agents[sidebarAgent.replace('agent-', '')]?.capabilities,
+            inputValues: agents[sidebarAgent.replace('agent-', '')]?.inputValues,
+            agentInput: (agents[sidebarAgent.replace('agent-', '')] as any)?.agentInput
           }}
+          logsOverride={(() => {
+            const selectedKey = sidebarAgent.replace('agent-', '');
+            const rawLogs = (agents[selectedKey]?.logs ?? []) as any[];
+            if (Array.isArray(rawLogs) && rawLogs.length > 0) {
+              if (typeof rawLogs[0] === 'string') {
+                return (rawLogs as string[]).map((message, idx) => ({
+                  id: `${selectedKey}-log-${idx}`,
+                  message,
+                  timestamp: Date.now(),
+                  type: 'info' as const,
+                }));
+              }
+              return rawLogs as Array<{ id?: string; message: string; timestamp?: number | string; type?: 'info' | 'warning' | 'error' | 'success'; status?: 'pending' | 'completed' | 'failed'; }>;
+            }
+            return [];
+          })()}
           initialWidth={sidebarWidth}
           onWidthChange={setSidebarWidth}
         />
       )}
+
+      {/* End Node Sidebar */}
+      <EndNodeSidebar
+        isOpen={showEndNodeSidebar}
+        onClose={handleCloseEndNodeSidebar}
+        sidebarType={endNodeSidebarType}
+        finalData={finalizedResult || finalData}
+        initialWidth={endNodeSidebarWidth}
+        onWidthChange={setEndNodeSidebarWidth}
+      />
 
       {/* Feedback Popup */}
       {feedbackAgent && (

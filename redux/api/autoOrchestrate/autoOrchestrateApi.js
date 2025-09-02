@@ -10,7 +10,7 @@ export const autoOrchestrateApi = createApi({
       query: ({ command }) => ({
         url: 'https://fatgraph-main-289021246668.us-central1.run.app/autoOrchestrate',
         method: 'POST',
-        body: { command },
+        body: { command, response_mode },
       }),
       invalidatesTags: ['AutoOrchestrate'],
     }),

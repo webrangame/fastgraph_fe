@@ -2,13 +2,15 @@
 
 import { AgentSidebar } from '../AgentSidebar';
 import { X } from 'lucide-react';
+import type { ProcessedAgent } from '@/services/workflows/agentProcessor';
 
 interface MobileAgentDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  agents?: Record<string, ProcessedAgent>;
 }
 
-export function MobileAgentDrawer({ isOpen, onClose }: MobileAgentDrawerProps) {
+export function MobileAgentDrawer({ isOpen, onClose, agents }: MobileAgentDrawerProps) {
   if (!isOpen) return null;
 
   return (
@@ -35,7 +37,7 @@ export function MobileAgentDrawer({ isOpen, onClose }: MobileAgentDrawerProps) {
         
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          <AgentSidebar isMobile={true} onAgentSelect={onClose} />
+          <AgentSidebar isMobile={true} onAgentSelect={onClose} agents={agents} />
         </div>
       </div>
     </div>

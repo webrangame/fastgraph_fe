@@ -6,7 +6,7 @@ import type { ProcessedAgent, AgentConnection } from '@/services/workflows/agent
 
 interface UseAutoOrchestrateProps {
   workflows: any[];
-  onAgentsProcessed: (agents: Record<string, ProcessedAgent>, connections: AgentConnection[]) => void;
+  onAgentsProcessed: (agents: Record<string, ProcessedAgent>, connections: AgentConnection[], finalData?: any) => void;
 }
 
 interface UseAutoOrchestrateReturn {
@@ -16,6 +16,8 @@ interface UseAutoOrchestrateReturn {
   connections: AgentConnection[] | null;
   triggerAutoOrchestrate: (command: string) => Promise<string>; // New function
   resetAutoOrchestration: () => void; // New function
+  finalData: any;
+  finalizedResult: any;
 }
 
 export function useAutoOrchestrate({ 
@@ -24,6 +26,8 @@ export function useAutoOrchestrate({
 }: UseAutoOrchestrateProps): UseAutoOrchestrateReturn {
   const [agents, setAgents] = useState<Record<string, ProcessedAgent> | null>(null);
   const [connections, setConnections] = useState<AgentConnection[] | null>(null);
+  const [finalData, setFinalData] = useState<any>(null);
+  const [finalizedResult, setFinalizedResult] = useState<any>(null);
   const hasAutoOrchestrated = useRef(false);
 
   const [autoOrchestrate, {
@@ -105,6 +109,26 @@ export function useAutoOrchestrate({
             // - Setting hasAutoOrchestrated.current = true
             
             console.log('🟡 Auto-orchestration completed successfully');
+            // Using hardcoded example for now - replace with actual API call when ready
+              const result = await autoOrchestrate({ command: firstWorkflowDescription, response_mode: 'full' }).unwrap();
+             //const result = mockAutoOrchestrateResult;
+
+            // Process agents and connections
+            const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult } = 
+              processAgentsFromResponse(result);
+            
+            console.log('Setting agents:', processedAgents);
+            console.log('Setting connections:', processedConnections);
+            console.log('Setting finalData:', processedFinalData);
+            
+            setAgents(processedAgents);
+            setConnections(processedConnections);
+            setFinalData(processedFinalData);
+            setFinalizedResult(processedFinalizedResult);
+            onAgentsProcessed(processedAgents, processedConnections, processedFinalData);
+            
+            // Mark as executed to prevent multiple calls
+            hasAutoOrchestrated.current = true;
           } catch (error) {
             console.error('🟡 Auto orchestrate failed:', error);
           }
@@ -126,5 +150,7 @@ export function useAutoOrchestrate({
     connections,
     triggerAutoOrchestrate, // Export the new function
     resetAutoOrchestration, // Export the reset function
+    finalData,
+    finalizedResult
   };
 }
