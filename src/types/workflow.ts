@@ -59,6 +59,14 @@ export interface WorkflowCanvasProps {
   onAgentFeedback?: (agentId: string, agentName: string, action?: string, feedback?: string | string[]) => void;
   finalData?: any;
   finalizedResult?: any;
+  executionResults?: {
+    [agentName: string]: {
+      result?: any;
+      success?: boolean;
+      outputs?: Record<string, any>;
+      [key: string]: any;
+    };
+  };
 }
 
 export interface PromptMessage {

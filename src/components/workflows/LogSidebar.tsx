@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Bot, MessageSquare, Activity, Trash2, GripVertical, Settings, FileText, Terminal } from "lucide-react";
+import { X, Bot, MessageSquare, Activity, Trash2, GripVertical, Settings, FileText, Terminal, CheckCircle } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLogStreaming } from "@/hooks/workflows/useLogStreaming";
 import { useTheme } from "@/components/ThemeProvider"; // Theme provider import
@@ -27,6 +27,14 @@ interface LogSidebarProps {
     type?: 'info' | 'warning' | 'error' | 'success';
     status?: 'pending' | 'completed' | 'failed';
   }>;
+  executionResults?: {
+    [agentName: string]: {
+      result?: any;
+      success?: boolean;
+      outputs?: Record<string, any>;
+      [key: string]: any;
+    };
+  };
 }
 
 interface LogMessage {
@@ -46,7 +54,8 @@ export function LogSidebar({
   agentData,
   initialWidth = 450,
   onWidthChange,
-  logsOverride
+  logsOverride,
+  executionResults
 }: LogSidebarProps) {
   const { logs, isConnected, clearLogs } = useLogStreaming(agentId);
   const { theme, isLoaded } = useTheme();
@@ -56,7 +65,7 @@ export function LogSidebar({
   const animationFrameRef = useRef<number | null>(null);
   
   // Tab state management
-  const [activeTab, setActiveTab] = useState<'input' | 'logs'>('logs');
+  const [activeTab, setActiveTab] = useState<'input' | 'logs' | 'output'>('logs');
   
   // State for sidebar width with localStorage persistence
   const [width, setWidth] = useState(() => {
@@ -133,6 +142,11 @@ export function LogSidebar({
       setActiveTab('input');
     }
   }, [agentData]);
+
+  // Extract agent result from execution results
+  const agentResult = executionResults?.[agentName]?.result;
+  const agentSuccess = executionResults?.[agentName]?.success;
+  const agentOutputs = executionResults?.[agentName]?.outputs;
 
   // Handle resizing
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -341,6 +355,25 @@ export function LogSidebar({
               <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>
             )}
           </button>
+          
+          {/* Output Tab */}
+          <button
+            onClick={() => setActiveTab('output')}
+            className={`flex-1 flex items-center justify-center px-4 py-3 text-sm font-medium transition-all duration-200 relative ${
+              !agentResult && !agentOutputs
+                ? 'text-gray-400 cursor-not-allowed'
+                : activeTab === 'output'
+                ? 'theme-text-primary bg-blue-500/10 border-b-2 border-blue-500'
+                : 'theme-text-secondary hover:theme-text-primary theme-hover-bg'
+            }`}
+            disabled={!agentResult && !agentOutputs}
+          >
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Output
+            {(agentResult || agentOutputs) && (
+              <div className={`absolute top-1 right-1 w-2 h-2 rounded-full ${agentSuccess ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+            )}
+          </button>
         </div>
       </div>
 
@@ -402,6 +435,80 @@ export function LogSidebar({
               </div>
             )}
           </div>
+        ) : activeTab === 'output' ? (
+          /* Agent Output Tab Content */
+          <div className="p-4 theme-bg">
+            {(agentResult || agentOutputs) ? (
+              <div className="space-y-4">
+                {/* Execution Status */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold theme-text-primary flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Execution Status
+                  </h3>
+                  <div className="theme-card-bg rounded-lg p-3 border theme-border">
+                    <div className={`text-sm font-medium flex items-center ${
+                      agentSuccess ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
+                    }`}>
+                      <div className={`w-2 h-2 rounded-full mr-2 ${
+                        agentSuccess ? 'bg-green-500' : 'bg-orange-500'
+                      }`} />
+                      {agentSuccess ? 'Completed Successfully' : 'Completed with Issues'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Final Result */}
+                {agentResult && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold theme-text-primary flex items-center">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Final Result
+                    </h3>
+                    <div className="theme-card-bg rounded-lg p-3 border theme-border">
+                      <div className="text-sm theme-text-secondary whitespace-pre-wrap break-words font-mono bg-gray-50 dark:bg-gray-800 rounded p-3 max-h-96 overflow-y-auto">
+                        {typeof agentResult === 'string' ? agentResult : JSON.stringify(agentResult, null, 2)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Agent Outputs */}
+                {/* {agentOutputs && Object.keys(agentOutputs).length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold theme-text-primary flex items-center">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Agent Outputs
+                    </h3>
+                    <div className="theme-card-bg rounded-lg p-3 border theme-border">
+                      <div className="space-y-3 text-sm">
+                        {Object.entries(agentOutputs).map(([key, value]) => (
+                          <div key={key} className="space-y-2">
+                            <div className="font-medium theme-text-primary border-b theme-border pb-1">{key}:</div>
+                            <div className="theme-text-secondary bg-gray-50 dark:bg-gray-800 rounded p-2 text-xs font-mono whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+                              {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )} */}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="p-4 theme-card-bg rounded-full mb-4">
+                  <CheckCircle className="w-12 h-12 theme-text-muted" />
+                </div>
+                <h3 className="text-base font-medium theme-text-primary mb-2">
+                  No output data yet
+                </h3>
+                <p className="theme-text-secondary text-sm max-w-xs">
+                  Agent output and final results will appear here when execution is complete
+                </p>
+              </div>
+            )}
+          </div>
         ) : (
           /* Logs Tab Content */
           <div className="p-3 theme-bg font-mono text-xs">
@@ -455,6 +562,11 @@ export function LogSidebar({
                 <span>{logs.filter(l => l.status === 'pending').length} pending</span>
               </div>
             </>
+          ) : activeTab === 'output' ? (
+            <div className="flex items-center space-x-1">
+              <CheckCircle className="w-3 h-3" />
+              <span>Agent output & final results</span>
+            </div>
           ) : (
             <div className="flex items-center space-x-1">
               <FileText className="w-3 h-3" />

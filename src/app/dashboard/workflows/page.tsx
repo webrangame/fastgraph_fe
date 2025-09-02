@@ -34,7 +34,7 @@ export default function WorkflowsPage() {
     setFinalData(processedFinalData);
   }, []);
   
-  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult } = useAutoOrchestrate({
+  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult, executionResults } = useAutoOrchestrate({
     workflows,
     onAgentsProcessed: handleAgentsProcessed
   });
@@ -209,6 +209,7 @@ export default function WorkflowsPage() {
           onAgentFeedback={handleAgentFeedback}
           finalData={finalData}
           finalizedResult={orchestratedFinalizedResult}
+          executionResults={executionResults}
         />
       </div>
 

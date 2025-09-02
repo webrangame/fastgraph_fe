@@ -29,6 +29,14 @@ export interface AgentProcessingResult {
   connections: AgentConnection[];
   finalData?: any;
   finalizedResult?: any;
+  executionResults?: {
+    [agentName: string]: {
+      result?: any;
+      success?: boolean;
+      outputs?: Record<string, any>;
+      [key: string]: any;
+    };
+  };
 }
 
 export function processAgentsFromResponse(result: any): AgentProcessingResult {
@@ -81,7 +89,7 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   const finalizedResultParsed = parseFinalizedResult(finalizedResultRaw);
   
   if (!swarmSpec?.agents || !executionPlan?.data_flow) {
-    return { agents: {}, connections: [], finalData, finalizedResult: finalizedResultParsed };
+    return { agents: {}, connections: [], finalData, finalizedResult: finalizedResultParsed, executionResults };
   }
 
   // Combine agent info from swarm_spec.agents and execution_plan.data_flow
@@ -184,7 +192,7 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   // Create connections based on input/output matching
   const connections = createConnections(agentsRecord);
   
-  return { agents: agentsRecord, connections, finalData, finalizedResult: finalizedResultParsed };
+  return { agents: agentsRecord, connections, finalData, finalizedResult: finalizedResultParsed, executionResults };
 }
 
 function createConnections(agentsRecord: Record<string, ProcessedAgent>): AgentConnection[] {

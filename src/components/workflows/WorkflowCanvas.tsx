@@ -110,6 +110,7 @@ function WorkflowCanvasInner({
   onAgentFeedback,
   finalData,
   finalizedResult,
+  executionResults,
 }: WorkflowCanvasProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -1034,6 +1035,7 @@ function WorkflowCanvasInner({
             }
             return [];
           })()}
+          executionResults={executionResults}
           initialWidth={sidebarWidth}
           onWidthChange={setSidebarWidth}
         />
