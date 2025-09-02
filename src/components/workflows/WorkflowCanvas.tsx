@@ -625,11 +625,11 @@ function WorkflowCanvasInner({
     }
   }, [feedbackAgent, onAgentFeedback]);
 
-  const handleEvolveFeedback = useCallback(async (feedback: string) => {
+  const handleEvolveFeedback = useCallback(async (feedbacks: string[]) => {
     if (feedbackAgent && onAgentFeedback) {
-      console.log('Evolving agent with feedback:', feedbackAgent.id, feedback);
+      console.log('Evolving agent with feedbacks:', feedbackAgent.id, feedbacks);
       // Call the parent's feedback handler with evolve action
-      onAgentFeedback(feedbackAgent.id, feedbackAgent.name, 'evolve', feedback);
+      onAgentFeedback(feedbackAgent.id, feedbackAgent.name, 'evolve', feedbacks);
     }
   }, [feedbackAgent, onAgentFeedback]);
 

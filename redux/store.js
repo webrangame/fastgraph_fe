@@ -15,6 +15,7 @@ import cartReducer from './reducer/CartReducer';
 import workflowReducer from './slice/workflowSlice';
 import { authApi } from '../lib/api/authApi';
 import { autoOrchestrateApi } from './api/autoOrchestrate/autoOrchestrateApi';
+import { evolveAgentApi } from './api/evolveAgent/evolveAgentApi';
 
 
 
@@ -30,6 +31,7 @@ const rootReducer = combineReducers({
   workflows: workflowReducer,
   [authApi.reducerPath]: authApi.reducer,
   [autoOrchestrateApi.reducerPath]: autoOrchestrateApi.reducer,
+  [evolveAgentApi.reducerPath]: evolveAgentApi.reducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -41,7 +43,7 @@ export const Store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(authApi.middleware, autoOrchestrateApi.middleware),
+    }).concat(authApi.middleware, autoOrchestrateApi.middleware, evolveAgentApi.middleware),
   devTools: process.env.NODE_ENV !== 'production',
 });
 
