@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setWorkflows, updateWorkflow, removeWorkflow } from '@/redux/slice/workflowSlice';
-import { useSaveWorkflowMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
+import { useSaveWorkflowMutation, useInstallDataMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
 import { transformAutoOrchestrateToWorkflow, AutoOrchestrateResponse } from '@/lib/workflow-utils';
 import { RootState } from '@/types/redux';
 import { toast } from 'react-hot-toast';
@@ -24,6 +24,7 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
   const [isSaving, setIsSaving] = useState(false);
 
   const [saveWorkflowMutation] = useSaveWorkflowMutation();
+  const [installDataMutation] = useInstallDataMutation();
 
   // Load workflows from localStorage on mount
   useEffect(() => {
@@ -54,30 +55,40 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
 
     setIsSaving(true);
     try {
-
-      alert("okk365")
-    
-      // Save to database via API
-      const response = await saveWorkflowMutation(workflow).unwrap();
+      // Save workflow data using the new installData API
+      const response = await installDataMutation({
+        dataName: `Workflow: ${workflow.name || workflow.id}`,
+        description: `Workflow data for ${workflow.name || workflow.id}`,
+        dataType: 'json',
+        dataContent: {
+          workflow: workflow,
+          metadata: {
+            savedAt: new Date().toISOString(),
+            version: '1.0',
+            type: 'workflow'
+          }
+        },
+        overwrite: false
+      }).unwrap();
       
-      // Update Redux store with the response from database
-      dispatch(updateWorkflow(response));
+      // Update Redux store with the workflow data
+      dispatch(updateWorkflow(workflow));
       
       // Update localStorage with the latest data
       const updatedWorkflows = workflows.map((w: any) =>
-        w.id === response.id ? response : w
+        w.id === workflow.id ? workflow : w
       );
-      if (!workflows.find((w: any) => w.id === response.id)) {
-        updatedWorkflows.push(response);
+      if (!workflows.find((w: any) => w.id === workflow.id)) {
+        updatedWorkflows.push(workflow);
       }
       localStorage.setItem('workflows', JSON.stringify(updatedWorkflows));
       
-      toast.success('Workflow saved successfully to database!');
-      console.log('Workflow saved to database:', response);
+      toast.success('Workflow saved successfully using data install API!');
+      console.log('Workflow saved via installData API:', response);
       
     } catch (error) {
-      console.error('Error saving workflow to database:', error);
-      toast.error('Failed to save workflow to database. Please try again.');
+      console.error('Error saving workflow via installData API:', error);
+      toast.error('Failed to save workflow via data install API. Please try again.');
       
       // Fallback: save to local storage only
       try {
@@ -92,11 +103,11 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
         // Update Redux store with local data
         dispatch(updateWorkflow(workflow));
         
-        toast('Workflow saved locally (database save failed)', { icon: 'ℹ️' });
+        toast('Workflow saved locally (data install API failed)', { icon: 'ℹ️' });
         console.log('Workflow saved locally as fallback:', workflow);
       } catch (localError) {
         console.error('Error saving workflow locally:', localError);
-        toast.error('Failed to save workflow both to database and locally.');
+        toast.error('Failed to save workflow both via API and locally.');
       }
     } finally {
       setIsSaving(false);
@@ -149,31 +160,47 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
         return;
       }
       
-      console.log('Attempting to save to database...');
+      console.log('Attempting to save to database using installData API...');
       
-      // Save to database via API
-      const response = await saveWorkflowMutation(workflowData).unwrap();
+      // Save to database via installData API
+      const response = await installDataMutation({
+        dataName: `Auto Orchestrate Workflow: ${workflowData.workflow.workflowName}`,
+        description: `Auto orchestrate workflow data for ${workflowData.workflow.workflowName}`,
+        dataType: 'json',
+        dataContent: {
+          workflow: workflowData.workflow,
+          agents: workflowData.agents,
+          autoOrchestrateResponse: autoOrchestrateResponse,
+          metadata: {
+            savedAt: new Date().toISOString(),
+            version: '1.0',
+            type: 'auto_orchestrate_workflow',
+            userId: userId
+          }
+        },
+        overwrite: false
+      }).unwrap();
       
-      console.log('Database response:', response);
+      console.log('InstallData API response:', response);
       
-      // Update Redux store with the response from database
-      dispatch(updateWorkflow(response));
+      // Update Redux store with the workflow data
+      dispatch(updateWorkflow(workflowData.workflow));
       
       // Update localStorage with the latest data
       const updatedWorkflows = workflows.map((w: any) =>
-        w.id === response.id ? response : w
+        w.id === workflowData.workflow.id ? workflowData.workflow : w
       );
-      if (!workflows.find((w: any) => w.id === response.id)) {
-        updatedWorkflows.push(response);
+      if (!workflows.find((w: any) => w.id === workflowData.workflow.id)) {
+        updatedWorkflows.push(workflowData.workflow);
       }
       localStorage.setItem('workflows', JSON.stringify(updatedWorkflows));
       
-      toast.success('Auto orchestrate workflow saved successfully to database!');
-      console.log('Auto orchestrate workflow saved to database:', response);
+      toast.success('Auto orchestrate workflow saved successfully using data install API!');
+      console.log('Auto orchestrate workflow saved via installData API:', response);
       
     } catch (error) {
-      console.error('Error saving auto orchestrate workflow to database:', error);
-      toast.error('Failed to save auto orchestrate workflow to database. Please try again.');
+      console.error('Error saving auto orchestrate workflow via installData API:', error);
+      toast.error('Failed to save auto orchestrate workflow via data install API. Please try again.');
       
       // Fallback: save to local storage only
       try {

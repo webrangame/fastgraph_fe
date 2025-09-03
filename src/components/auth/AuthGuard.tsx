@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
-import { selectCurrentUser } from '@/redux/slice/authSlice';
-import { Loader } from '@/components/ui/Loader';
+import { selectCurrentUser } from '../../../redux/slice/authSlice';
+import { Loader } from '../ui/Loader';
 import Cookies from 'js-cookie';
 
 interface AuthGuardProps {

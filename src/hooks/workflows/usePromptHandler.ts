@@ -9,7 +9,6 @@ interface UsePromptHandlerProps {
   addNodeToWorkflow: (nodeData: any, position: { x: number; y: number }) => void;
   deleteNode: (nodeId: string) => void;
   executeWorkflow: () => void;
-  triggerAutoOrchestrate: (command: string) => Promise<string>; // New parameter
 }
 
 export function usePromptHandler({
@@ -17,8 +16,7 @@ export function usePromptHandler({
   selectedNode,
   addNodeToWorkflow,
   deleteNode,
-  executeWorkflow,
-  triggerAutoOrchestrate // New parameter
+  executeWorkflow
 }: UsePromptHandlerProps) {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [messages, setMessages] = useState<PromptMessage[]>([]);
@@ -39,14 +37,8 @@ export function usePromptHandler({
     let responseText = '';
     
     if (message.toLowerCase().includes('auto') || message.toLowerCase().includes('orchestrate')) {
-
-     
-      // Use the centralized auto-orchestration function
-      try {
-        responseText = await triggerAutoOrchestrate(message);
-      } catch (error) {
-        responseText = 'Failed to auto-orchestrate. Please try again.';
-      }
+      // Auto-orchestration is now handled automatically by useAutoOrchestrate hook
+      responseText = 'Auto-orchestration is running automatically when workflows are available. Check the workflow canvas for results.';
     } else if (message.toLowerCase().includes('add') && message.toLowerCase().includes('agent')) {
       // Add a random agent to the workflow
       const agents = ['Customer Service Agent', 'Billing Agent', 'Technical Support Agent'];

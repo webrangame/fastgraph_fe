@@ -4,7 +4,7 @@ import { baseQueryWithRefresh } from '../../../lib/api/baseQuery';
 export const autoOrchestrateApi = createApi({
   reducerPath: 'autoOrchestrateApi',
   baseQuery: baseQueryWithRefresh,
-  tagTypes: ['AutoOrchestrate', 'Workflow'],
+  tagTypes: ['AutoOrchestrate', 'Workflow', 'Data'],
   endpoints: (builder) => ({
     
     autoOrchestrate: builder.mutation({
@@ -16,7 +16,6 @@ export const autoOrchestrateApi = createApi({
       invalidatesTags: ['AutoOrchestrate'],
     }),
     saveWorkflow: builder.mutation({
-
       query: ({ workflow, agents }) => ({
         url: '/api/v1/workflow/save',
         method: 'POST',
@@ -28,10 +27,29 @@ export const autoOrchestrateApi = createApi({
       }),
       invalidatesTags: ['Workflow'],
     }),
+    installData: builder.mutation({
+      query: ({ dataName, description, dataType, dataContent, overwrite = false }) => ({
+        url: '/api/v1/data/install',
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: { 
+          dataName, 
+          description, 
+          dataType, 
+          dataContent, 
+          overwrite 
+        },
+      }),
+      invalidatesTags: ['Data'],
+    }),
   }),
 });
 
 export const {
   useAutoOrchestrateMutation,
   useSaveWorkflowMutation,
+  useInstallDataMutation,
 } = autoOrchestrateApi;

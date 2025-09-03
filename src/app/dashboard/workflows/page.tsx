@@ -29,7 +29,7 @@ export default function WorkflowsPage() {
     setFinalData(processedFinalData);
   }, []);
   
-  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult, triggerAutoOrchestrate } = useAutoOrchestrate({
+  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult } = useAutoOrchestrate({
     workflows,
     onAgentsProcessed: handleAgentsProcessed
   });
@@ -56,8 +56,7 @@ export default function WorkflowsPage() {
     selectedNode,
     addNodeToWorkflow,
     deleteNode,
-    executeWorkflow,
-    triggerAutoOrchestrate // Pass the centralized function
+    executeWorkflow
   });
 
   // Mobile detection

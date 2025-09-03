@@ -7,38 +7,57 @@ export function middleware(request: NextRequest) {
   // Get tokens from cookies
   const accessToken = request.cookies.get('access_token')?.value;
   const refreshToken = request.cookies.get('refresh_token')?.value;
-  const isAuthenticated = accessToken || refreshToken;
+  const isAuthenticated = !!(accessToken || refreshToken);
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login'];
+  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
-  console.log('Middleware Debug:', {
-    pathname,
-    isPublicRoute,
-    accessToken: !!accessToken,
-    refreshToken: !!refreshToken,
-    isAuthenticated
-  });
+  // API routes that don't need middleware protection
+  const isApiRoute = pathname.startsWith('/api/');
+  
+  // Static files and Next.js internal routes
+  const isStaticFile = pathname.startsWith('/_next/') || 
+                      pathname.startsWith('/favicon.ico') || 
+                      pathname.startsWith('/public/') ||
+                      pathname.includes('.');
 
-  if (isPublicRoute) {
-    // If user is authenticated and trying to access login, redirect to dashboard
-    if (isAuthenticated) {
-      console.log('Middleware: Redirecting authenticated user from login to dashboard');
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-    // Allow access to public routes for unauthenticated users
+  // Skip middleware for API routes and static files
+  if (isApiRoute || isStaticFile) {
     return NextResponse.next();
   }
 
-  // Protected routes - check authentication
+  console.log('🔍 Middleware Debug:', {
+    pathname,
+    isPublicRoute,
+    isApiRoute,
+    isStaticFile,
+    accessToken: !!accessToken,
+    refreshToken: !!refreshToken,
+    isAuthenticated,
+    timestamp: new Date().toISOString()
+  });
+
+  // Handle public routes
+  if (isPublicRoute) {
+    // If user is authenticated and trying to access login/register, redirect to dashboard
+    if (isAuthenticated) {
+      console.log('🔄 Middleware: Redirecting authenticated user from', pathname, 'to dashboard');
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    // Allow access to public routes for unauthenticated users
+    console.log('✅ Middleware: Allowing access to public route:', pathname);
+    return NextResponse.next();
+  }
+
+  // Handle protected routes
   if (!isAuthenticated) {
-    console.log('Middleware: Redirecting unauthenticated user to login');
+    console.log('🚫 Middleware: Redirecting unauthenticated user to login from:', pathname);
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // User is authenticated, allow access to protected routes
-  console.log('Middleware: Allowing access to protected route');
+  console.log('✅ Middleware: Allowing access to protected route:', pathname);
   return NextResponse.next();
 }
 
@@ -52,7 +71,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public files (public folder)
+     * - files with extensions (images, css, js, etc.)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|public|.*\\.).*)',
   ],
 };
