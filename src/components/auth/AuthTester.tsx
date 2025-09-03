@@ -82,7 +82,20 @@ export default function AuthTester() {
     if (profileData) {
       addTestResult('Profile API', 'pass', `Profile loaded: ${profileData.fullName || profileData.email}`);
     } else if (profileError) {
-      addTestResult('Profile API', 'fail', `Profile error: ${profileError.message || 'Unknown error'}`);
+      let errorMessage = 'Unknown error';
+      
+      if ('data' in profileError) {
+        // FetchBaseQueryError
+        errorMessage = (profileError.data as any)?.message || `Status: ${profileError.status}`;
+      } else if ('message' in profileError && profileError.message) {
+        // SerializedError
+        errorMessage = profileError.message;
+      } else if ('error' in profileError) {
+        // Other error types
+        errorMessage = String(profileError.error);
+      }
+      
+      addTestResult('Profile API', 'fail', `Profile error: ${errorMessage}`);
     } else if (isProfileLoading) {
       addTestResult('Profile API', 'info', 'Profile loading...');
     } else {

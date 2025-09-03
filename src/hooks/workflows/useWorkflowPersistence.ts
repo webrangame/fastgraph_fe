@@ -57,8 +57,8 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
     try {
       // Save workflow data using the new installData API
       const response = await installDataMutation({
-        dataName: `Workflow: ${workflow.name || workflow.id}`,
-        description: `Workflow data for ${workflow.name || workflow.id}`,
+        dataName: `Workflow: ${workflow.name || workflow.workflowName || 'Untitled'}`,
+        description: `Workflow data for ${workflow.name || workflow.workflowName || 'Untitled'}`,
         dataType: 'json',
         dataContent: {
           workflow: workflow,
@@ -76,9 +76,9 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
       
       // Update localStorage with the latest data
       const updatedWorkflows = workflows.map((w: any) =>
-        w.id === workflow.id ? workflow : w
+        w.workflowName === workflow.workflowName ? workflow : w
       );
-      if (!workflows.find((w: any) => w.id === workflow.id)) {
+      if (!workflows.find((w: any) => w.workflowName === workflow.workflowName)) {
         updatedWorkflows.push(workflow);
       }
       localStorage.setItem('workflows', JSON.stringify(updatedWorkflows));
@@ -93,9 +93,9 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
       // Fallback: save to local storage only
       try {
         const updatedWorkflows = workflows.map((w: any) =>
-          w.id === workflow.id ? workflow : w
+          w.workflowName === workflow.workflowName ? workflow : w
         );
-        if (!workflows.find((w: any) => w.id === workflow.id)) {
+        if (!workflows.find((w: any) => w.workflowName === workflow.workflowName)) {
           updatedWorkflows.push(workflow);
         }
         localStorage.setItem('workflows', JSON.stringify(updatedWorkflows));
@@ -188,9 +188,9 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
       
       // Update localStorage with the latest data
       const updatedWorkflows = workflows.map((w: any) =>
-        w.id === workflowData.workflow.id ? workflowData.workflow : w
+        w.workflowName === workflowData.workflow.workflowName ? workflowData.workflow : w
       );
-      if (!workflows.find((w: any) => w.id === workflowData.workflow.id)) {
+      if (!workflows.find((w: any) => w.workflowName === workflowData.workflow.workflowName)) {
         updatedWorkflows.push(workflowData.workflow);
       }
       localStorage.setItem('workflows', JSON.stringify(updatedWorkflows));
@@ -239,7 +239,7 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
     dispatch(removeWorkflow(workflowId));
     
     // Also remove from localStorage
-    const updatedWorkflows = workflows.filter((w: any) => w.id !== workflowId);
+    const updatedWorkflows = workflows.filter((w: any) => w.workflowName !== workflowId);
     localStorage.setItem('workflows', JSON.stringify(updatedWorkflows));
   };
 

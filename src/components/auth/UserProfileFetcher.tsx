@@ -42,15 +42,16 @@ export default function UserProfileFetcher({ children }: UserProfileFetcherProps
   if (error) {
     console.error('🔴 UserProfileFetcher: Failed to fetch user profile:', error);
     console.error('🔴 Error details:', {
-      status: error.status,
-      data: error.data,
-      message: error.message,
+      status: 'status' in error ? error.status : 'unknown',
+      data: 'data' in error ? error.data : 'no data',
+      message: 'message' in error ? error.message : 'no message',
       shouldFetchProfile,
       hasTokens: hasValidTokens()
     });
     
     // If it's a 401 error (unauthorized) or any authentication error, redirect to login
-    if (error.status === 401 || error.status === 'FETCH_ERROR' || error.status === 'PARSING_ERROR') {
+    const errorStatus = 'status' in error ? error.status : null;
+    if (errorStatus === 401 || errorStatus === 'FETCH_ERROR' || errorStatus === 'PARSING_ERROR') {
       console.log('🚫 UserProfileFetcher: Token expired or invalid, redirecting to login...');
       redirectToLogin();
     }
