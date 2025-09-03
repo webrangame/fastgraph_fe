@@ -16,6 +16,7 @@ interface UseAutoOrchestrateReturn {
   connections: AgentConnection[] | null;
   finalData: any;
   finalizedResult: any;
+  executionResults: any;
 }
  
 export function useAutoOrchestrate({
@@ -26,6 +27,7 @@ export function useAutoOrchestrate({
   const [connections, setConnections] = useState<AgentConnection[] | null>(null);
   const [finalData, setFinalData] = useState<any>(null);
   const [finalizedResult, setFinalizedResult] = useState<any>(null);
+  const [executionResults, setExecutionResults] = useState<any>(null);
   const hasAutoOrchestrated = useRef(false);
  
   const [autoOrchestrate, {
@@ -54,17 +56,16 @@ export function useAutoOrchestrate({
              //const result = mockAutoOrchestrateResult;
 
             // Process agents and connections
-            const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult } =
+            const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, executionResults: processedExecutionResults } = 
               processAgentsFromResponse(result);
            
-            console.log('Setting agents:', processedAgents);
-            console.log('Setting connections:', processedConnections);
-            console.log('Setting finalData:', processedFinalData);
            
+            
             setAgents(processedAgents);
             setConnections(processedConnections);
             setFinalData(processedFinalData);
             setFinalizedResult(processedFinalizedResult);
+            setExecutionResults(processedExecutionResults);
             onAgentsProcessed(processedAgents, processedConnections, processedFinalData);
 
             // Save the auto orchestrate result using useInstallDataMutation
@@ -113,6 +114,7 @@ export function useAutoOrchestrate({
     agents,
     connections,
     finalData,
-    finalizedResult
+    finalizedResult,
+    executionResults
   };
 }

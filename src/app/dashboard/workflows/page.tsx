@@ -9,7 +9,9 @@ import { useWorkflowManager } from '@/hooks/workflows/useWorkflowManager';
 import { usePromptHandler } from '@/hooks/workflows/usePromptHandler';
 import { useAutoOrchestrate } from '@/hooks/workflows/useAutoOrchestrate';
 import { useWorkflowPersistence } from '@/hooks/workflows/useWorkflowPersistence';
+import { useEvolveAgentMutation } from '../../../../redux/api/evolveAgent/evolveAgentApi';
 import { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 
 export default function WorkflowsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -22,6 +24,9 @@ export default function WorkflowsPage() {
   // Custom hooks for workflow management
   const { workflows, workflowStatus, workflowError, saveWorkflow, saveAutoOrchestrateWorkflow, deleteWorkflowById, isSaving } = useWorkflowPersistence();
   
+  // Evolution API
+  const [evolveAgent, { isLoading: isEvolving }] = useEvolveAgentMutation();
+  
   // Memoize the callback to prevent infinite re-renders
   const handleAgentsProcessed = useCallback((processedAgents: Record<string, any>, processedConnections: any[], processedFinalData?: any) => {
     setAgents(processedAgents);
@@ -29,7 +34,7 @@ export default function WorkflowsPage() {
     setFinalData(processedFinalData);
   }, []);
   
-  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult } = useAutoOrchestrate({
+  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult, executionResults } = useAutoOrchestrate({
     workflows,
     onAgentsProcessed: handleAgentsProcessed
   });
@@ -91,7 +96,7 @@ export default function WorkflowsPage() {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const handleAgentFeedback = (agentId: string, agentName: string, action?: string, feedback?: string) => {
+  const handleAgentFeedback = async (agentId: string, agentName: string, action?: string, feedback?: string | string[]) => {
     console.log('Feedback action:', action, 'for agent:', { agentId, agentName }, 'feedback:', feedback);
     
     if (action === 'save') {
@@ -99,11 +104,49 @@ export default function WorkflowsPage() {
       console.log('Saving feedback to system...');
       // You can implement API call here to save feedback
       // Example: await saveFeedbackAPI(agentId, feedback);
+      toast.success('Feedback saved successfully!');
     } else if (action === 'evolve') {
-      // Use feedback to evolve/improve the agent
-      console.log('Evolving agent based on feedback...');
-      // You can implement API call here to trigger agent evolution
-      // Example: await evolveAgentAPI(agentId, feedback);
+      try {
+        // Use feedback to evolve/improve the agent
+        console.log('Evolving agent based on feedback...');
+        
+        // Extract workflowId - for now using a default, but this should come from the auto-orchestrate response
+        const workflowId = "poetry_swarm"; // This should be dynamic based on current workflow
+        
+        const result = await evolveAgent({
+          workflowId,
+          agentName: agentName.replace('agent-', ''), // Remove agent- prefix if present
+          feedbacks: Array.isArray(feedback) ? feedback : [feedback || ''],
+          evolutionMode: 'fast_auto_evolution'
+        }).unwrap();
+
+        if (result.evolutionResults === "Success") {
+          toast.success(`Agent "${agentName}" evolved successfully!`, {
+            duration: 4000,
+            style: {
+              background: '#10B981',
+              color: '#fff',
+            },
+            iconTheme: {
+              primary: '#fff',
+              secondary: '#10B981',
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Evolution failed:', error);
+        toast.error('Failed to evolve agent. Please try again.', {
+          duration: 4000,
+          style: {
+            background: '#EF4444',
+            color: '#fff',
+          },
+          iconTheme: {
+            primary: '#fff',
+            secondary: '#EF4444',
+          },
+        });
+      }
     } else {
       // Legacy handling for backward compatibility
       console.log('Legacy feedback request - opening popup');
@@ -166,6 +209,7 @@ export default function WorkflowsPage() {
           onAgentFeedback={handleAgentFeedback}
           finalData={finalData}
           finalizedResult={orchestratedFinalizedResult}
+          executionResults={executionResults}
         />
       </div>
 
