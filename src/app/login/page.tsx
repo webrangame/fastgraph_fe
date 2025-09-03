@@ -10,24 +10,64 @@ const LoginPage = () => {
   const [email, setEmail] = useState('prageeth.mahendra@gmail.com');
   const [password, setPassword] = useState('prageeth');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [login, { isLoading, isSuccess, isError, error }] = useLoginMutation();
   const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
+    // Prevent default form submission behavior
     e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('🔵 Form submitted, preventing default behavior');
+    console.log('🔵 Event type:', e.type);
+    console.log('🔵 Event target:', e.target);
+    
+    // Prevent any further event propagation
+    if (e.nativeEvent) {
+      e.nativeEvent.preventDefault();
+      e.nativeEvent.stopPropagation();
+    }
+    
     setIsSubmitting(true);
+    setLoginError(null); // Clear previous errors
     
     try {
-      await login({ email, password }).unwrap();
+      console.log('🔵 Attempting login with:', { email, password: '***' });
+      const result = await login({ email, password }).unwrap();
+      console.log('✅ Login successful, redirecting...', result);
       // Redirect to dashboard after successful login
       router.replace('/dashboard');
-    } catch (err) {
-      console.error('Failed to login:', err);
-      toast.error('Login failed. Please check your credentials and try again.');
+    } catch (err: any) {
+      console.error('❌ Login failed:', err);
+      
+      // Extract specific error message from the API response
+      let errorMessage = 'Login failed. Please check your credentials and try again.';
+      
+      if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err?.data?.error) {
+        errorMessage = err.data.error;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (err?.status === 401) {
+        errorMessage = 'Invalid email or password. Please try again.';
+      } else if (err?.status === 400) {
+        errorMessage = 'Please check your email and password format.';
+      } else if (err?.status === 429) {
+        errorMessage = 'Too many login attempts. Please try again later.';
+      }
+      
+      console.log('🔴 Setting error message:', errorMessage);
+      setLoginError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
+    
+    // Return false to prevent any further form submission
+    return false;
   };
 
   const handleGoogleLogin = async () => {
@@ -81,6 +121,11 @@ const LoginPage = () => {
     };
   }, []);
 
+  // Debug: Log component mount
+  useEffect(() => {
+    console.log('🔵 LoginPage component mounted');
+  }, []);
+
   // Show success toast when login is successful
   useEffect(() => {
     if (isSuccess) {
@@ -88,18 +133,28 @@ const LoginPage = () => {
     }
   }, [isSuccess]);
 
-  // Show error toast when login fails
-  useEffect(() => {
-    if (isError) {
-      toast.error('Login failed. Please check your credentials and try again.');
-    }
-  }, [isError]);
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
-        <form onSubmit={handleSubmit}>
+        
+        {/* Error Message Display */}
+        {loginError && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium">{loginError}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} noValidate>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
               Email
@@ -109,7 +164,10 @@ const LoginPage = () => {
               id="email"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (loginError) setLoginError(null); // Clear error when user starts typing
+              }}
               required
               disabled={isSubmitting || isLoading}
             />
@@ -123,7 +181,10 @@ const LoginPage = () => {
               id="password"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (loginError) setLoginError(null); // Clear error when user starts typing
+              }}
               required
               disabled={isSubmitting || isLoading}
             />

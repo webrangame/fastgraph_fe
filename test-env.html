@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Environment Variables</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .success {
+            background-color: #efe;
+            border-color: #cfc;
+        }
+        .error {
+            background-color: #fee;
+            border-color: #fcc;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 3px solid #007bff;
+            background-color: #f0f8ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Test Environment Variables</h1>
+    
+    <div class="test-section">
+        <h2>Environment Variable Status</h2>
+        <p>Your `.env` file contains:</p>
+        <pre>NEXT_PUBLIC_API_URL=http://localhost:3000/</pre>
+        <p>✅ This should be loaded by your Next.js app.</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔍 How to Test in Browser</h2>
+        
+        <div class="step">
+            <h3>Step 1: Open Browser Console</h3>
+            <p>Press F12 to open Developer Tools, then go to Console tab.</p>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Check Environment Variable</h3>
+            <p>Type this in the console:</p>
+            <pre>console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);</pre>
+            <p><strong>Expected result:</strong> <code>http://localhost:3000/</code></p>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Test Login Form</h3>
+            <p>Go to your login page and try entering wrong credentials:</p>
+            <ul>
+                <li>Email: <code>wrong@example.com</code></li>
+                <li>Password: <code>wrongpassword</code></li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <h3>Step 4: Check Console Messages</h3>
+            <p>You should see these messages in the console:</p>
+            <pre>🔵 LoginPage component mounted
+🔵 Form submitted, preventing default behavior
+🔵 Attempting login with: {email: "wrong@example.com", password: "***"}
+❌ Login failed: {status: 401, data: {message: "Invalid credentials"}}
+🔴 Setting error message: Invalid credentials</pre>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🚨 Troubleshooting</h2>
+        
+        <h3>If Environment Variable is Undefined:</h3>
+        <p>If <code>process.env.NEXT_PUBLIC_API_URL</code> shows <code>undefined</code>:</p>
+        <ol>
+            <li>Make sure your dev server is restarted</li>
+            <li>Check that the `.env` file is in the project root</li>
+            <li>Verify the variable name is exactly <code>NEXT_PUBLIC_API_URL</code></li>
+        </ol>
+        
+        <h3>If API Calls Still Fail:</h3>
+        <p>Check the Network tab in Developer Tools for:</p>
+        <ul>
+            <li>Failed requests to <code>/api/v1/auth/login</code></li>
+            <li>404 errors (endpoint not found)</li>
+            <li>CORS errors</li>
+        </ul>
+        
+        <h3>If Page Still Refreshes:</h3>
+        <p>Check for JavaScript errors in the console that might be breaking the form handling.</p>
+    </div>
+    
+    <div class="test-section success">
+        <h2>✅ Expected Results After Fix</h2>
+        <p>When you enter wrong credentials and click Login:</p>
+        <ul>
+            <li>✅ <strong>Page does NOT refresh</strong></li>
+            <li>✅ <strong>Button shows "Logging in..." briefly</strong></li>
+            <li>✅ <strong>Red error box appears above form</strong></li>
+            <li>✅ <strong>Toast notification appears</strong></li>
+            <li>✅ <strong>Error clears when you start typing</strong></li>
+            <li>✅ <strong>Console shows debug messages</strong></li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔧 Quick Fixes</h2>
+        
+        <h3>1. Hard Refresh Browser</h3>
+        <p>Press <code>Ctrl+F5</code> (Windows) or <code>Cmd+Shift+R</code> (Mac) to clear cache.</p>
+        
+        <h3>2. Check Backend is Running</h3>
+        <p>Make sure your NestJS backend is running on port 3000:</p>
+        <pre>curl http://localhost:3000/api/v1/auth/login</pre>
+        
+        <h3>3. Verify API Endpoints</h3>
+        <p>Test the login endpoint directly:</p>
+        <pre>curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"wrongpassword"}'</pre>
+        <p>Should return: <code>{"message":"Invalid credentials","error":"Unauthorized","statusCode":401}</code></p>
+    </div>
+</body>
+</html>

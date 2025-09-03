@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useGetUserProfileQuery } from '../../../lib/api/authApi';
 import { selectCurrentUser } from '../../../redux/slice/authSlice';
+import { hasValidTokens, redirectToLogin } from '../../utils/tokenUtils';
 
 interface UserProfileFetcherProps {
   children: React.ReactNode;
@@ -13,11 +14,8 @@ export default function UserProfileFetcher({ children }: UserProfileFetcherProps
   const dispatch = useDispatch();
   const user = useSelector(selectCurrentUser);
   
-  // Only fetch user profile if we have tokens but no user data
-  const shouldFetchProfile = !user && (
-    typeof window !== 'undefined' && 
-    (document.cookie.includes('access_token') || document.cookie.includes('refresh_token'))
-  );
+  // Fetch user profile if we have valid tokens (even if user data exists, to keep it fresh)
+  const shouldFetchProfile = hasValidTokens();
 
   const { data: profileData, error, isLoading } = useGetUserProfileQuery(undefined, {
     skip: !shouldFetchProfile,
@@ -43,6 +41,19 @@ export default function UserProfileFetcher({ children }: UserProfileFetcherProps
 
   if (error) {
     console.error('🔴 UserProfileFetcher: Failed to fetch user profile:', error);
+    console.error('🔴 Error details:', {
+      status: error.status,
+      data: error.data,
+      message: error.message,
+      shouldFetchProfile,
+      hasTokens: hasValidTokens()
+    });
+    
+    // If it's a 401 error (unauthorized) or any authentication error, redirect to login
+    if (error.status === 401 || error.status === 'FETCH_ERROR' || error.status === 'PARSING_ERROR') {
+      console.log('🚫 UserProfileFetcher: Token expired or invalid, redirecting to login...');
+      redirectToLogin();
+    }
   }
 
   return <>{children}</>;

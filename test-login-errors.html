@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login Error Messages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .error {
+            background-color: #fee;
+            border-color: #fcc;
+        }
+        .success {
+            background-color: #efe;
+            border-color: #cfc;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Login Error Message Testing</h1>
+    
+    <div class="test-section">
+        <h2>Test Cases for Login Error Messages</h2>
+        <p>Use these test cases to verify that error messages display correctly:</p>
+        
+        <h3>1. Wrong Email</h3>
+        <p><strong>Email:</strong> wrong@example.com</p>
+        <p><strong>Password:</strong> anypassword</p>
+        <p><strong>Expected Error:</strong> "Invalid credentials" or "Invalid email or password"</p>
+        
+        <h3>2. Wrong Password</h3>
+        <p><strong>Email:</strong> prageeth.mahendra@gmail.com</p>
+        <p><strong>Password:</strong> wrongpassword</p>
+        <p><strong>Expected Error:</strong> "Invalid credentials" or "Invalid email or password"</p>
+        
+        <h3>3. Invalid Email Format</h3>
+        <p><strong>Email:</strong> notanemail</p>
+        <p><strong>Password:</strong> anypassword</p>
+        <p><strong>Expected Error:</strong> "Please check your email and password format"</p>
+        
+        <h3>4. Empty Fields</h3>
+        <p><strong>Email:</strong> (empty)</p>
+        <p><strong>Password:</strong> (empty)</p>
+        <p><strong>Expected Error:</strong> Browser validation or "Please check your email and password format"</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>Backend Error Response Format</h2>
+        <p>Your backend returns errors in this format:</p>
+        <pre>{
+  "statusCode": 401,
+  "message": "Invalid credentials",
+  "error": "Unauthorized"
+}</pre>
+    </div>
+    
+    <div class="test-section">
+        <h2>Frontend Error Handling</h2>
+        <p>The frontend now handles these error scenarios:</p>
+        <ul>
+            <li>✅ <strong>401 Unauthorized:</strong> "Invalid email or password. Please try again."</li>
+            <li>✅ <strong>400 Bad Request:</strong> "Please check your email and password format."</li>
+            <li>✅ <strong>429 Too Many Requests:</strong> "Too many login attempts. Please try again later."</li>
+            <li>✅ <strong>Backend message:</strong> Uses the exact message from backend response</li>
+            <li>✅ <strong>Fallback:</strong> "Login failed. Please check your credentials and try again."</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>Error Display Features</h2>
+        <ul>
+            <li>✅ <strong>Inline Error Display:</strong> Red error box appears above the form</li>
+            <li>✅ <strong>Toast Notification:</strong> Popup notification in bottom-right corner</li>
+            <li>✅ <strong>Auto-clear:</strong> Error disappears when user starts typing</li>
+            <li>✅ <strong>Loading State:</strong> Button shows "Logging in..." during submission</li>
+            <li>✅ <strong>Form Disabled:</strong> Form is disabled during submission</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>How to Test</h2>
+        <ol>
+            <li>Go to your login page</li>
+            <li>Try the test cases above</li>
+            <li>Verify that error messages appear both inline and as toast notifications</li>
+            <li>Check that errors clear when you start typing</li>
+            <li>Verify that the form is disabled during submission</li>
+        </ol>
+    </div>
+    
+    <div class="test-section success">
+        <h2>✅ Expected Results</h2>
+        <p>After implementing the fixes, you should see:</p>
+        <ul>
+            <li>Clear, specific error messages for different failure scenarios</li>
+            <li>Both inline and toast error notifications</li>
+            <li>Errors that clear when user starts typing</li>
+            <li>Proper loading states during form submission</li>
+            <li>No more generic "Login failed" messages</li>
+        </ul>
+    </div>
+</body>
+</html>
