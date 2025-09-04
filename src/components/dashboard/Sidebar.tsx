@@ -2,19 +2,23 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Workflow, 
-  Bot, 
-  BarChart3, 
+import { usePathname, useRouter } from 'next/navigation';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  LayoutDashboard,
+  Workflow,
+  Bot,
+  BarChart3,
   Settings,
   CreditCard,
   ChevronDown,
   Sun,
-  Moon
+  Moon,
+  LogOut
 } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
+import { selectCurrentUser, logout } from '@/redux/slice/authSlice';
+import { useLogoutMutation } from '../../../lib/api/authApi';
 
 // Extracted navigation items for reuse
 export const navigationItems = [
@@ -58,10 +62,18 @@ interface SidebarProps {
 export default function Sidebar({ isMobile = false, onNavigate }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const user = useSelector(selectCurrentUser);
+  const [logoutMutation] = useLogoutMutation();
   
   // Safely get theme context
   const themeContext = useTheme();
   const { theme, toggleTheme, isLoaded } = themeContext;
+
+  // Get user's first name and initials
+  const firstName = user?.fullName ? user.fullName : 'User';
+  const initials = user?.fullName ? user.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase() : 'U';
 
   const isActive = (href: string) => {
     return pathname === href;
@@ -74,6 +86,22 @@ export default function Sidebar({ isMobile = false, onNavigate }: SidebarProps) 
   const handleNavClick = () => {
     if (isMobile && onNavigate) {
       onNavigate();
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      // Call logout API
+      await logoutMutation(null).unwrap();
+      // Dispatch logout action to clear Redux state
+      dispatch(logout());
+      // Redirect to login page
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Even if API call fails, clear local state and redirect
+      dispatch(logout());
+      router.push('/login');
     }
   };
 
@@ -97,39 +125,23 @@ export default function Sidebar({ isMobile = false, onNavigate }: SidebarProps) 
           disabled={isMobile}
         >
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-105 transition-transform">
-            <span className="text-white font-bold text-sm">AA</span>
+            <span className="text-white font-bold text-sm">{initials}</span>
           </div>
           {!isCollapsed && (
             <span className="theme-text-primary font-semibold text-lg tracking-tight group-hover:text-blue-600 transition-colors">
-              ADMIN
+              {firstName}
             </span>
           )}
         </button>
       </div>
 
       {/* User Profile Section */}
-      {!isCollapsed && (
-        <div className="p-4 theme-border" style={{ borderBottomWidth: '1px' }}>
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center shadow-md">
-              <span className="text-gray-700 font-semibold text-sm">NH</span>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center space-x-1">
-                <span className="theme-text-primary font-semibold text-sm">Nowak Helme</span>
-                <ChevronDown className="w-4 h-4 theme-text-muted hover:text-gray-600 transition-colors cursor-pointer" />
-              </div>
-              <span className="theme-text-muted text-xs font-medium">Admin Head</span>
-            </div>
-          </div>
-        </div>
-      )}
-
+     
       {/* Collapsed User Avatar */}
       {isCollapsed && (
         <div className="p-3 theme-border flex justify-center" style={{ borderBottomWidth: '1px' }}>
           <div className="w-8 h-8 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center shadow-md">
-            <span className="text-gray-700 font-semibold text-xs">NH</span>
+            <span className="text-gray-700 font-semibold text-xs">{initials}</span>
           </div>
         </div>
       )}
@@ -174,6 +186,27 @@ export default function Sidebar({ isMobile = false, onNavigate }: SidebarProps) 
               )}
             </Link>
           ))}
+        </div>
+
+        {/* Logout Button */}
+        <div className="px-3 mt-4">
+          <div className="theme-border pt-4" style={{ borderTopWidth: '1px' }}>
+            <button
+              onClick={handleLogout}
+              className={`group flex items-center rounded-xl text-sm font-medium transition-all duration-200 w-full ${
+                isCollapsed ? 'px-3 py-3 justify-center' : 'px-4 py-3'
+              } theme-text-secondary theme-hover-bg hover:text-red-600 hover:bg-red-50`}
+              title={isCollapsed ? 'Logout' : undefined}
+            >
+              <LogOut className={`w-5 h-5 transition-all duration-200 ${
+                isCollapsed ? 'mr-0' : 'mr-4'
+              } theme-text-muted group-hover:text-red-600`} />
+              
+              {!isCollapsed && (
+                <span className="font-semibold tracking-wide group-hover:text-red-600">Logout</span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Theme Toggle in Sidebar */}

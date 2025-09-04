@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { LogSidebar } from "./LogSidebar";
 import { EndNodeSidebar } from "./EndNodeSidebar";
 import { FeedbackPopup } from "./FeedbackPopup";
+import { toast } from 'react-hot-toast';
 import {
   ReactFlow,
   applyNodeChanges,

@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
+import { selectCurrentUser } from '@/redux/slice/authSlice';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -15,6 +16,8 @@ import { QUICK_ACTIONS, STATS_CARDS, RECENT_ACTIVITIES } from '@/lib/constants';
 export default function DashboardPage() {
   const dispatch = useDispatch();
   const router = useRouter();
+  const user = useSelector(selectCurrentUser);
+  
   const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState(false);
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
 
@@ -103,9 +106,11 @@ export default function DashboardPage() {
             ))}
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">NH</span>
+                <span className="text-white font-medium text-sm">
+                  {user?.fullName ? user.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase() : 'U'}
+                </span>
               </div>
-              <span className="text-sm font-medium">Nowak Helme</span>
+              <span className="text-sm font-medium">{user?.fullName || 'User'}</span>
             </div>
           </div>
         </div>

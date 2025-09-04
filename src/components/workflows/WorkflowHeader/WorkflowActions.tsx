@@ -4,6 +4,7 @@ import { Play, Square, Save, Trash2 } from 'lucide-react';
 interface WorkflowActionsProps {
   currentWorkflow: any;
   isRunning: boolean;
+  agentCount:number
   onExecute: () => void;
   onStop: () => void;
   onSave: () => void;
@@ -16,7 +17,8 @@ export function WorkflowActions({
   onExecute,
   onStop,
   onSave,
-  onDelete
+  onDelete,
+  agentCount,
 }: WorkflowActionsProps) {
   const getExecuteButtonProps = () => ({
     onClick: isRunning ? onStop : onExecute,
@@ -26,22 +28,24 @@ export function WorkflowActions({
     children: isRunning ? 'Stop' : 'Execute'
   });
 
+  {console.log(currentWorkflow , "currentWorkflow123")}
+
   return (
     <div className="flex items-center space-x-2">
       <Button {...getExecuteButtonProps()} />
       <Button 
         variant="primary" 
         icon={Save} 
-        disabled={!currentWorkflow}
+        disabled={!agentCount}
         onClick={onSave}
       >
-        Save
+        Save 
       </Button>
       <Button 
         variant="danger" 
         icon={Trash2}
         onClick={onDelete}
-        disabled={!currentWorkflow}
+        disabled={!agentCount}
       >
         Delete
       </Button>

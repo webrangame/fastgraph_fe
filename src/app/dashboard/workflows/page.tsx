@@ -22,7 +22,7 @@ export default function WorkflowsPage() {
   const [finalizedResult, setFinalizedResult] = useState<any>(null);
 
   // Custom hooks for workflow management
-  const { workflows, workflowStatus, workflowError, saveWorkflow, deleteWorkflowById } = useWorkflowPersistence();
+  const { workflows, workflowStatus, workflowError, saveWorkflow, saveAutoOrchestrateWorkflow, deleteWorkflowById, isSaving } = useWorkflowPersistence();
   
   // Evolution API
   const [evolveAgent, { isLoading: isEvolving }] = useEvolveAgentMutation();
@@ -214,11 +214,11 @@ export default function WorkflowsPage() {
       </div>
 
       {/* Prompt Input - Mobile optimized */}
-      <PromptInput 
-        onSubmit={handlePromptSubmit}
-        isProcessing={isProcessing}
-        isMobile={isMobile}
-      />
+              <PromptInput 
+          onSubmit={handlePromptSubmit}
+          isProcessing={isProcessing}
+          isMobile={isMobile}
+        />
     </div>
   );
 }

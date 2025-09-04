@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Workflow, PromptMessage } from '@/types/workflow';
-import { useAutoOrchestrateMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
 
 interface UsePromptHandlerProps {
   currentWorkflow: Workflow | undefined;
@@ -19,10 +18,9 @@ export function usePromptHandler({
   deleteNode,
   executeWorkflow
 }: UsePromptHandlerProps) {
-  const [autoOrchestrate] = useAutoOrchestrateMutation();
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [messages, setMessages] = useState<PromptMessage[]>([]);
-
+  
   const handlePromptSubmit = async (message: string) => {
     setIsProcessing(true);
     
@@ -35,20 +33,12 @@ export function usePromptHandler({
     };
     setMessages(prev => [...prev, userMessage]);
 
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
     // Process the command based on message content
     let responseText = '';
     
     if (message.toLowerCase().includes('auto') || message.toLowerCase().includes('orchestrate')) {
-      // Use auto-orchestration API
-      try {
-        const result = await autoOrchestrate({ command: message }).unwrap();
-        responseText = result.response || 'Auto-orchestration completed successfully!';
-      } catch (error) {
-        responseText = 'Failed to auto-orchestrate. Please try again.';
-      }
+      // Auto-orchestration is now handled automatically by useAutoOrchestrate hook
+      responseText = 'Auto-orchestration is running automatically when workflows are available. Check the workflow canvas for results.';
     } else if (message.toLowerCase().includes('add') && message.toLowerCase().includes('agent')) {
       // Add a random agent to the workflow
       const agents = ['Customer Service Agent', 'Billing Agent', 'Technical Support Agent'];
