@@ -239,7 +239,7 @@ export default function Sidebar({ isMobile = false, onNavigate }: SidebarProps) 
           <div className={`${isLoaded ? 'mt-4' : 'mt-8'} px-4`}>
             <div className="theme-border pt-6" style={{ borderTopWidth: '1px' }}>
               <div className="text-xs theme-text-muted font-medium uppercase tracking-wider">
-                Version 2.0.1
+                Version 1.0-beta
               </div>
             </div>
           </div>
