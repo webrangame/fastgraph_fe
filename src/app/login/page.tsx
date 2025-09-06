@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useLoginMutation, useGoogleLoginMutation } from '../../../lib/api/authApi';
+import { useLoginMutation, useGoogleLoginMutation, useForgotPasswordMutation } from '../../../lib/api/authApi';
 import { useRouter } from 'next/navigation';
 import GoogleLoginButton from '@/components/ui/GoogleLoginButton';
+import { Card } from '@/components/ui/Card';
+import { useTheme } from '@/components/ThemeProvider';
 import toast from 'react-hot-toast';
 
 const LoginPage = () => {
@@ -11,9 +13,13 @@ const LoginPage = () => {
   const [password, setPassword] = useState('prageeth');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [login, { isLoading, isSuccess, isError, error }] = useLoginMutation();
   const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
+  const [forgotPassword, { isLoading: isForgotPasswordLoading }] = useForgotPasswordMutation();
   const router = useRouter();
+  const { theme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     // Prevent default form submission behavior
@@ -103,6 +109,42 @@ const LoginPage = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!forgotPasswordEmail) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(forgotPasswordEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      await forgotPassword({ email: forgotPasswordEmail }).unwrap();
+      toast.success('Password reset link sent to your email!');
+      setShowForgotPassword(false);
+      setForgotPasswordEmail('');
+    } catch (err: any) {
+      console.error('Forgot password failed:', err);
+      
+      let errorMessage = 'Failed to send reset email. Please try again.';
+      if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err?.status === 404) {
+        errorMessage = 'No account found with this email address.';
+      } else if (err?.status === 429) {
+        errorMessage = 'Too many requests. Please try again later.';
+      }
+      
+      toast.error(errorMessage);
+    }
+  };
+
   // Load Google OAuth script
   useEffect(() => {
     const script = document.createElement('script');
@@ -134,13 +176,43 @@ const LoginPage = () => {
   }, [isSuccess]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gray-900">
+      {/* Dark background with gradients */}
+      <div className="absolute inset-0">
+        {/* Base dark background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
+        
+        {/* Dark gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/15 to-indigo-900/25" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-blue-800/10 to-purple-800/20" />
+        
+        {/* Enhanced dark pattern overlay */}
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
+                             radial-gradient(circle at 80% 70%, rgba(147, 51, 234, 0.12) 0%, transparent 40%),
+                             radial-gradient(circle at 50% 20%, rgba(79, 70, 229, 0.08) 0%, transparent 50%),
+                             radial-gradient(circle at 30% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 50%)`
+          }}
+        />
+        
+        {/* Subtle noise texture for depth */}
+        <div 
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='7' cy='7' r='1'/%3E%3Ccircle cx='27' cy='7' r='1'/%3E%3Ccircle cx='47' cy='7' r='1'/%3E%3Ccircle cx='7' cy='27' r='1'/%3E%3Ccircle cx='27' cy='27' r='1'/%3E%3Ccircle cx='47' cy='27' r='1'/%3E%3Ccircle cx='7' cy='47' r='1'/%3E%3Ccircle cx='27' cy='47' r='1'/%3E%3Ccircle cx='47' cy='47' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          }}
+        />
+      </div>
+
+      {/* Dark themed login card */}
+      <div className="p-8 w-full max-w-md relative z-10 bg-gray-800/90 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-2xl">
+        <h2 className="text-2xl font-bold text-center mb-6 text-white">Login</h2>
         
         {/* Error Message Display */}
         {loginError && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="mb-4 p-3 bg-red-900/30 border border-red-600/50 text-red-300 rounded-lg backdrop-blur-sm">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -156,13 +228,13 @@ const LoginPage = () => {
         
         <form onSubmit={handleSubmit} noValidate>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="email">
               Email
             </label>
             <input
               type="email"
               id="email"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full py-3 px-4 bg-gray-700/50 border border-gray-600/50 text-white rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -170,16 +242,17 @@ const LoginPage = () => {
               }}
               required
               disabled={isSubmitting || isLoading}
+              placeholder="Enter your email"
             />
           </div>
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+          <div className="mb-1">
+            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="password">
               Password
             </label>
             <input
               type="password"
               id="password"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full py-3 px-4 bg-gray-700/50 border border-gray-600/50 text-white rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -187,15 +260,32 @@ const LoginPage = () => {
               }}
               required
               disabled={isSubmitting || isLoading}
+              placeholder="Enter your password"
             />
           </div>
+          
+          {/* Forgot Password Link */}
+          <div className="mb-5 text-right">
+            <button
+              type="button"
+              onClick={() => {
+                setShowForgotPassword(true);
+                setForgotPasswordEmail(email); // Pre-fill with current email
+              }}
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
+              disabled={isSubmitting || isLoading}
+            >
+              Forgot your password?
+            </button>
+          </div>
+          
           <div className="flex items-center justify-between">
             <button
               type="submit"
-              className={`font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors ${
+              className={`w-full font-bold py-3 px-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 ${
                 isSubmitting || isLoading
-                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                  : 'bg-blue-500 hover:bg-blue-700 text-white'
+                  ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 backdrop-blur-sm'
               }`}
               disabled={isSubmitting || isLoading}
             >
@@ -207,10 +297,10 @@ const LoginPage = () => {
         <div className="mt-6">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-gray-600/50" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              <span className="px-2 bg-gray-800/90 text-gray-400">Or continue with</span>
             </div>
           </div>
           
@@ -223,6 +313,76 @@ const LoginPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800/95 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-white">Reset Password</h3>
+              <button
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setForgotPasswordEmail('');
+                }}
+                className="text-gray-400 hover:text-white transition-colors duration-200 p-1 rounded-lg hover:bg-gray-700/50"
+                disabled={isForgotPasswordLoading}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <p className="text-gray-300 text-sm mb-6">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+            
+            <form onSubmit={handleForgotPassword}>
+              <div className="mb-6">
+                <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="forgot-email">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="forgot-email"
+                  className="w-full py-3 px-4 bg-gray-700/50 border border-gray-600/50 text-white rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  placeholder="Enter your email address"
+                  required
+                  disabled={isForgotPasswordLoading}
+                />
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotPasswordEmail('');
+                  }}
+                  className="flex-1 py-3 px-4 bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold rounded-lg transition-all duration-200 disabled:opacity-50"
+                  disabled={isForgotPasswordLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={`flex-1 font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 ${
+                    isForgotPasswordLoading
+                      ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl'
+                  }`}
+                  disabled={isForgotPasswordLoading}
+                >
+                  {isForgotPasswordLoading ? 'Sending...' : 'Send Reset Link'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

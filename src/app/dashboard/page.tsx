@@ -99,11 +99,9 @@ export default function DashboardPage() {
                 className="theme-input-bg pl-10 pr-4 py-2 rounded-lg w-64 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 theme-border"
               />
             </div>
-            {['Flag', 'Bell', 'Settings'].map((iconName) => (
-              <button key={iconName} className="p-2 rounded-lg theme-hover-bg">
-                <Icon name={iconName as any} className="w-5 h-5 theme-text-secondary" />
-              </button>
-            ))}
+            <button className="p-2 rounded-lg theme-hover-bg">
+              <Icon name="Bell" className="w-5 h-5 theme-text-secondary" />
+            </button>
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-medium text-sm">

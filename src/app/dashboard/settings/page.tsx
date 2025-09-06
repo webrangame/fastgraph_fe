@@ -4,6 +4,7 @@ import { Settings } from 'lucide-react';
 import SettingsSidebar from '@/components/settings/SettingsSidebar';
 import MCPSettings from '@/components/settings/MCPSettings';
 import GeneralSettings from '@/components/settings/GeneralSettings';
+import SecuritySettings from '@/components/settings/SecuritySettings';
 import AdvancedSettings from '@/components/settings/AdvancedSettings';
 import APIKeysSettings from '@/components/settings/APIKeysSettings';
 
@@ -23,6 +24,9 @@ export default function SettingsPage() {
         );
       case 'general':
         return <GeneralSettings />;
+      case 'security':
+        
+        return <SecuritySettings />;
       case 'api-keys':
         return <APIKeysSettings />;
       case 'advanced':

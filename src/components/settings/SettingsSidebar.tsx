@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, Settings, Zap, Server, Key } from 'lucide-react';
+import { ChevronRight, ChevronDown, Settings, Zap, Server, Key, Shield } from 'lucide-react';
 
 interface SettingsSidebarProps {
   activeSection: string | null;
@@ -12,6 +12,12 @@ const settingsSections = [
     id: 'general',
     title: 'General Settings',
     icon: Settings,
+    subSections: []
+  },
+  {
+    id: 'security',
+    title: 'Security',
+    icon: Shield,
     subSections: []
   },
   {
