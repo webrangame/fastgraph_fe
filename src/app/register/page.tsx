@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useLoginMutation, useGoogleLoginMutation, useForgotPasswordMutation } from '../../../lib/api/authApi';
+import { useRegisterMutation, useGoogleLoginMutation } from '../../../lib/api/authApi';
 import { useRouter } from 'next/navigation';
 import GoogleLoginButton from '@/components/ui/GoogleLoginButton';
 import { Card } from '@/components/ui/Card';
@@ -9,16 +9,15 @@ import { useTheme } from '@/components/ThemeProvider';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
-const LoginPage = () => {
-  const [email, setEmail] = useState('prageeth.mahendra@gmail.com');
-  const [password, setPassword] = useState('prageeth');
+const RegisterPage = () => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
-  const [login, { isLoading, isSuccess, isError, error }] = useLoginMutation();
+  const [registerError, setRegisterError] = useState<string | null>(null);
+  const [register, { isLoading, isSuccess, isError, error }] = useRegisterMutation();
   const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
-  const [forgotPassword, { isLoading: isForgotPasswordLoading }] = useForgotPasswordMutation();
   const router = useRouter();
   const { theme } = useTheme();
 
@@ -27,9 +26,7 @@ const LoginPage = () => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('🔵 Form submitted, preventing default behavior');
-    console.log('🔵 Event type:', e.type);
-    console.log('🔵 Event target:', e.target);
+    console.log('🔵 Registration form submitted');
     
     // Prevent any further event propagation
     if (e.nativeEvent) {
@@ -38,19 +35,59 @@ const LoginPage = () => {
     }
     
     setIsSubmitting(true);
-    setLoginError(null); // Clear previous errors
+    setRegisterError(null); // Clear previous errors
+    
+    // Validation
+    if (!name.trim()) {
+      setRegisterError('Name is required');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    if (!email.trim()) {
+      setRegisterError('Email is required');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    if (!password) {
+      setRegisterError('Password is required');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      setRegisterError('Passwords do not match');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    if (password.length < 6) {
+      setRegisterError('Password must be at least 6 characters long');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setRegisterError('Please enter a valid email address');
+      setIsSubmitting(false);
+      return;
+    }
     
     try {
-      console.log('🔵 Attempting login with:', { email, password: '***' });
-      const result = await login({ email, password }).unwrap();
-      console.log('✅ Login successful, redirecting...', result);
-      // Redirect to dashboard after successful login
+      console.log('🔵 Attempting registration with:', { name, email, password: '***' });
+      const result = await register({ name: name.trim(), email: email.trim(), password }).unwrap();
+      console.log('✅ Registration successful, redirecting...', result);
+      toast.success('Registration successful! Welcome to FastGraph!');
+      // Redirect to dashboard after successful registration
       router.replace('/dashboard');
     } catch (err: any) {
-      console.error('❌ Login failed:', err);
+      console.error('❌ Registration failed:', err);
       
       // Extract specific error message from the API response
-      let errorMessage = 'Login failed. Please check your credentials and try again.';
+      let errorMessage = 'Registration failed. Please try again.';
       
       if (err?.data?.message) {
         errorMessage = err.data.message;
@@ -58,16 +95,16 @@ const LoginPage = () => {
         errorMessage = err.data.error;
       } else if (err?.message) {
         errorMessage = err.message;
-      } else if (err?.status === 401) {
-        errorMessage = 'Invalid email or password. Please try again.';
       } else if (err?.status === 400) {
-        errorMessage = 'Please check your email and password format.';
+        errorMessage = 'Please check your information and try again.';
+      } else if (err?.status === 409) {
+        errorMessage = 'An account with this email already exists. Please try logging in instead.';
       } else if (err?.status === 429) {
-        errorMessage = 'Too many login attempts. Please try again later.';
+        errorMessage = 'Too many registration attempts. Please try again later.';
       }
       
       console.log('🔴 Setting error message:', errorMessage);
-      setLoginError(errorMessage);
+      setRegisterError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -88,12 +125,12 @@ const LoginPage = () => {
               // The response.credential contains the JWT token from Google
               // We need to send this as access_token to match your backend API
               await googleLogin({ access_token: response.credential }).unwrap();
-              toast.success('Google login successful! Redirecting to dashboard...');
+              toast.success('Google registration successful! Welcome to FastGraph!');
               // Redirect to dashboard after successful Google login
               router.replace('/dashboard');
             } catch (err) {
-              console.error('Google login failed:', err);
-              toast.error('Google login failed. Please try again.');
+              console.error('Google registration failed:', err);
+              toast.error('Google registration failed. Please try again.');
             }
           },
         });
@@ -105,44 +142,8 @@ const LoginPage = () => {
         toast.error('Google OAuth not available. Please try again.');
       }
     } catch (err) {
-      console.error('Failed to initialize Google login:', err);
-      toast.error('Failed to initialize Google login. Please try again.');
-    }
-  };
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!forgotPasswordEmail) {
-      toast.error('Please enter your email address');
-      return;
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(forgotPasswordEmail)) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-
-    try {
-      await forgotPassword({ email: forgotPasswordEmail }).unwrap();
-      toast.success('Password reset link sent to your email!');
-      setShowForgotPassword(false);
-      setForgotPasswordEmail('');
-    } catch (err: any) {
-      console.error('Forgot password failed:', err);
-      
-      let errorMessage = 'Failed to send reset email. Please try again.';
-      if (err?.data?.message) {
-        errorMessage = err.data.message;
-      } else if (err?.status === 404) {
-        errorMessage = 'No account found with this email address.';
-      } else if (err?.status === 429) {
-        errorMessage = 'Too many requests. Please try again later.';
-      }
-      
-      toast.error(errorMessage);
+      console.error('Failed to initialize Google registration:', err);
+      toast.error('Failed to initialize Google registration. Please try again.');
     }
   };
 
@@ -166,13 +167,13 @@ const LoginPage = () => {
 
   // Debug: Log component mount
   useEffect(() => {
-    console.log('🔵 LoginPage component mounted');
+    console.log('🔵 RegisterPage component mounted');
   }, []);
 
-  // Show success toast when login is successful
+  // Show success toast when registration is successful
   useEffect(() => {
     if (isSuccess) {
-      toast.success('Login successful!');
+      toast.success('Registration successful!');
     }
   }, [isSuccess]);
 
@@ -207,12 +208,12 @@ const LoginPage = () => {
         />
       </div>
 
-      {/* Dark themed login card */}
+      {/* Dark themed registration card */}
       <div className="p-8 w-full max-w-md relative z-10 bg-gray-800/90 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-2xl">
-        <h2 className="text-2xl font-bold text-center mb-6 text-white">Login</h2>
+        <h2 className="text-2xl font-bold text-center mb-6 text-white">Create Account</h2>
         
         {/* Error Message Display */}
-        {loginError && (
+        {registerError && (
           <div className="mb-4 p-3 bg-red-900/30 border border-red-600/50 text-red-300 rounded-lg backdrop-blur-sm">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -221,13 +222,34 @@ const LoginPage = () => {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium">{loginError}</p>
+                <p className="text-sm font-medium">{registerError}</p>
               </div>
             </div>
           </div>
         )}
         
         <form onSubmit={handleSubmit} noValidate>
+          {/* Name Field */}
+          <div className="mb-4">
+            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="name">
+              Full Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              className="w-full py-3 px-4 bg-gray-700/50 border border-gray-600/50 text-white rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (registerError) setRegisterError(null); // Clear error when user starts typing
+              }}
+              required
+              disabled={isSubmitting || isLoading}
+              placeholder="Enter your full name"
+            />
+          </div>
+
+          {/* Email Field */}
           <div className="mb-4">
             <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="email">
               Email
@@ -239,14 +261,16 @@ const LoginPage = () => {
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
-                if (loginError) setLoginError(null); // Clear error when user starts typing
+                if (registerError) setRegisterError(null); // Clear error when user starts typing
               }}
               required
               disabled={isSubmitting || isLoading}
               placeholder="Enter your email"
             />
           </div>
-          <div className="mb-1">
+
+          {/* Password Field */}
+          <div className="mb-4">
             <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="password">
               Password
             </label>
@@ -257,27 +281,32 @@ const LoginPage = () => {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                if (loginError) setLoginError(null); // Clear error when user starts typing
+                if (registerError) setRegisterError(null); // Clear error when user starts typing
               }}
               required
               disabled={isSubmitting || isLoading}
-              placeholder="Enter your password"
+              placeholder="Enter your password (min 6 characters)"
             />
           </div>
-          
-          {/* Forgot Password Link */}
-          <div className="mb-5 text-right">
-            <button
-              type="button"
-              onClick={() => {
-                setShowForgotPassword(true);
-                setForgotPasswordEmail(email); // Pre-fill with current email
+
+          {/* Confirm Password Field */}
+          <div className="mb-6">
+            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="confirmPassword">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              className="w-full py-3 px-4 bg-gray-700/50 border border-gray-600/50 text-white rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (registerError) setRegisterError(null); // Clear error when user starts typing
               }}
-              className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
+              required
               disabled={isSubmitting || isLoading}
-            >
-              Forgot your password?
-            </button>
+              placeholder="Confirm your password"
+            />
           </div>
           
           <div className="flex items-center justify-between">
@@ -290,7 +319,7 @@ const LoginPage = () => {
               }`}
               disabled={isSubmitting || isLoading}
             >
-              {isSubmitting || isLoading ? 'Logging in...' : 'Login'}
+              {isSubmitting || isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
           </div>
         </form>
@@ -314,91 +343,21 @@ const LoginPage = () => {
           </div>
         </div>
 
-        {/* Registration Link */}
+        {/* Login Link */}
         <div className="mt-6 text-center">
           <p className="text-gray-400 text-sm">
-            Don't have an account?{' '}
+            Already have an account?{' '}
             <Link 
-              href="/register" 
+              href="/login" 
               className="text-blue-400 hover:text-blue-300 transition-colors duration-200 font-medium"
             >
-              Create one here
+              Sign in here
             </Link>
           </p>
         </div>
       </div>
-
-      {/* Forgot Password Modal */}
-      {showForgotPassword && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800/95 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">Reset Password</h3>
-              <button
-                onClick={() => {
-                  setShowForgotPassword(false);
-                  setForgotPasswordEmail('');
-                }}
-                className="text-gray-400 hover:text-white transition-colors duration-200 p-1 rounded-lg hover:bg-gray-700/50"
-                disabled={isForgotPasswordLoading}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <p className="text-gray-300 text-sm mb-6">
-              Enter your email address and we'll send you a link to reset your password.
-            </p>
-            
-            <form onSubmit={handleForgotPassword}>
-              <div className="mb-6">
-                <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="forgot-email">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  id="forgot-email"
-                  className="w-full py-3 px-4 bg-gray-700/50 border border-gray-600/50 text-white rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400"
-                  value={forgotPasswordEmail}
-                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  required
-                  disabled={isForgotPasswordLoading}
-                />
-              </div>
-              
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgotPassword(false);
-                    setForgotPasswordEmail('');
-                  }}
-                  className="flex-1 py-3 px-4 bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold rounded-lg transition-all duration-200 disabled:opacity-50"
-                  disabled={isForgotPasswordLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className={`flex-1 font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 ${
-                    isForgotPasswordLoading
-                      ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl'
-                  }`}
-                  disabled={isForgotPasswordLoading}
-                >
-                  {isForgotPasswordLoading ? 'Sending...' : 'Send Reset Link'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default LoginPage;
+export default RegisterPage;
