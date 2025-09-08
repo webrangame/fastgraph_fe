@@ -8,6 +8,7 @@ import GoogleLoginButton from '@/components/ui/GoogleLoginButton';
 import { Card } from '@/components/ui/Card';
 import { useTheme } from '@/components/ThemeProvider';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 // Form validation schemas
 interface LoginFormData {
@@ -385,6 +386,19 @@ const LoginPage = () => {
           <div className="mt-6">
             <div id="google-signin-button" className="w-full"></div>
           </div>
+        </div>
+
+        {/* Registration Link */}
+        <div className="mt-6 text-center">
+          <p className="text-gray-400 text-sm">
+            Don't have an account?{' '}
+            <Link 
+              href="/register" 
+              className="text-blue-400 hover:text-blue-300 transition-colors duration-200 font-medium"
+            >
+              Create one here
+            </Link>
+          </p>
         </div>
       </div>
 
