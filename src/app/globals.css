@@ -12,6 +12,7 @@
   --sidebar-bg: #ffffff;
   --header-bg: #ffffff;
   --input-bg: #f3f4f6;
+  --input-text: #111827;
   --hover-bg: #f3f4f6;
   --shadow: rgba(0, 0, 0, 0.1);
 }
@@ -28,6 +29,7 @@
   --sidebar-bg: #111827;
   --header-bg: #1f2937;
   --input-bg: #374151;
+  --input-text: #ffffff;
   --hover-bg: #374151;
   --shadow: rgba(0, 0, 0, 0.3);
 }
@@ -90,8 +92,30 @@ body {
   background-color: var(--input-bg) !important;
 }
 
+.theme-input-text {
+  color: var(--input-text) !important;
+}
+
 .theme-hover-bg:hover {
   background-color: var(--hover-bg) !important;
+}
+
+/* Enhanced input styling */
+input, textarea, select {
+  color: var(--input-text) !important;
+  background-color: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  color: var(--input-text) !important;
+  background-color: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+  outline: none !important;
 }
 
 .theme-shadow {
