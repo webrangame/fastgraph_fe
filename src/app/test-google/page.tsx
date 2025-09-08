@@ -35,10 +35,6 @@ const TestGooglePage = () => {
         console.log('Google OAuth Response:', response);
         toast.success('Google OAuth test successful!');
         console.log('Credential:', response.credential);
-      },
-      error_callback: (error: any) => {
-        console.error('Google OAuth Error:', error);
-        toast.error('Google OAuth test failed');
       }
     });
 
