@@ -237,20 +237,27 @@ export default function WorkflowsPage() {
         onMenuToggle={handleMobileMenuToggle}
       />
 
-      {/* Mobile Agent Drawer */}
+      {/* Mobile Workflow Drawer */}
       {isMobile && (
         <MobileAgentDrawer 
           isOpen={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
-          agents={agents || undefined}
+          onWorkflowSelect={(workflowId: string) => {
+            setActiveWorkflow(workflowId);
+            setMobileMenuOpen(false);
+          }}
+          currentWorkflowId={activeWorkflow || undefined}
         />
       )}
       
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Desktop Agent Sidebar - Hidden on mobile */}
+        {/* Desktop Workflow Sidebar - Hidden on mobile */}
         {!isMobile && (
-          <AgentSidebar agents={agents || undefined} />
+          <AgentSidebar 
+            onWorkflowSelect={setActiveWorkflow}
+            currentWorkflowId={activeWorkflow || undefined}
+          />
         )}
         
         {/* Workflow Canvas - Responsive */}

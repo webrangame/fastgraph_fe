@@ -2,15 +2,15 @@
 
 import { AgentSidebar } from '../AgentSidebar';
 import { X } from 'lucide-react';
-import type { ProcessedAgent } from '@/services/workflows/agentProcessor';
 
 interface MobileAgentDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  agents?: Record<string, ProcessedAgent>;
+  onWorkflowSelect?: (workflowId: string) => void;
+  currentWorkflowId?: string;
 }
 
-export function MobileAgentDrawer({ isOpen, onClose, agents }: MobileAgentDrawerProps) {
+export function MobileAgentDrawer({ isOpen, onClose, onWorkflowSelect, currentWorkflowId }: MobileAgentDrawerProps) {
   if (!isOpen) return null;
 
   return (
@@ -26,7 +26,7 @@ export function MobileAgentDrawer({ isOpen, onClose, agents }: MobileAgentDrawer
         
         {/* Header */}
         <div className="p-4 theme-border border-b flex items-center justify-between">
-          <h2 className="text-lg font-semibold theme-text-primary">Agents</h2>
+          <h2 className="text-lg font-semibold theme-text-primary">Workflows</h2>
           <button
             onClick={onClose}
             className="p-2 theme-hover-bg rounded-lg theme-text-secondary hover:theme-text-primary transition-colors"
@@ -37,7 +37,11 @@ export function MobileAgentDrawer({ isOpen, onClose, agents }: MobileAgentDrawer
         
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          <AgentSidebar isMobile={true} onAgentSelect={onClose} agents={agents} />
+          <AgentSidebar 
+            isMobile={true} 
+            onWorkflowSelect={onWorkflowSelect}
+            currentWorkflowId={currentWorkflowId}
+          />
         </div>
       </div>
     </div>
