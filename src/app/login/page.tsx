@@ -24,6 +24,7 @@ const LoginPage = () => {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
   // React Hook Form setup
   const loginForm = useForm<LoginFormData>({
@@ -85,23 +86,53 @@ const LoginPage = () => {
 
 
   const handleForgotPasswordSubmit = async (data: ForgotPasswordFormData) => {
+    setForgotPasswordMessage(null); // Clear previous messages
+    
     try {
-      await forgotPassword({ email: data.email }).unwrap();
-      toast.success('Password reset link sent to your email!');
-      setShowForgotPassword(false);
-      forgotPasswordForm.reset();
-    } catch (err: any) {
-      console.error('Forgot password failed:', err);
+      const response = await forgotPassword({ email: data.email }).unwrap();
+      console.log('✅ Forgot password response:', response);
       
-      let errorMessage = 'Failed to send reset email. Please try again.';
-      if (err?.data?.message) {
-        errorMessage = err.data.message;
-      } else if (err?.status === 404) {
-        errorMessage = 'No account found with this email address.';
-      } else if (err?.status === 429) {
-        errorMessage = 'Too many requests. Please try again later.';
+      // Extract success message from backend response
+      let successMessage = 'Password reset link sent to your email!';
+      if (response?.message) {
+        successMessage = response.message;
+      } else if (response?.data?.message) {
+        successMessage = response.data.message;
       }
       
+      setForgotPasswordMessage({ type: 'success', text: successMessage });
+      toast.success(successMessage);
+      
+      // Auto-close modal after 3 seconds on success
+      setTimeout(() => {
+        setShowForgotPassword(false);
+        forgotPasswordForm.reset();
+        setForgotPasswordMessage(null);
+      }, 3000);
+      
+    } catch (err: any) {
+      console.error('❌ Forgot password failed:', err);
+      
+      // Extract error message from backend response
+      let errorMessage = 'Failed to send reset email. Please try again.';
+      
+      if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err?.data?.error) {
+        errorMessage = err.data.error;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (err?.status === 404) {
+        errorMessage = 'No account found with this email address.';
+      } else if (err?.status === 400) {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (err?.status === 429) {
+        errorMessage = 'Too many requests. Please try again later.';
+      } else if (err?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
+      setForgotPasswordMessage({ type: 'error', text: errorMessage });
       toast.error(errorMessage);
     }
   };
@@ -137,66 +168,103 @@ const LoginPage = () => {
   }, []);
 
   const initializeAndRenderGoogleButton = () => {
-    if (!window.google || !process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-      console.error('❌ Google OAuth not available or Client ID missing');
+    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      console.error('❌ Google Client ID missing');
       return;
     }
 
-    // Initialize Google OAuth
-    window.google.accounts.id.initialize({
-      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-      callback: async (response: any) => {
-        try {
-          console.log('🔵 Google OAuth callback received');
-          console.log('🔵 Response credential length:', response.credential?.length);
-          
-          if (!response.credential) {
-            console.error('❌ No credential received from Google');
-            toast.error('No authentication token received from Google. Please try again.');
-            return;
-          }
-
-          console.log('🔵 Sending credential to backend...');
-          // The response.credential contains the JWT token from Google
-          // We need to send this as access_token to match your backend API
-          const result = await googleLogin({ access_token: response.credential }).unwrap();
-          console.log('✅ Google login successful:', result);
-          toast.success('Google login successful! Redirecting to dashboard...');
-          // Redirect to dashboard after successful Google login
-          router.replace('/dashboard');
-        } catch (err: any) {
-          console.error('❌ Google login API call failed:', err);
-          
-          let errorMessage = 'Google login failed. Please try again.';
-          if (err?.data?.message) {
-            errorMessage = err.data.message;
-          } else if (err?.data?.error) {
-            errorMessage = err.data.error;
-          } else if (err?.status === 401) {
-            errorMessage = 'Google authentication failed. Please try again.';
-          } else if (err?.status === 400) {
-            errorMessage = 'Invalid Google authentication token. Please try again.';
-          }
-          
-          toast.error(errorMessage);
-        }
-      }
-    });
-
-    // Render the Google button
+    // Use popup-based OAuth instead of FedCM to avoid CORS issues
     const buttonDiv = document.getElementById('google-signin-button');
     if (buttonDiv) {
-      // Clear any existing content
-      buttonDiv.innerHTML = '';
-      window.google.accounts.id.renderButton(buttonDiv, {
-        theme: 'outline',
-        size: 'large',
-        text: 'continue_with',
-        width: '100%'
+      buttonDiv.innerHTML = `
+        <button 
+          type="button" 
+          id="google-login-btn"
+          class="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Continue with Google
+        </button>
+      `;
+
+      // Add click handler for popup-based OAuth
+      const googleBtn = document.getElementById('google-login-btn');
+      if (googleBtn) {
+        googleBtn.addEventListener('click', handleGoogleLoginPopup);
+      }
+    }
+  };
+
+  const handleGoogleLoginPopup = () => {
+    try {
+      console.log('🔵 Starting Google OAuth popup flow');
+      
+      // Use Google's One Tap or redirect flow
+      if (window.google && window.google.accounts) {
+        // Try One Tap first (more reliable)
+        window.google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            console.log('One Tap not displayed, trying redirect flow');
+            // Fallback to redirect flow
+            window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?` +
+              `client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&` +
+              `redirect_uri=${encodeURIComponent(window.location.origin)}&` +
+              `scope=${encodeURIComponent('email profile')}&` +
+              `response_type=code&` +
+              `access_type=offline&` +
+              `prompt=select_account`;
+          }
+        });
+      } else {
+        // Direct redirect if Google API not loaded
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?` +
+          `client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&` +
+          `redirect_uri=${encodeURIComponent(window.location.origin)}&` +
+          `scope=${encodeURIComponent('email profile')}&` +
+          `response_type=code&` +
+          `access_type=offline&` +
+          `prompt=select_account`;
+      }
+
+    } catch (error) {
+      console.error('❌ Google auth failed:', error);
+      toast.error('Failed to start Google authentication. Please try again.');
+    }
+  };
+
+  const handleGoogleAuthCode = async (code: string) => {
+    try {
+      console.log('🔵 Processing Google auth code');
+      
+      // Exchange code for token (you'll need to implement this in your backend)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/google/callback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code }),
       });
-      console.log('✅ Google button rendered successfully');
-    } else {
-      console.error('❌ Google signin button div not found');
+
+      if (!response.ok) {
+        throw new Error('Failed to exchange code for token');
+      }
+
+      const data = await response.json();
+      
+      // Use the existing googleLogin mutation
+      const result = await googleLogin({ access_token: data.access_token }).unwrap();
+      console.log('✅ Google login successful:', result);
+      toast.success('Google login successful! Redirecting to dashboard...');
+      router.replace('/dashboard');
+      
+    } catch (error: any) {
+      console.error('❌ Google auth code processing failed:', error);
+      toast.error('Google authentication failed. Please try again.');
     }
   };
 
@@ -349,6 +417,7 @@ const LoginPage = () => {
               type="button"
               onClick={() => {
                 setShowForgotPassword(true);
+                setForgotPasswordMessage(null); // Clear any previous messages
                 forgotPasswordForm.setValue('email', loginForm.getValues('email')); // Pre-fill with current email
               }}
               className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
@@ -412,6 +481,7 @@ const LoginPage = () => {
                 onClick={() => {
                   setShowForgotPassword(false);
                   forgotPasswordForm.reset();
+                  setForgotPasswordMessage(null);
                 }}
                 className="text-gray-400 hover:text-white transition-colors duration-200 p-1 rounded-lg hover:bg-gray-700/50"
                 disabled={isForgotPasswordLoading}
@@ -425,6 +495,32 @@ const LoginPage = () => {
             <p className="text-gray-300 text-sm mb-6">
               Enter your email address and we'll send you a link to reset your password.
             </p>
+            
+            {/* Backend Response Message Display */}
+            {forgotPasswordMessage && (
+              <div className={`mb-4 p-3 rounded-lg backdrop-blur-sm ${
+                forgotPasswordMessage.type === 'success' 
+                  ? 'bg-green-900/30 border border-green-600/50 text-green-300' 
+                  : 'bg-red-900/30 border border-red-600/50 text-red-300'
+              }`}>
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    {forgotPasswordMessage.type === 'success' ? (
+                      <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium">{forgotPasswordMessage.text}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPasswordSubmit)}>
               <div className="mb-6">
@@ -460,6 +556,7 @@ const LoginPage = () => {
                   onClick={() => {
                     setShowForgotPassword(false);
                     forgotPasswordForm.reset();
+                    setForgotPasswordMessage(null);
                   }}
                   className="flex-1 py-3 px-4 bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold rounded-lg transition-all duration-200 disabled:opacity-50"
                   disabled={isForgotPasswordLoading}
