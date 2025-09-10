@@ -102,7 +102,7 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
               }}
               onKeyPress={handleKeyPress}
               placeholder="Describe what you want to add..."
-              className="w-full min-h-12 max-h-24 px-3 py-2 pr-12 theme-input-bg theme-border border rounded-lg resize-none theme-text-primary placeholder:theme-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+              className="w-full min-h-12 max-h-24 px-3 py-2 pr-12 theme-input-bg theme-border border rounded-lg resize-none theme-input-text placeholder:theme-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
               disabled={isProcessing}
               rows={1}
             />
@@ -274,19 +274,19 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
           <div className="flex flex-wrap gap-2 justify-center">
             <button
               onClick={() => setInputValue('Add a customer service agent to handle inquiries')}
-              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-text-muted hover:theme-text-primary transition-colors border theme-border"
+              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-input-text hover:theme-text-primary transition-colors border theme-border"
             >
               Add Agent
             </button>
             <button
               onClick={() => setInputValue('Create a data processing pipeline')}
-              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-text-muted hover:theme-text-primary transition-colors border theme-border"
+              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-input-text hover:theme-text-primary transition-colors border theme-border"
             >
               Data Pipeline
             </button>
             <button
               onClick={() => setInputValue('Set up email notifications for workflow completion')}
-              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-text-muted hover:theme-text-primary transition-colors border theme-border"
+              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-input-text hover:theme-text-primary transition-colors border theme-border"
             >
               Notifications
             </button>

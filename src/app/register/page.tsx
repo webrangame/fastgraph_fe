@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { useRegisterMutation, useGoogleLoginMutation } from '../../../lib/api/authApi';
 import { useRouter } from 'next/navigation';
 import GoogleLoginButton from '@/components/ui/GoogleLoginButton';
@@ -9,76 +10,45 @@ import { useTheme } from '@/components/ThemeProvider';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
+// Form validation schemas
+interface RegisterFormData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
 const RegisterPage = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // React Hook Form setup
+  const registerForm = useForm<RegisterFormData>({
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
+    },
+    mode: 'onChange'
+  });
+
   const [register, { isLoading, isSuccess, isError, error }] = useRegisterMutation();
   const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
   const router = useRouter();
   const { theme } = useTheme();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    // Prevent default form submission behavior
-    e.preventDefault();
-    e.stopPropagation();
-    
-    console.log('🔵 Registration form submitted');
-    
-    // Prevent any further event propagation
-    if (e.nativeEvent) {
-      e.nativeEvent.preventDefault();
-      e.nativeEvent.stopPropagation();
-    }
-    
-    setIsSubmitting(true);
+  const handleRegisterSubmit = async (data: RegisterFormData) => {
     setRegisterError(null); // Clear previous errors
     
-    // Validation
-    if (!name.trim()) {
-      setRegisterError('Name is required');
-      setIsSubmitting(false);
-      return;
-    }
-    
-    if (!email.trim()) {
-      setRegisterError('Email is required');
-      setIsSubmitting(false);
-      return;
-    }
-    
-    if (!password) {
-      setRegisterError('Password is required');
-      setIsSubmitting(false);
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      setRegisterError('Passwords do not match');
-      setIsSubmitting(false);
-      return;
-    }
-    
-    if (password.length < 6) {
-      setRegisterError('Password must be at least 6 characters long');
-      setIsSubmitting(false);
-      return;
-    }
-    
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setRegisterError('Please enter a valid email address');
-      setIsSubmitting(false);
-      return;
-    }
-    
     try {
-      console.log('🔵 Attempting registration with:', { name, email, password: '***' });
-      const result = await register({ name: name.trim(), email: email.trim(), password }).unwrap();
+      console.log('🔵 Attempting registration with:', { name: data.name, email: data.email, password: '***' });
+      const result = await register({ 
+        fullName: data.name.trim(), 
+        email: data.email.trim(), 
+        password: data.password 
+      }).unwrap();
       console.log('✅ Registration successful, redirecting...', result);
       toast.success('Registration successful! Welcome to FastGraph!');
       // Redirect to dashboard after successful registration
@@ -106,12 +76,7 @@ const RegisterPage = () => {
       console.log('🔴 Setting error message:', errorMessage);
       setRegisterError(errorMessage);
       toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
     }
-    
-    // Return false to prevent any further form submission
-    return false;
   };
 
   const handleGoogleLogin = async () => {
@@ -228,7 +193,7 @@ const RegisterPage = () => {
           </div>
         )}
         
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} noValidate>
           {/* Name Field */}
           <div className="mb-4">
             <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="name">
@@ -237,16 +202,27 @@ const RegisterPage = () => {
             <input
               type="text"
               id="name"
-              className="w-full py-3 px-4 bg-gray-700/50 border border-gray-600/50 text-white rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                if (registerError) setRegisterError(null); // Clear error when user starts typing
-              }}
-              required
-              disabled={isSubmitting || isLoading}
+              className={`w-full py-3 px-4 bg-gray-700/50 border rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400 ${
+                registerForm.formState.errors.name 
+                  ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                  : 'border-gray-600/50'
+              }`}
+              {...registerForm.register('name', {
+                required: 'Full name is required',
+                minLength: {
+                  value: 2,
+                  message: 'Name must be at least 2 characters'
+                },
+                onChange: () => {
+                  if (registerError) setRegisterError(null); // Clear error when user starts typing
+                }
+              })}
+              disabled={isLoading}
               placeholder="Enter your full name"
             />
+            {registerForm.formState.errors.name && (
+              <p className="text-red-400 text-xs mt-1">{registerForm.formState.errors.name.message}</p>
+            )}
           </div>
 
           {/* Email Field */}
@@ -257,16 +233,27 @@ const RegisterPage = () => {
             <input
               type="email"
               id="email"
-              className="w-full py-3 px-4 bg-gray-700/50 border border-gray-600/50 text-white rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (registerError) setRegisterError(null); // Clear error when user starts typing
-              }}
-              required
-              disabled={isSubmitting || isLoading}
+              className={`w-full py-3 px-4 bg-gray-700/50 border rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400 ${
+                registerForm.formState.errors.email 
+                  ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                  : 'border-gray-600/50'
+              }`}
+              {...registerForm.register('email', {
+                required: 'Email is required',
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message: 'Please enter a valid email address'
+                },
+                onChange: () => {
+                  if (registerError) setRegisterError(null); // Clear error when user starts typing
+                }
+              })}
+              disabled={isLoading}
               placeholder="Enter your email"
             />
+            {registerForm.formState.errors.email && (
+              <p className="text-red-400 text-xs mt-1">{registerForm.formState.errors.email.message}</p>
+            )}
           </div>
 
           {/* Password Field */}
@@ -274,19 +261,49 @@ const RegisterPage = () => {
             <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="password">
               Password
             </label>
-            <input
-              type="password"
-              id="password"
-              className="w-full py-3 px-4 bg-gray-700/50 border border-gray-600/50 text-white rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (registerError) setRegisterError(null); // Clear error when user starts typing
-              }}
-              required
-              disabled={isSubmitting || isLoading}
-              placeholder="Enter your password (min 6 characters)"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                className={`w-full py-3 px-4 pr-12 bg-gray-700/50 border rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400 ${
+                  registerForm.formState.errors.password 
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-gray-600/50'
+                }`}
+                {...registerForm.register('password', {
+                  required: 'Password is required',
+                  minLength: {
+                    value: 6,
+                    message: 'Password must be at least 6 characters'
+                  },
+                  onChange: () => {
+                    if (registerError) setRegisterError(null); // Clear error when user starts typing
+                  }
+                })}
+                disabled={isLoading}
+                placeholder="Enter your password (min 6 characters)"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300 transition-colors duration-200"
+                disabled={isLoading}
+              >
+                {showPassword ? (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            {registerForm.formState.errors.password && (
+              <p className="text-red-400 text-xs mt-1">{registerForm.formState.errors.password.message}</p>
+            )}
           </div>
 
           {/* Confirm Password Field */}
@@ -294,32 +311,62 @@ const RegisterPage = () => {
             <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="confirmPassword">
               Confirm Password
             </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              className="w-full py-3 px-4 bg-gray-700/50 border border-gray-600/50 text-white rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400"
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                if (registerError) setRegisterError(null); // Clear error when user starts typing
-              }}
-              required
-              disabled={isSubmitting || isLoading}
-              placeholder="Confirm your password"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirmPassword"
+                className={`w-full py-3 px-4 pr-12 bg-gray-700/50 border rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm placeholder-gray-400 ${
+                  registerForm.formState.errors.confirmPassword 
+                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                    : 'border-gray-600/50'
+                }`}
+                {...registerForm.register('confirmPassword', {
+                  required: 'Please confirm your password',
+                  validate: (value) => {
+                    const password = registerForm.getValues('password');
+                    return value === password || 'Passwords do not match';
+                  },
+                  onChange: () => {
+                    if (registerError) setRegisterError(null); // Clear error when user starts typing
+                  }
+                })}
+                disabled={isLoading}
+                placeholder="Confirm your password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-300 transition-colors duration-200"
+                disabled={isLoading}
+              >
+                {showConfirmPassword ? (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            {registerForm.formState.errors.confirmPassword && (
+              <p className="text-red-400 text-xs mt-1">{registerForm.formState.errors.confirmPassword.message}</p>
+            )}
           </div>
           
           <div className="flex items-center justify-between">
             <button
               type="submit"
               className={`w-full font-bold py-3 px-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 ${
-                isSubmitting || isLoading
+                isLoading
                   ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
                   : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 backdrop-blur-sm'
               }`}
-              disabled={isSubmitting || isLoading}
+              disabled={isLoading}
             >
-              {isSubmitting || isLoading ? 'Creating Account...' : 'Create Account'}
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
           </div>
         </form>
@@ -338,7 +385,7 @@ const RegisterPage = () => {
             <GoogleLoginButton
               onClick={handleGoogleLogin}
               isLoading={isGoogleLoading}
-              disabled={isSubmitting || isLoading || isGoogleLoading}
+              disabled={isLoading || isGoogleLoading}
             />
           </div>
         </div>

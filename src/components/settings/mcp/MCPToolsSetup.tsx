@@ -52,7 +52,7 @@ export default function MCPToolsSetup({
                 value={config.serverName}
                 onChange={(e) => onConfigChange('serverName', e.target.value)}
                 placeholder="e.g., weather-api-mcp"
-                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg theme-input-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 disabled={isConnecting}
               />
             </div>
@@ -80,7 +80,7 @@ export default function MCPToolsSetup({
                 <select
                   value={config.serverType}
                   onChange={(e) => onConfigChange('serverType', e.target.value)}
-                  className="w-full px-3 py-2 pr-10 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors appearance-none"
+                  className="w-full px-3 py-2 pr-10 theme-border border rounded-sm theme-input-bg theme-input-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors appearance-none"
                   disabled={isConnecting}
                 >
                   <option value="">Select connection type</option>
@@ -99,7 +99,7 @@ export default function MCPToolsSetup({
               </label>
               <div className="relative">
                 <select 
-                  className="w-full px-3 py-2 pr-10 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors appearance-none"
+                  className="w-full px-3 py-2 pr-10 theme-border border rounded-sm theme-input-bg theme-input-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors appearance-none"
                   disabled={isConnecting}
                 >
                   <option value="1.0">MCP 1.0</option>
@@ -120,7 +120,7 @@ export default function MCPToolsSetup({
               value={config.serverUrl}
               onChange={(e) => onConfigChange('serverUrl', e.target.value)}
               placeholder="https://api.example.com/mcp or ws://localhost:8080"
-              className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg theme-input-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
               disabled={isConnecting}
             />
           </div>
@@ -134,7 +134,7 @@ export default function MCPToolsSetup({
               onChange={(e) => onConfigChange('description', e.target.value)}
               placeholder="Describe what this MCP server provides..."
               rows={3}
-              className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors resize-vertical"
+              className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg theme-input-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors resize-vertical"
               disabled={isConnecting}
             />
           </div>
@@ -156,7 +156,7 @@ export default function MCPToolsSetup({
                 <select
                   value={config.authType}
                   onChange={(e) => onConfigChange('authType', e.target.value)}
-                  className="w-full px-3 py-2 pr-10 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors appearance-none"
+                  className="w-full px-3 py-2 pr-10 theme-border border rounded-sm theme-input-bg theme-input-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors appearance-none"
                   disabled={isConnecting}
                 >
                   <option value="none">No Authentication</option>
@@ -179,7 +179,7 @@ export default function MCPToolsSetup({
                 value={config.apiKey}
                 onChange={(e) => onConfigChange('apiKey', e.target.value)}
                 placeholder="Enter your API key or token"
-                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg theme-input-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 disabled={isConnecting}
               />
             </div>
@@ -196,7 +196,7 @@ export default function MCPToolsSetup({
                 onChange={(e) => onConfigChange('timeout', parseInt(e.target.value))}
                 min="1000"
                 max="300000"
-                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg theme-input-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 disabled={isConnecting}
               />
             </div>
@@ -211,7 +211,7 @@ export default function MCPToolsSetup({
                 onChange={(e) => onConfigChange('retries', parseInt(e.target.value))}
                 min="0"
                 max="10"
-                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="w-full px-3 py-2 theme-border border rounded-sm theme-input-bg theme-input-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                 disabled={isConnecting}
               />
             </div>
