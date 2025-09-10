@@ -140,14 +140,10 @@ export function AgentSidebar({ isMobile = false, onWorkflowSelect, currentWorkfl
                 title={isCollapsed ? workflow.name : undefined}
               >
                 {isCollapsed ? (
-                  // Collapsed view - only show icon
+                  // Collapsed view - clean icon-only display
                   <div className="flex justify-center">
-                    <div className={`p-2 rounded-lg ${getStatusColor(workflow.status)} relative`}>
+                    <div className={`p-2 rounded-lg ${getStatusColor(workflow.status)}`}>
                       <FileText className="w-4 h-4 text-white" />
-                      {/* Small status indicator */}
-                      <div className="absolute -top-1 -right-1">
-                        {getStatusIcon(workflow.status)}
-                      </div>
                     </div>
                   </div>
                 ) : (
