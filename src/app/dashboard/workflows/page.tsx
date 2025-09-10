@@ -22,6 +22,7 @@ export default function WorkflowsPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [agents, setAgents] = useState<Record<string, any> | null>(null);
   const [connections, setConnections] = useState<any[] | null>(null);
   const [finalData, setFinalData] = useState<any>(null);
@@ -130,6 +131,10 @@ export default function WorkflowsPage() {
 
   const handleMobileMenuToggle = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleSidebarToggle = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
   };
 
   const handleWorkflowSubmit = (data: WorkflowFormData) => {
@@ -257,6 +262,8 @@ export default function WorkflowsPage() {
           <AgentSidebar 
             onWorkflowSelect={setActiveWorkflow}
             currentWorkflowId={activeWorkflow || undefined}
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={handleSidebarToggle}
           />
         )}
         

@@ -1,12 +1,14 @@
 'use client';
 
-import { FileText, Play, Pause, Clock, CheckCircle } from 'lucide-react';
+import { FileText, Play, Pause, Clock, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Workflow } from '@/types/workflow';
 
 interface AgentSidebarProps {
   isMobile?: boolean;
   onWorkflowSelect?: (workflowId: string) => void;
   currentWorkflowId?: string;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 // Mock data for available workflows
@@ -58,7 +60,7 @@ const mockWorkflows: Workflow[] = [
   }
 ];
 
-export function AgentSidebar({ isMobile = false, onWorkflowSelect, currentWorkflowId }: AgentSidebarProps) {
+export function AgentSidebar({ isMobile = false, onWorkflowSelect, currentWorkflowId, isCollapsed = false, onToggleCollapse }: AgentSidebarProps) {
   const handleWorkflowClick = (workflow: Workflow) => {
     if (onWorkflowSelect) {
       onWorkflowSelect(workflow.id);
@@ -100,11 +102,26 @@ export function AgentSidebar({ isMobile = false, onWorkflowSelect, currentWorkfl
   };
 
   return (
-    <div className={`${isMobile ? 'w-full' : 'w-64'} theme-sidebar-bg ${!isMobile ? 'theme-border border-r' : ''}`}>
+    <div className={`${isMobile ? 'w-full' : isCollapsed ? 'w-16' : 'w-[300px]'} theme-sidebar-bg ${!isMobile ? 'theme-border border-r' : ''} transition-all duration-300 ease-in-out`}>
       <div className="p-4">
         {!isMobile && (
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold theme-text-secondary">Available Workflows</h3>
+          <div className="mb-4 flex items-center justify-between">
+            {!isCollapsed && (
+              <h3 className="text-sm font-semibold theme-text-secondary">Available Workflows</h3>
+            )}
+            {onToggleCollapse && (
+              <button
+                onClick={onToggleCollapse}
+                className="p-1.5 theme-hover-bg rounded-lg theme-text-secondary hover:theme-text-primary transition-colors ml-auto"
+                title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {isCollapsed ? (
+                  <ChevronRight className="w-4 h-4" />
+                ) : (
+                  <ChevronLeft className="w-4 h-4" />
+                )}
+              </button>
+            )}
           </div>
         )}
         
@@ -114,49 +131,64 @@ export function AgentSidebar({ isMobile = false, onWorkflowSelect, currentWorkfl
             return (
               <div 
                 key={workflow.id}
-                className={`p-3 rounded-lg cursor-pointer group transition-all duration-200 ${
+                className={`${isCollapsed ? 'p-2' : 'p-3'} rounded-lg cursor-pointer group transition-all duration-200 ${
                   isSelected 
                     ? 'theme-card-bg theme-border border theme-shadow-sm' 
                     : 'theme-hover-bg hover:theme-shadow-sm'
                 } ${isMobile ? 'active:scale-95' : ''}`}
                 onClick={() => handleWorkflowClick(workflow)}
+                title={isCollapsed ? workflow.name : undefined}
               >
-                <div className="flex items-start space-x-3">
-                  <div className={`p-2 rounded-lg ${getStatusColor(workflow.status)}`}>
-                    <FileText className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className={`${isMobile ? 'text-base' : 'text-sm'} theme-text-primary font-medium truncate`}>
-                        {workflow.name}
-                      </span>
-                      {getStatusIcon(workflow.status)}
-                    </div>
-                    <p className="text-xs theme-text-muted mb-2 line-clamp-2">
-                      {workflow.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs theme-text-muted">
-                        {workflow.lastModified}
-                      </span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        workflow.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
-                        workflow.status === 'running' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
-                        workflow.status === 'stopped' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
-                        workflow.status === 'draft' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                        'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300'
-                      }`}>
-                        {workflow.status}
-                      </span>
+                {isCollapsed ? (
+                  // Collapsed view - only show icon
+                  <div className="flex justify-center">
+                    <div className={`p-2 rounded-lg ${getStatusColor(workflow.status)} relative`}>
+                      <FileText className="w-4 h-4 text-white" />
+                      {/* Small status indicator */}
+                      <div className="absolute -top-1 -right-1">
+                        {getStatusIcon(workflow.status)}
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  // Expanded view - full content
+                  <div className="flex items-start space-x-3">
+                    <div className={`p-2 rounded-lg ${getStatusColor(workflow.status)}`}>
+                      <FileText className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className={`${isMobile ? 'text-base' : 'text-sm'} theme-text-primary font-medium truncate`}>
+                          {workflow.name}
+                        </span>
+                        {getStatusIcon(workflow.status)}
+                      </div>
+                      <p className="text-xs theme-text-muted mb-2 line-clamp-2">
+                        {workflow.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs theme-text-muted">
+                          {workflow.lastModified}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          workflow.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                          workflow.status === 'running' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                          workflow.status === 'stopped' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
+                          workflow.status === 'draft' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                          'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300'
+                        }`}>
+                          {workflow.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
 
-        {isMobile && (
+        {isMobile && !isCollapsed && (
           <div className="mt-6 p-3 theme-card-bg rounded-lg theme-border border">
             <p className="text-xs theme-text-muted text-center">
               Tap a workflow to select and work with it
