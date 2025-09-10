@@ -2,29 +2,6 @@ import { Bot } from 'lucide-react';
 import { Workflow, AgentData } from '@/types/workflow';
 
 
-export const QUICK_ACTIONS = [
-  {
-    title: 'Create Workflow',
-    description: 'Build a new automation workflow',
-    icon: 'Plus',
-    colors: { light: '#3b82f6', gradient: 'from-blue-500 to-blue-600' },
-    href: '/dashboard/workflows/create'
-  },
-  {
-    title: 'Add Agent', 
-    description: 'Deploy a new AI agent',
-    icon: 'UserPlus',
-    colors: { light: '#8b5cf6', gradient: 'from-indigo-500 to-purple-600' },
-    href: '/dashboard/agents/create'
-  },
-  {
-    title: 'View Analytics',
-    description: 'Check performance metrics', 
-    icon: 'Eye',
-    colors: { light: '#06b6d4', gradient: 'from-cyan-500 to-teal-600' },
-    href: '/dashboard/analytics'
-  }
-];
 
 export const STATS_CARDS = [
   {

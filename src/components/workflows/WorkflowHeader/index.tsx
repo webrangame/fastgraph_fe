@@ -1,6 +1,8 @@
 import { DesktopHeader } from './DesktopHeader';
 import { MobileWorkflowHeader } from '../mobile/MobileWorkflowHeader';
 
+import { WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
+
 interface WorkflowHeaderProps {
   isMobile: boolean;
   currentWorkflow: any;
@@ -15,6 +17,7 @@ interface WorkflowHeaderProps {
   onSelectWorkflow: (workflow: any) => void;
   onCloseWorkflow: (workflowId: string) => void;
   onCreateNew: () => void;
+  onCreateWithModal?: (data: WorkflowFormData) => void;
   onExecute: () => void;
   onStop: () => void;
   onSave: () => void;
@@ -37,6 +40,7 @@ export function WorkflowHeader({
         isRunning={props.isRunning}
         onMenuToggle={onMenuToggle!}
         onCreateNew={props.onCreateNew}
+        onCreateWithModal={props.onCreateWithModal}
         onSelectWorkflow={props.onSelectWorkflow}
         onExecute={props.onExecute}
         onStop={props.onStop}
@@ -60,6 +64,7 @@ export function WorkflowHeader({
       onSelectWorkflow={props.onSelectWorkflow}
       onCloseWorkflow={props.onCloseWorkflow}
       onCreateNew={props.onCreateNew}
+      onCreateWithModal={props.onCreateWithModal}
       onExecute={props.onExecute}
       onStop={props.onStop}
       onSave={props.onSave}

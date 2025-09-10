@@ -238,8 +238,8 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
     // Remove from Redux store
     dispatch(removeWorkflow(workflowId));
     
-    // Also remove from localStorage
-    const updatedWorkflows = workflows.filter((w: any) => w.workflowName !== workflowId);
+    // Also remove from localStorage - use id field for consistency
+    const updatedWorkflows = workflows.filter((w: any) => w.id !== workflowId);
     localStorage.setItem('workflows', JSON.stringify(updatedWorkflows));
   };
 

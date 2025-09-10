@@ -10,10 +10,16 @@ import { usePromptHandler } from '@/hooks/workflows/usePromptHandler';
 import { useAutoOrchestrate } from '@/hooks/workflows/useAutoOrchestrate';
 import { useWorkflowPersistence } from '@/hooks/workflows/useWorkflowPersistence';
 import { useEvolveAgentMutation } from '../../../../redux/api/evolveAgent/evolveAgentApi';
+import { WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
+import { useDispatch } from 'react-redux';
+import { addWorkflow, removeAllWorkflows } from '@/redux/slice/workflowSlice';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 
 export default function WorkflowsPage() {
+  const dispatch = useDispatch();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [agents, setAgents] = useState<Record<string, any> | null>(null);
@@ -56,8 +62,22 @@ export default function WorkflowsPage() {
     deleteNode
   } = useWorkflowManager();
 
+  // Use Redux workflows if available, otherwise fallback to workflow manager
+  const displayWorkflows = workflows.length > 0 ? workflows : workflowManagerWorkflows;
+  
+  // Find the current workflow from the correct source
+  const actualCurrentWorkflow = displayWorkflows.find((w: any) => w.id === activeWorkflow) || 
+                                (displayWorkflows.length > 0 ? displayWorkflows[0] : null);
+  
+  // Auto-select first workflow if none is active and workflows are available
+  useEffect(() => {
+    if (displayWorkflows.length > 0 && !activeWorkflow) {
+      setActiveWorkflow(displayWorkflows[0].id);
+    }
+  }, [displayWorkflows, activeWorkflow, setActiveWorkflow]);
+
   const { handlePromptSubmit, isProcessing } = usePromptHandler({
-    currentWorkflow,
+    currentWorkflow: actualCurrentWorkflow,
     selectedNode,
     addNodeToWorkflow,
     deleteNode,
@@ -77,13 +97,13 @@ export default function WorkflowsPage() {
 
   // Event handlers
   const handleSave = () => {
-    if (currentWorkflow) {
-      saveWorkflow(currentWorkflow);
+    if (actualCurrentWorkflow) {
+      saveWorkflow(actualCurrentWorkflow);
     }
   };
 
   const handleDeleteWorkflow = (workflowId?: string) => {
-    const idToDelete = workflowId || currentWorkflow?.id;
+    const idToDelete = workflowId || actualCurrentWorkflow?.id;
     if (idToDelete) {
       deleteWorkflowById(idToDelete);
       setAgents(null);
@@ -92,8 +112,47 @@ export default function WorkflowsPage() {
     originalDeleteWorkflow();
   };
 
+  const handleCloseWorkflow = (workflowId: string) => {
+    if (workflows.length > 0) {
+      // If using Redux workflows, delete from Redux and localStorage
+      deleteWorkflowById(workflowId);
+      
+      // Update active workflow if the closed one was active
+      if (activeWorkflow === workflowId) {
+        const remainingWorkflows = workflows.filter((w: any) => w.id !== workflowId);
+        setActiveWorkflow(remainingWorkflows[0]?.id || null);
+      }
+    } else {
+      // Fall back to workflow manager for local workflows
+      closeWorkflow(workflowId);
+    }
+  };
+
   const handleMobileMenuToggle = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleWorkflowSubmit = (data: WorkflowFormData) => {
+    console.log('Creating workflow:', data);
+    
+    // Create workflow data that matches the Workflow interface
+    const workflowData = {
+      id: Date.now().toString(),
+      name: data.name,
+      description: `${data.description} (Type: ${data.type})`,
+      status: 'draft' as const,
+      lastModified: 'Just now',
+      nodes: [],
+      connections: []
+    };
+    
+    // Add to Redux store (don't remove existing workflows)
+    dispatch(addWorkflow(workflowData));
+    
+    // Set the new workflow as active
+    setActiveWorkflow(workflowData.id);
+    
+    toast.success('Workflow created successfully!');
   };
 
   const handleAgentFeedback = async (agentId: string, agentName: string, action?: string, feedback?: string | string[]) => {
@@ -153,15 +212,12 @@ export default function WorkflowsPage() {
     }
   };
 
-  // Use Redux workflows if available, otherwise fallback to workflow manager
-  const displayWorkflows = workflows.length > 0 ? workflows : workflowManagerWorkflows;
-
   return (
     <div className="h-screen theme-bg flex flex-col transition-colors duration-300">
       
       <WorkflowHeader
         isMobile={isMobile}
-        currentWorkflow={currentWorkflow}
+        currentWorkflow={actualCurrentWorkflow}
         workflows={displayWorkflows}
         activeWorkflow={activeWorkflow}
         workflowStatus={workflowStatus}
@@ -171,8 +227,9 @@ export default function WorkflowsPage() {
         isRunning={isRunning}
         mobileMenuOpen={mobileMenuOpen}
         onSelectWorkflow={setActiveWorkflow}
-        onCloseWorkflow={closeWorkflow}
+        onCloseWorkflow={handleCloseWorkflow}
         onCreateNew={createNewWorkflow}
+        onCreateWithModal={handleWorkflowSubmit}
         onExecute={executeWorkflow}
         onStop={stopWorkflow}
         onSave={handleSave}
@@ -198,7 +255,7 @@ export default function WorkflowsPage() {
         
         {/* Workflow Canvas - Responsive */}
         <WorkflowCanvas
-          workflow={currentWorkflow}
+          workflow={actualCurrentWorkflow}
           selectedNode={selectedNode}
           onSelectNode={setSelectedNode}
           onDeleteNode={deleteNode}
