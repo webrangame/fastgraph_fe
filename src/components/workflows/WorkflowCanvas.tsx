@@ -122,7 +122,7 @@ function WorkflowCanvasInner({
   const [panelPosition, setPanelPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showLogSidebar, setShowLogSidebar] = useState<boolean>(false);
   const [sidebarAgent, setSidebarAgent] = useState<string | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useState<number>(400);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(450);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState<boolean>(false);
   const [feedbackAgent, setFeedbackAgent] = useState<{ id: string; name: string } | null>(null);
   const [showEndNodeSidebar, setShowEndNodeSidebar] = useState<boolean>(false);

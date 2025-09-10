@@ -396,7 +396,7 @@ export function LogSidebar({
                         {Object.entries(agentData.inputValues).map(([key, value]) => (
                           <div key={key} className="space-y-1">
                             <div className="font-medium theme-text-primary">{key}:</div>
-                            <div className="theme-text-secondary bg-gray-50 dark:bg-gray-800 rounded p-2 text-xs font-mono whitespace-pre-wrap break-words">
+                            <div className="theme-text-primary theme-input-bg rounded p-2 text-xs font-mono whitespace-pre-wrap break-words">
                               {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
                             </div>
                           </div>
@@ -414,7 +414,7 @@ export function LogSidebar({
                       Agent Prompt
                     </h3>
                     <div className="theme-card-bg rounded-lg p-3 border theme-border">
-                      <div className="text-sm theme-text-secondary whitespace-pre-wrap break-words font-mono bg-gray-50 dark:bg-gray-800 rounded p-3">
+                      <div className="text-sm theme-text-primary whitespace-pre-wrap break-words font-mono theme-input-bg rounded p-3">
                         {agentData.agentInput}
                       </div>
                     </div>
@@ -466,7 +466,7 @@ export function LogSidebar({
                       Final Result
                     </h3>
                     <div className="theme-card-bg rounded-lg p-3 border theme-border">
-                      <div className="text-sm theme-text-secondary whitespace-pre-wrap break-words font-mono bg-gray-50 dark:bg-gray-800 rounded p-3 max-h-96 overflow-y-auto">
+                      <div className="text-sm theme-text-primary whitespace-pre-wrap break-words font-mono theme-input-bg rounded p-3 max-h-96 overflow-y-auto">
                         {typeof agentResult === 'string' ? agentResult : JSON.stringify(agentResult, null, 2)}
                       </div>
                     </div>
