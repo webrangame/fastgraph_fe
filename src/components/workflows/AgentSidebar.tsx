@@ -102,8 +102,8 @@ export function AgentSidebar({ isMobile = false, onWorkflowSelect, currentWorkfl
   };
 
   return (
-    <div className={`${isMobile ? 'w-full' : isCollapsed ? 'w-16' : 'w-[300px]'} theme-sidebar-bg ${!isMobile ? 'theme-border border-r' : ''} transition-all duration-300 ease-in-out`}>
-      <div className="p-4">
+    <div className={`${isMobile ? 'w-full' : isCollapsed ? 'w-16' : 'w-[300px]'} theme-sidebar-bg ${!isMobile ? 'theme-border border-r' : ''} transition-all duration-300 ease-in-out overflow-hidden flex flex-col`}>
+      <div className="p-4 flex-1 overflow-y-auto scrollbar-very-thin">
         {!isMobile && (
           <div className="mb-4 flex items-center justify-between">
             {!isCollapsed && (
