@@ -140,17 +140,17 @@ export function AgentSidebar({ isMobile = false, onWorkflowSelect, currentWorkfl
                 title={isCollapsed ? workflow.name : undefined}
               >
                 {isCollapsed ? (
-                  // Collapsed view - clean icon-only display
+                  // Collapsed view - clean icon-only display with theme colors
                   <div className="flex justify-center">
-                    <div className={`p-2 rounded-lg ${getStatusColor(workflow.status)}`}>
-                      <FileText className="w-4 h-4 text-white" />
+                    <div className="p-2 rounded-lg theme-card-bg theme-border border theme-shadow">
+                      <FileText className="w-4 h-4 theme-text-secondary" />
                     </div>
                   </div>
                 ) : (
-                  // Expanded view - full content
+                  // Expanded view - full content with theme colors
                   <div className="flex items-start space-x-3">
-                    <div className={`p-2 rounded-lg ${getStatusColor(workflow.status)}`}>
-                      <FileText className="w-4 h-4 text-white" />
+                    <div className="p-2 rounded-lg theme-card-bg theme-border border theme-shadow">
+                      <FileText className="w-4 h-4 theme-text-secondary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-1">
@@ -166,13 +166,13 @@ export function AgentSidebar({ isMobile = false, onWorkflowSelect, currentWorkfl
                         <span className="text-xs theme-text-muted">
                           {workflow.lastModified}
                         </span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          workflow.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
-                          workflow.status === 'running' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
-                          workflow.status === 'stopped' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
-                          workflow.status === 'draft' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                          'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300'
-                        }`}>
+                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                        workflow.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' :
+                        workflow.status === 'running' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400' :
+                        workflow.status === 'stopped' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400' :
+                        workflow.status === 'draft' ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400' :
+                        'theme-input-bg theme-text-muted border theme-border'
+                      }`}>
                           {workflow.status}
                         </span>
                       </div>
