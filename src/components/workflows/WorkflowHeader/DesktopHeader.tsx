@@ -1,6 +1,7 @@
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { WorkflowTabs } from '../WorkflowTabs';
 import { WorkflowActions } from './WorkflowActions';
+import { WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 
 interface DesktopHeaderProps {
   currentWorkflow: any;
@@ -14,6 +15,7 @@ interface DesktopHeaderProps {
   onSelectWorkflow: (workflow: any) => void;
   onCloseWorkflow: (workflowId: string) => void;
   onCreateNew: () => void;
+  onCreateWithModal?: (data: WorkflowFormData) => void;
   onExecute: () => void;
   onStop: () => void;
   onSave: () => void;
@@ -32,6 +34,7 @@ export function DesktopHeader({
   onSelectWorkflow,
   onCloseWorkflow,
   onCreateNew,
+  onCreateWithModal,
   onExecute,
   onStop,
   onSave,
@@ -88,6 +91,7 @@ export function DesktopHeader({
         onSelectWorkflow={onSelectWorkflow}
         onCloseWorkflow={onCloseWorkflow}
         onCreateNew={onCreateNew}
+        onCreateWithModal={onCreateWithModal}
         maxWorkflows={5}
       />
     </header>

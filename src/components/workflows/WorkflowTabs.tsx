@@ -3,6 +3,8 @@
 import { Plus, X } from 'lucide-react';
 import { Workflow } from '@/types/workflow';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
+import { CreateWorkflowModal, WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
+import { useState } from 'react';
 
 interface WorkflowTabsProps {
   workflows: Workflow[];
@@ -10,6 +12,7 @@ interface WorkflowTabsProps {
   onSelectWorkflow: (workflowId: string) => void;
   onCloseWorkflow: (workflowId: string) => void;
   onCreateNew: () => void;
+  onCreateWithModal?: (data: WorkflowFormData) => void;
   maxWorkflows: number;
 }
 
@@ -19,8 +22,10 @@ export function WorkflowTabs({
   onSelectWorkflow,
   onCloseWorkflow,
   onCreateNew,
+  onCreateWithModal,
   maxWorkflows
 }: WorkflowTabsProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   return (
     <div className="flex items-center px-4 pb-2">
       <div className="flex space-x-1 flex-1">
@@ -51,12 +56,30 @@ export function WorkflowTabs({
       
       {workflows.length < maxWorkflows && (
         <button
-          onClick={onCreateNew}
+          onClick={() => {
+            if (onCreateWithModal) {
+              setIsModalOpen(true);
+            } else {
+              onCreateNew();
+            }
+          }}
           className="flex items-center space-x-1 px-3 py-2 theme-text-secondary hover:theme-text-primary theme-hover-bg rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span className="text-sm">New Workflow</span>
         </button>
+      )}
+
+      {/* Create Workflow Modal */}
+      {onCreateWithModal && (
+        <CreateWorkflowModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={(data: WorkflowFormData) => {
+            onCreateWithModal(data);
+            setIsModalOpen(false);
+          }}
+        />
       )}
     </div>
   );

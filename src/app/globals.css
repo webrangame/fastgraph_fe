@@ -140,6 +140,43 @@ input:focus, textarea:focus, select:focus {
   background: var(--text-secondary);
 }
 
+/* Very thin scrollbar for sidebar */
+.scrollbar-very-thin::-webkit-scrollbar {
+  width: 3px;
+}
+
+.scrollbar-very-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-very-thin::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5); /* gray-400 with opacity */
+  border-radius: 2px;
+}
+
+.scrollbar-very-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.8); /* gray-400 with higher opacity */
+}
+
+/* Dark theme scrollbar */
+.dark .scrollbar-very-thin::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5); /* gray-600 with opacity */
+}
+
+.dark .scrollbar-very-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.8); /* gray-600 with higher opacity */
+}
+
+/* Firefox support */
+.scrollbar-very-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.dark .scrollbar-very-thin {
+  scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
+}
+
 /* Add to globals.css - Theme toggle improvements */
 
 /* Ensure theme toggle icons are properly sized and centered */

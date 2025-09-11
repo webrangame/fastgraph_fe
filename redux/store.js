@@ -9,7 +9,7 @@ import {
   PURGE,
   REGISTER,
 } from 'redux-persist';
-import sessionStorage from 'redux-persist/lib/storage/session';
+import storage from 'redux-persist/lib/storage';
 import authReducer from './slice/authSlice';
 import cartReducer from './reducer/CartReducer';
 import workflowReducer from './slice/workflowSlice';
@@ -21,7 +21,7 @@ import { evolveAgentApi } from './api/evolveAgent/evolveAgentApi';
 
 const persistConfig = {
   key: 'root',
-  storage: sessionStorage,
+  storage: storage, // Use localStorage instead of sessionStorage
   whitelist: ['auth', 'cart' , 'workflows'], // Persist auth and cart reducers
 };
 
