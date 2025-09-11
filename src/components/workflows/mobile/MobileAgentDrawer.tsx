@@ -1,6 +1,6 @@
 'use client';
 
-import { AgentSidebar } from '../AgentSidebar';
+import { WorkflowsSidebar } from '../WorkflowsSidebar';
 import { X } from 'lucide-react';
 
 interface MobileAgentDrawerProps {
@@ -37,7 +37,7 @@ export function MobileAgentDrawer({ isOpen, onClose, onWorkflowSelect, currentWo
         
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          <AgentSidebar 
+          <WorkflowsSidebar 
             isMobile={true} 
             onWorkflowSelect={onWorkflowSelect}
             currentWorkflowId={currentWorkflowId}

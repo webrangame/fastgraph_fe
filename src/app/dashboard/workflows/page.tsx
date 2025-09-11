@@ -1,7 +1,7 @@
 'use client';
 
 import { WorkflowCanvas } from '@/components/workflows/WorkflowCanvas';
-import { AgentSidebar } from '@/components/workflows/AgentSidebar';
+import { WorkflowsSidebar } from '@/components/workflows/WorkflowsSidebar';
 import { PromptInput } from '@/components/workflows/PromptInput';
 import { MobileAgentDrawer } from '@/components/workflows/mobile/MobileAgentDrawer';
 import { WorkflowHeader } from '@/components/workflows/WorkflowHeader';
@@ -259,7 +259,7 @@ export default function WorkflowsPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Workflow Sidebar - Hidden on mobile */}
         {!isMobile && (
-          <AgentSidebar 
+          <WorkflowsSidebar 
             onWorkflowSelect={setActiveWorkflow}
             currentWorkflowId={activeWorkflow || undefined}
             isCollapsed={sidebarCollapsed}
