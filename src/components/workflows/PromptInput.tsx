@@ -102,7 +102,8 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
               }}
               onKeyPress={handleKeyPress}
               placeholder="Describe what you want to add..."
-              className="w-full min-h-12 max-h-24 px-3 py-2 pr-12 theme-input-bg theme-border border rounded-lg resize-none theme-input-text placeholder:theme-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+              className="w-full min-h-12 max-h-24 px-3 py-2 pr-12 theme-input-bg theme-border border rounded-lg resize-none theme-input-text placeholder:theme-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 text-base scrollbar-hide overflow-y-auto"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               disabled={isProcessing}
               rows={1}
             />
@@ -208,7 +209,8 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
               }}
               onKeyPress={handleKeyPress}
               placeholder="Describe what you want to add to your workflow..."
-              className="w-full min-h-12 max-h-32 px-4 py-3 pr-24 theme-surface border theme-border rounded-xl resize-none theme-text-primary placeholder:theme-text-muted focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all"
+              className="w-full min-h-12 max-h-32 px-4 py-3 pr-24 theme-surface border theme-border rounded-xl resize-none theme-text-primary placeholder:theme-text-muted focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all scrollbar-hide overflow-y-auto"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               disabled={isProcessing}
               rows={1}
             />
@@ -269,29 +271,6 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
           </div>
         )}
 
-        {/* Quick Suggestions */}
-        <div className="px-4 pb-4">
-          <div className="flex flex-wrap gap-2 justify-center">
-            <button
-              onClick={() => setInputValue('Add a customer service agent to handle inquiries')}
-              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-input-text hover:theme-text-primary transition-colors border theme-border"
-            >
-              Add Agent
-            </button>
-            <button
-              onClick={() => setInputValue('Create a data processing pipeline')}
-              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-input-text hover:theme-text-primary transition-colors border theme-border"
-            >
-              Data Pipeline
-            </button>
-            <button
-              onClick={() => setInputValue('Set up email notifications for workflow completion')}
-              className="px-3 py-1.5 text-xs rounded-full theme-input-bg theme-hover-bg theme-input-text hover:theme-text-primary transition-colors border theme-border"
-            >
-              Notifications
-            </button>
-          </div>
-        </div>
           </div>
         </div>
       </div>
