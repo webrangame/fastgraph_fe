@@ -173,6 +173,95 @@ const LoginPage = () => {
       return;
     }
 
+    // Initialize Google OAuth with callback
+    if (window.google && window.google.accounts) {
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        callback: async (response: any) => {
+          try {
+            console.log('🔵 Google OAuth callback received');
+            console.log('🔵 Response credential length:', response.credential?.length);
+            console.log('🔵 Response credential (first 100 chars):', response.credential?.substring(0, 100));
+            
+            if (!response.credential) {
+              console.error('❌ No credential received from Google');
+              toast.error('No authentication token received from Google. Please try again.');
+              return;
+            }
+
+            console.log('🔵 Sending credential to backend...');
+            
+            // Try different token formats that backends commonly expect
+            try {
+              // Format 1: access_token (current)
+              console.log('🔵 Trying access_token format...');
+              const result = await googleLogin({ access_token: response.credential }).unwrap();
+              console.log('✅ Google login successful with access_token:', result);
+              toast.success('Google login successful! Redirecting to dashboard...');
+              router.replace('/dashboard');
+              return;
+            } catch (accessTokenError) {
+              console.log('❌ access_token format failed:', accessTokenError);
+              
+              // Format 2: id_token (common alternative)
+              try {
+                console.log('🔵 Trying id_token format...');
+                const result = await googleLogin({ id_token: response.credential }).unwrap();
+                console.log('✅ Google login successful with id_token:', result);
+                toast.success('Google login successful! Redirecting to dashboard...');
+                router.replace('/dashboard');
+                return;
+              } catch (idTokenError) {
+                console.log('❌ id_token format failed:', idTokenError);
+                
+                // Format 3: token (generic)
+                try {
+                  console.log('🔵 Trying token format...');
+                  const result = await googleLogin({ token: response.credential }).unwrap();
+                  console.log('✅ Google login successful with token:', result);
+                  toast.success('Google login successful! Redirecting to dashboard...');
+                  router.replace('/dashboard');
+                  return;
+                } catch (tokenError) {
+                  console.log('❌ token format failed:', tokenError);
+                  
+                  // Format 4: credential (direct)
+                  try {
+                    console.log('🔵 Trying credential format...');
+                    const result = await googleLogin({ credential: response.credential }).unwrap();
+                    console.log('✅ Google login successful with credential:', result);
+                    toast.success('Google login successful! Redirecting to dashboard...');
+                    router.replace('/dashboard');
+                    return;
+                  } catch (credentialError) {
+                    console.log('❌ credential format failed:', credentialError);
+                    throw accessTokenError; // Throw the original error
+                  }
+                }
+              }
+            }
+          } catch (err: any) {
+            console.error('❌ Google login API call failed:', err);
+            
+            let errorMessage = 'Google login failed. Please try again.';
+            if (err?.data?.message) {
+              errorMessage = err.data.message;
+            } else if (err?.data?.error) {
+              errorMessage = err.data.error;
+            } else if (err?.status === 401) {
+              errorMessage = 'Google authentication failed. Please check your backend configuration.';
+            } else if (err?.status === 400) {
+              errorMessage = 'Invalid Google authentication token. Please try again.';
+            } else if (err?.status === 0) {
+              errorMessage = 'Network error. Please check your connection and try again.';
+            }
+            
+            toast.error(errorMessage);
+          }
+        }
+      });
+    }
+
     // Use popup-based OAuth instead of FedCM to avoid CORS issues
     const buttonDiv = document.getElementById('google-signin-button');
     if (buttonDiv) {
@@ -200,26 +289,14 @@ const LoginPage = () => {
     }
   };
 
-  const handleGoogleLoginPopup = () => {
+  const handleGoogleLoginPopup = async () => {
     try {
-      console.log('🔵 Starting Google OAuth popup flow');
+      console.log('🔵 Starting Google OAuth for login');
       
       // Use Google's One Tap or redirect flow
       if (window.google && window.google.accounts) {
         // Try One Tap first (more reliable)
-        window.google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            console.log('One Tap not displayed, trying redirect flow');
-            // Fallback to redirect flow
-            window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?` +
-              `client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&` +
-              `redirect_uri=${encodeURIComponent(window.location.origin)}&` +
-              `scope=${encodeURIComponent('email profile')}&` +
-              `response_type=code&` +
-              `access_type=offline&` +
-              `prompt=select_account`;
-          }
-        });
+        window.google.accounts.id.prompt();
       } else {
         // Direct redirect if Google API not loaded
         window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?` +
