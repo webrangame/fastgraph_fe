@@ -91,17 +91,7 @@ export const createdAgents: AgentData[] = [
 ];
 
 // Sample workflows (empty canvas)
-export const initialWorkflows: Workflow[] = [
-  {
-    id: '1',
-    name: 'Customer Service Router',
-    status: 'active',
-    lastModified: '2 hours ago',
-    nodes: [],
-    connections: [],
-    description: 'Routes customer service requests to the appropriate agent'
-  }
-];
+export const initialWorkflows: Workflow[] = [];
 
 export const MAX_WORKFLOWS = 5;
 

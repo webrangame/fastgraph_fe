@@ -54,7 +54,7 @@ const mockWorkflows: Workflow[] = [
     id: 'wf-5',
     name: 'Content Summarizer',
     description: 'Summarize long articles and documents',
-    status: 'stopped',
+    status: 'inactive',
     lastModified: '1 week ago',
     nodes: [],
     connections: []
@@ -91,8 +91,6 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
         return <CheckCircle className="w-3 h-3 text-green-500" />;
       case 'running':
         return <Play className="w-3 h-3 text-blue-500" />;
-      case 'stopped':
-        return <Pause className="w-3 h-3 text-red-500" />;
       case 'draft':
         return <Clock className="w-3 h-3 text-yellow-500" />;
       case 'inactive':
@@ -108,8 +106,6 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
         return 'bg-green-500';
       case 'running':
         return 'bg-blue-500';
-      case 'stopped':
-        return 'bg-red-500';
       case 'draft':
         return 'bg-yellow-500';
       case 'inactive':
@@ -238,7 +234,6 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                           workflow.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' :
                           workflow.status === 'running' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400' :
-                          workflow.status === 'stopped' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400' :
                           workflow.status === 'draft' ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400' :
                           'theme-input-bg theme-text-muted border theme-border'
                         }`}>
