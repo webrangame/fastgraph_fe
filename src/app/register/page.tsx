@@ -174,7 +174,43 @@ const RegisterPage = () => {
                       return;
                     } catch (credentialError) {
                       console.log('❌ credential format failed:', credentialError);
-                      throw accessTokenError; // Throw the original error
+                      
+                      // Format 5: google_token
+                      try {
+                        console.log('🔵 Trying google_token format...');
+                        const result = await googleLogin({ google_token: response.credential }).unwrap();
+                        console.log('✅ Google registration successful with google_token:', result);
+                        toast.success('Google registration successful! Welcome to FastGraph!');
+                        router.replace('/dashboard');
+                        return;
+                      } catch (googleTokenError) {
+                        console.log('❌ google_token format failed:', googleTokenError);
+                        
+                        // Format 6: jwt
+                        try {
+                          console.log('🔵 Trying jwt format...');
+                          const result = await googleLogin({ jwt: response.credential }).unwrap();
+                          console.log('✅ Google registration successful with jwt:', result);
+                          toast.success('Google registration successful! Welcome to FastGraph!');
+                          router.replace('/dashboard');
+                          return;
+                        } catch (jwtError) {
+                          console.log('❌ jwt format failed:', jwtError);
+                          
+                          // Format 7: google_id_token
+                          try {
+                            console.log('🔵 Trying google_id_token format...');
+                            const result = await googleLogin({ google_id_token: response.credential }).unwrap();
+                            console.log('✅ Google registration successful with google_id_token:', result);
+                            toast.success('Google registration successful! Welcome to FastGraph!');
+                            router.replace('/dashboard');
+                            return;
+                          } catch (googleIdTokenError) {
+                            console.log('❌ google_id_token format failed:', googleIdTokenError);
+                            throw accessTokenError; // Throw the original error
+                          }
+                        }
+                      }
                     }
                   }
                 }
