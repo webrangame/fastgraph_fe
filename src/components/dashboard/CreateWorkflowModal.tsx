@@ -92,11 +92,11 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
       isOpen={isOpen}
       onClose={handleClose}
       title="Create New Workflow"
-      maxWidth="max-w-lg"
+      maxWidth="max-w-2xl"
       headerColor="blue"
       headerIcon="Workflow"
     >
-      <form onSubmit={handleSubmit(onSubmitHandler)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmitHandler)} className="space-y-8">
         {/* Workflow Name */}
         <div>
           <label className="block text-sm font-medium theme-text-primary mb-2">
@@ -247,7 +247,7 @@ export function CreateWorkflowModal({ isOpen, onClose, onSubmit }: CreateWorkflo
         </div>
 
         {/* Form Actions */}
-        <div className="flex items-center justify-end space-x-3 pt-4">
+        <div className="flex items-center justify-end space-x-3 pt-6 border-t theme-border mt-8">
           <Button
             type="button"
             variant="secondary"

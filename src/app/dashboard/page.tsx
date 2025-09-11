@@ -6,12 +6,11 @@ import { selectCurrentUser } from '@/redux/slice/authSlice';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { StatsCard } from '@/components/dashboard/StatsCard';
-import { QuickActionCard } from '@/components/dashboard/QuickActionCard';
 import { ActivityItem } from '@/components/dashboard/ActivityItem';
 import { CreateWorkflowModal, WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 import { CreateAgentModal, AgentFormData } from '@/components/dashboard/CreateAgentModal';
 import { addWorkflow, removeAllWorkflows } from '@/redux/slice/workflowSlice';
-import { QUICK_ACTIONS, STATS_CARDS, RECENT_ACTIVITIES } from '@/lib/constants';
+import { STATS_CARDS, RECENT_ACTIVITIES } from '@/lib/constants';
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
@@ -61,16 +60,6 @@ export default function DashboardPage() {
     // For example: save to database, deploy agent, etc.
   };
 
-  const handleQuickAction = (action: typeof QUICK_ACTIONS[0]) => {
-    if (action.title === 'Create Workflow') {
-      handleCreateWorkflow();
-    } else if (action.title === 'Add Agent') {
-      handleAddAgent();
-    } else {
-      // Handle other actions normally
-      window.location.href = action.href;
-    }
-  };
 
   return (
     <div className="theme-bg min-h-screen theme-text-primary transition-colors duration-300">
@@ -124,19 +113,6 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Quick Actions - Responsive Layout */}
-        <div className="mb-6 md:mb-8">
-          <h2 className="text-lg md:text-xl font-semibold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {QUICK_ACTIONS.map((action, index) => (
-              <QuickActionCard 
-                key={index} 
-                {...action} 
-                onClick={() => handleQuickAction(action)}
-              />
-            ))}
-          </div>
-        </div>
 
         {/* Recent Activity - Mobile Optimized */}
         <Card>

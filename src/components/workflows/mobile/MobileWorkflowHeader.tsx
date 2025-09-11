@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/Button';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
+import { CreateWorkflowModal, WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 import { Menu, X, Play, Square, Save, Trash2, Plus, MoreVertical, Users, Bot } from 'lucide-react';
 import { useState } from 'react';
 
@@ -12,6 +13,7 @@ interface MobileWorkflowHeaderProps {
   isRunning: boolean;
   onMenuToggle: () => void;
   onCreateNew: () => void;
+  onCreateWithModal?: (data: WorkflowFormData) => void;
   onSelectWorkflow: (id: string) => void;
   onExecute: () => void;
   onStop: () => void;
@@ -27,6 +29,7 @@ export function MobileWorkflowHeader({
   isRunning,
   onMenuToggle,
   onCreateNew,
+  onCreateWithModal,
   onSelectWorkflow,
   onExecute,
   onStop,
@@ -35,6 +38,7 @@ export function MobileWorkflowHeader({
   menuOpen
 }: MobileWorkflowHeaderProps) {
   const [showActions, setShowActions] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const executeButtonProps = {
     onClick: isRunning ? onStop : onExecute,
@@ -130,7 +134,13 @@ export function MobileWorkflowHeader({
       <div className="px-4 pb-3 pt-2">
         <div className="flex items-center space-x-3 overflow-x-auto scrollbar-hide">
           <button
-            onClick={onCreateNew}
+            onClick={() => {
+              if (onCreateWithModal) {
+                setIsModalOpen(true);
+              } else {
+                onCreateNew();
+              }
+            }}
             className="flex-shrink-0 p-2 theme-hover-bg rounded-lg theme-text-secondary border theme-border"
           >
             <Plus size={18} />
@@ -150,6 +160,18 @@ export function MobileWorkflowHeader({
           ))}
         </div>
       </div>
+
+      {/* Create Workflow Modal */}
+      {onCreateWithModal && (
+        <CreateWorkflowModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={(data: WorkflowFormData) => {
+            onCreateWithModal(data);
+            setIsModalOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }

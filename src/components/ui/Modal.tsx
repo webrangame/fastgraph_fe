@@ -48,19 +48,19 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${
+    <div className={`fixed inset-0 z-[99999] flex items-center justify-center p-4 transition-all duration-300 ${
       isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
     }`}>
       {/* Animated Backdrop */}
       <div 
-        className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-all duration-300 ${
+        className={`absolute inset-0 bg-black/60 backdrop-blur-md transition-all duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={onClose}
       />
       
       {/* Animated Modal */}
-      <div className={`relative theme-card-bg rounded-2xl theme-shadow w-full ${maxWidth} transform transition-all duration-300 ${
+      <div className={`relative theme-card-bg rounded-2xl theme-shadow w-full ${maxWidth} max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
         isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 -translate-y-4 opacity-0'
       }`}>
         {/* Header with gradient */}

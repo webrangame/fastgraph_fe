@@ -25,10 +25,10 @@ export function WorkflowActions({
     disabled: !currentWorkflow || (!isRunning && currentWorkflow.nodes.length === 0),
     variant: isRunning ? 'danger' as const : 'success' as const,
     icon: isRunning ? Square : Play,
+    size: 'sm' as const,
+    className: '!rounded-sm',
     children: isRunning ? 'Stop' : 'Execute'
   });
-
-  {console.log(currentWorkflow , "currentWorkflow123")}
 
   return (
     <div className="flex items-center space-x-2">
@@ -36,6 +36,8 @@ export function WorkflowActions({
       <Button 
         variant="primary" 
         icon={Save} 
+        size="sm"
+        className="rounded-sm"
         disabled={!agentCount}
         onClick={onSave}
       >
@@ -44,6 +46,8 @@ export function WorkflowActions({
       <Button 
         variant="danger" 
         icon={Trash2}
+        size="sm"
+        className="!rounded-sm"
         onClick={onDelete}
         disabled={!agentCount}
       >

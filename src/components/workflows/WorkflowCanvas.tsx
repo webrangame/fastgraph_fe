@@ -122,7 +122,7 @@ function WorkflowCanvasInner({
   const [panelPosition, setPanelPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showLogSidebar, setShowLogSidebar] = useState<boolean>(false);
   const [sidebarAgent, setSidebarAgent] = useState<string | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useState<number>(400);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(450);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState<boolean>(false);
   const [feedbackAgent, setFeedbackAgent] = useState<{ id: string; name: string } | null>(null);
   const [showEndNodeSidebar, setShowEndNodeSidebar] = useState<boolean>(false);
@@ -982,7 +982,7 @@ function WorkflowCanvasInner({
             >
               {isMobile
                 ? "Tap menu to add agents"
-                : "Drag agents here to build your workflow"}
+                : "Build your workflow here"}
             </h3>
             <p
               className={`theme-text-secondary ${
@@ -991,7 +991,7 @@ function WorkflowCanvasInner({
             >
               {isMobile
                 ? "Use the agent panel to add agents to your workflow"
-                : "Select agents from the left panel and drag them onto the canvas"}
+                : "Select a workflow from the left panel to start building or choose an existing one to continue editing"}
             </p>
             {isMobile && (
               <p className="theme-text-muted text-xs mt-2">
