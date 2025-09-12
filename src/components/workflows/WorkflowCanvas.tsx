@@ -992,6 +992,7 @@ function WorkflowCanvasInner({
               {/* {isMobile
                 ? "Use the agent panel to add agents to your workflow"
                 : "Select a workflow from the left panel to start building or choose an existing one to continue editing"} */}
+                
             </p>
             {isMobile && (
               <p className="theme-text-muted text-xs mt-2">

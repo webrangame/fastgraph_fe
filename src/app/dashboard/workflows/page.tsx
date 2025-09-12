@@ -124,7 +124,7 @@ export default function WorkflowsPage() {
 
   const handleCloseWorkflow = (workflowId: string) => {
     if (workflows.length > 0) {
-      // If using Redux workflows, delete from Redux and localStorage
+      // If using Redux workflows, delete from Redux store
       deleteWorkflowById(workflowId);
       
       // Update active workflow if the closed one was active
