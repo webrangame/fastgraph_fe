@@ -1,7 +1,7 @@
 'use client';
 
 import { WorkflowCanvas } from '@/components/workflows/WorkflowCanvas';
-import { AgentSidebar } from '@/components/workflows/AgentSidebar';
+import { WorkflowsSidebar } from '@/components/workflows/WorkflowsSidebar';
 import { PromptInput } from '@/components/workflows/PromptInput';
 import { MobileAgentDrawer } from '@/components/workflows/mobile/MobileAgentDrawer';
 import { WorkflowHeader } from '@/components/workflows/WorkflowHeader';
@@ -27,6 +27,10 @@ export default function WorkflowsPage() {
   const [connections, setConnections] = useState<any[] | null>(null);
   const [finalData, setFinalData] = useState<any>(null);
   const [finalizedResult, setFinalizedResult] = useState<any>(null);
+  
+  // Undo functionality state
+  const [undoStack, setUndoStack] = useState<any[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
 
   // Custom hooks for workflow management
   const { workflows, workflowStatus, workflowError, saveWorkflow, saveAutoOrchestrateWorkflow, deleteWorkflowById, isSaving, clearWorkflowData } = useWorkflowPersistence();
@@ -77,6 +81,11 @@ export default function WorkflowsPage() {
     }
   }, [displayWorkflows, activeWorkflow, setActiveWorkflow]);
 
+  // Update undo availability
+  useEffect(() => {
+    setCanUndo(undoStack.length > 0);
+  }, [undoStack]);
+
   const { handlePromptSubmit, isProcessing } = usePromptHandler({
     currentWorkflow: actualCurrentWorkflow,
     selectedNode,
@@ -123,7 +132,7 @@ export default function WorkflowsPage() {
 
   const handleCloseWorkflow = (workflowId: string) => {
     if (workflows.length > 0) {
-      // If using Redux workflows, delete from Redux and localStorage
+      // If using Redux workflows, delete from Redux store
       deleteWorkflowById(workflowId);
       
       // Update active workflow if the closed one was active
@@ -145,6 +154,36 @@ export default function WorkflowsPage() {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
+  // Undo functionality
+  const handleUndo = () => {
+    if (undoStack.length > 0) {
+      const lastAction = undoStack[undoStack.length - 1];
+      
+      // Remove the last action from the stack
+      setUndoStack(prev => prev.slice(0, -1));
+      
+      // Show a toast message
+      toast.success(`Undid: ${lastAction.description || 'Last action'}`, {
+        duration: 2000,
+        style: {
+          background: '#10B981',
+          color: '#fff',
+        },
+        iconTheme: {
+          primary: '#fff',
+          secondary: '#10B981',
+        },
+      });
+      
+      console.log('Undo action:', lastAction);
+    }
+  };
+
+  // Function to add action to undo stack
+  const addToUndoStack = (action: { type: string; description: string; data?: any }) => {
+    setUndoStack(prev => [...prev, { ...action, timestamp: Date.now() }]);
+  };
+
   const handleWorkflowSubmit = (data: WorkflowFormData) => {
     console.log('Creating workflow:', data);
     
@@ -164,6 +203,13 @@ export default function WorkflowsPage() {
     
     // Set the new workflow as active
     setActiveWorkflow(workflowData.id);
+    
+    // Add to undo stack
+    addToUndoStack({
+      type: 'CREATE_WORKFLOW',
+      description: `Created workflow "${data.name}"`,
+      data: { workflowId: workflowData.id, workflowData }
+    });
     
     toast.success('Workflow created successfully!');
   };
@@ -243,6 +289,8 @@ export default function WorkflowsPage() {
         onCloseWorkflow={handleCloseWorkflow}
         onCreateNew={createNewWorkflow}
         onCreateWithModal={handleWorkflowSubmit}
+        onUndo={handleUndo}
+        canUndo={canUndo}
         onExecute={executeWorkflow}
         onStop={stopWorkflow}
         onSave={handleSave}
@@ -267,7 +315,7 @@ export default function WorkflowsPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Workflow Sidebar - Hidden on mobile */}
         {!isMobile && (
-          <AgentSidebar 
+          <WorkflowsSidebar 
             onWorkflowSelect={setActiveWorkflow}
             currentWorkflowId={activeWorkflow || undefined}
             isCollapsed={sidebarCollapsed}

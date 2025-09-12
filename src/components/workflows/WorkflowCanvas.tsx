@@ -982,16 +982,17 @@ function WorkflowCanvasInner({
             >
               {isMobile
                 ? "Tap menu to add agents"
-                : "Build your workflow here"}
+                : "Edit your workflow here"}
             </h3>
             <p
               className={`theme-text-secondary ${
                 isMobile ? "text-xs" : "text-sm"
               }`}
             >
-              {isMobile
+              {/* {isMobile
                 ? "Use the agent panel to add agents to your workflow"
-                : "Select a workflow from the left panel to start building or choose an existing one to continue editing"}
+                : "Select a workflow from the left panel to start building or choose an existing one to continue editing"} */}
+                
             </p>
             {isMobile && (
               <p className="theme-text-muted text-xs mt-2">

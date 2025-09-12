@@ -2,6 +2,8 @@
 
 import { X, Zap, GripVertical, FileText, Link } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useDispatch, useSelector } from 'react-redux';
+import { setEndNodeSidebarWidth } from '@/redux/slice/uiSlice';
 
 interface EndNodeSidebarProps {
   isOpen: boolean;
@@ -24,14 +26,9 @@ export function EndNodeSidebar({
   const isResizingRef = useRef(false);
   const animationFrameRef = useRef<number | null>(null);
   
-  // State for sidebar width with localStorage persistence
-  const [width, setWidth] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('endNodeSidebarWidth');
-      return saved ? parseInt(saved, 10) : initialWidth;
-    }
-    return initialWidth;
-  });
+  const dispatch = useDispatch();
+  const savedEndWidth = useSelector((state: any) => state.ui?.sidebar?.endNodeWidth);
+  const [width, setWidth] = useState<number>(savedEndWidth || initialWidth);
   
   // State for tracking resize activity
   const [isActivelyResizing, setIsActivelyResizing] = useState(false);
@@ -40,28 +37,21 @@ export function EndNodeSidebar({
   const MIN_WIDTH = 300;
   const MAX_WIDTH = 800;
 
-  // Debounced localStorage save to avoid excessive writes during resize
+  // Debounced Redux update to avoid excessive dispatches during resize
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Clear previous timeout
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      
-      // Debounce localStorage writes
-      saveTimeoutRef.current = setTimeout(() => {
-        localStorage.setItem('endNodeSidebarWidth', width.toString());
-      }, 300);
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
-    
+    saveTimeoutRef.current = setTimeout(() => {
+      dispatch(setEndNodeSidebarWidth(width));
+    }, 200);
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [width]);
+  }, [width, dispatch]);
 
   // Cleanup animation frames on unmount
   useEffect(() => {
