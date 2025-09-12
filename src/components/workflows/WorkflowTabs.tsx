@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Undo2 } from 'lucide-react';
 import { Workflow } from '@/types/workflow';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { CreateWorkflowModal, WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
@@ -13,6 +13,8 @@ interface WorkflowTabsProps {
   onCloseWorkflow: (workflowId: string) => void;
   onCreateNew: () => void;
   onCreateWithModal?: (data: WorkflowFormData) => void;
+  onUndo?: () => void;
+  canUndo?: boolean;
   maxWorkflows: number;
 }
 
@@ -23,6 +25,8 @@ export function WorkflowTabs({
   onCloseWorkflow,
   onCreateNew,
   onCreateWithModal,
+  onUndo,
+  canUndo = false,
   maxWorkflows
 }: WorkflowTabsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,21 +58,41 @@ export function WorkflowTabs({
         ))}
       </div>
       
-      {workflows.length < maxWorkflows && (
-        <button
-          onClick={() => {
-            if (onCreateWithModal) {
-              setIsModalOpen(true);
-            } else {
-              onCreateNew();
-            }
-          }}
-          className="flex items-center space-x-1 px-3 py-2 theme-text-secondary hover:theme-text-primary theme-hover-bg rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span className="text-sm">New Workflow</span>
-        </button>
-      )}
+      <div className="flex items-center space-x-2">
+        {/* Undo Button */}
+        {onUndo && (
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+              canUndo
+                ? 'theme-text-secondary hover:theme-text-primary theme-hover-bg'
+                : 'theme-text-muted cursor-not-allowed opacity-50'
+            }`}
+            title={canUndo ? 'Undo last action' : 'No actions to undo'}
+          >
+            <Undo2 className="w-4 h-4" />
+            <span className="text-sm">Undo</span>
+          </button>
+        )}
+
+        {/* New Workflow Button */}
+        {workflows.length < maxWorkflows && (
+          <button
+            onClick={() => {
+              if (onCreateWithModal) {
+                setIsModalOpen(true);
+              } else {
+                onCreateNew();
+              }
+            }}
+            className="flex items-center space-x-1 px-3 py-2 theme-text-secondary hover:theme-text-primary theme-hover-bg rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="text-sm">New Workflow</span>
+          </button>
+        )}
+      </div>
 
       {/* Create Workflow Modal */}
       {onCreateWithModal && (
