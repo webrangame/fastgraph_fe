@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setWorkflows, updateWorkflow, removeWorkflow } from '@/redux/slice/workflowSlice';
 import { useSaveWorkflowMutation, useInstallDataMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
 import { transformAutoOrchestrateToWorkflow, AutoOrchestrateResponse } from '@/lib/workflow-utils';
-import { RootState } from '@/types/redux';
+import { Store } from '@/redux/store';
 import { toast } from 'react-hot-toast';
 
 interface UseWorkflowPersistenceReturn {
@@ -14,17 +14,32 @@ interface UseWorkflowPersistenceReturn {
   saveAutoOrchestrateWorkflow: (autoOrchestrateResponse: AutoOrchestrateResponse, userId?: string) => Promise<void>;
   deleteWorkflowById: (workflowId: string) => void;
   isSaving: boolean;
+  clearWorkflowData: () => void;
 }
 
 export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
   const dispatch = useDispatch();
-  const workflows = useSelector((state: RootState) => state.workflows.workflows);
-  const workflowStatus = useSelector((state: RootState) => state.workflows.status);
-  const workflowError = useSelector((state: RootState) => state.workflows.error);
+  const workflows = useSelector((state: ReturnType<typeof Store.getState>) => state.workflows.workflows);
+  const workflowStatus = useSelector((state: ReturnType<typeof Store.getState>) => state.workflows.status);
+  const workflowError = useSelector((state: ReturnType<typeof Store.getState>) => state.workflows.error);
   const [isSaving, setIsSaving] = useState(false);
 
   const [saveWorkflowMutation] = useSaveWorkflowMutation();
   const [installDataMutation] = useInstallDataMutation();
+
+  // Clear workflow data function
+  const clearWorkflowData = () => {
+    console.log('Clearing workflow data...');
+    
+    // Clear workflows from Redux store
+    dispatch(setWorkflows([]));
+    
+    // Clear workflows from localStorage
+    localStorage.removeItem('workflows');
+    
+    console.log('Workflows cleared from Redux store and localStorage');
+    toast.success('Workflow data cleared successfully!');
+  };
 
   // Load workflows from localStorage on mount
   useEffect(() => {
@@ -55,20 +70,12 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
 
     setIsSaving(true);
     try {
-      // Save workflow data using the new installData API
-      const response = await installDataMutation({
-        dataName: `Workflow: ${workflow.name || workflow.workflowName || 'Untitled'}`,
-        description: `Workflow data for ${workflow.name || workflow.workflowName || 'Untitled'}`,
-        dataType: 'json',
-        dataContent: {
-          workflow: workflow,
-          metadata: {
-            savedAt: new Date().toISOString(),
-            version: '1.0',
-            type: 'workflow'
-          }
-        },
-        overwrite: false
+
+      console.log(workflow , 9999999)
+      // Save workflow data using the dedicated workflow API
+      const response = await saveWorkflowMutation({
+        workflow: workflow,
+        agents: workflow.agents || [] // Include agents if available
       }).unwrap();
       
       // Update Redux store with the workflow data
@@ -83,12 +90,15 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
       }
       localStorage.setItem('workflows', JSON.stringify(updatedWorkflows));
       
-      toast.success('Workflow saved successfully using data install API!');
-      console.log('Workflow saved via installData API:', response);
+      toast.success('Workflow saved successfully!');
+      console.log('Workflow saved via workflow API:', response);
+      
+      // Clear workflow data after successful save
+      clearWorkflowData();
       
     } catch (error) {
-      console.error('Error saving workflow via installData API:', error);
-      toast.error('Failed to save workflow via data install API. Please try again.');
+      console.error('Error saving workflow via workflow API:', error);
+      toast.error('Failed to save workflow. Please try again.');
       
       // Fallback: save to local storage only
       try {
@@ -103,7 +113,7 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
         // Update Redux store with local data
         dispatch(updateWorkflow(workflow));
         
-        toast('Workflow saved locally (data install API failed)', { icon: 'ℹ️' });
+        toast('Workflow saved locally (workflow API failed)', { icon: 'ℹ️' });
         console.log('Workflow saved locally as fallback:', workflow);
       } catch (localError) {
         console.error('Error saving workflow locally:', localError);
@@ -198,6 +208,9 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
       toast.success('Auto orchestrate workflow saved successfully using data install API!');
       console.log('Auto orchestrate workflow saved via installData API:', response);
       
+      // Clear workflow data after successful save
+      clearWorkflowData();
+      
     } catch (error) {
       console.error('Error saving auto orchestrate workflow via installData API:', error);
       toast.error('Failed to save auto orchestrate workflow via data install API. Please try again.');
@@ -250,6 +263,7 @@ export function useWorkflowPersistence(): UseWorkflowPersistenceReturn {
     saveWorkflow,
     saveAutoOrchestrateWorkflow,
     deleteWorkflowById,
-    isSaving
+    isSaving,
+    clearWorkflowData
   };
 }

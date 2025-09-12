@@ -17,6 +17,7 @@ interface UseAutoOrchestrateReturn {
   finalData: any;
   finalizedResult: any;
   executionResults: any;
+  resetAutoOrchestrate: () => void;
 }
  
 export function useAutoOrchestrate({
@@ -36,6 +37,18 @@ export function useAutoOrchestrate({
   }] = useAutoOrchestrateMutation();
 
   const [installData] = useInstallDataMutation();
+
+  // Reset function to clear auto orchestrate state
+  const resetAutoOrchestrate = () => {
+    console.log('Resetting auto orchestrate state...');
+    setAgents(null);
+    setConnections(null);
+    setFinalData(null);
+    setFinalizedResult(null);
+    setExecutionResults(null);
+    hasAutoOrchestrated.current = false;
+    console.log('Auto orchestrate state reset successfully');
+  };
  
   useEffect(() => {
     const autoOrchestrateFirstWorkflow = async () => {
@@ -69,24 +82,18 @@ export function useAutoOrchestrate({
             onAgentsProcessed(processedAgents, processedConnections, processedFinalData);
 
             // Save the auto orchestrate result using useInstallDataMutation
+
+            console.log(workflows[0] , 1111111)
             try {
-              console.log('Saving auto orchestrate result...');
               const saveResult = await installData({
-                dataName: `${firstWorkflowDescription}`,
-                description: `Auto orchestrate result for command: ${firstWorkflowDescription}`,
+                dataName: workflows[0].name,
+                description: firstWorkflowDescription,
+                status:workflows[0].status,
                 dataType: 'json',
                 dataContent: {
                   originalCommand: firstWorkflowDescription,
                   autoOrchestrateResult: result,
-                  processedAgents: processedAgents,
-                  processedConnections: processedConnections,
-                  finalData: processedFinalData,
-                  finalizedResult: processedFinalizedResult,
-                  metadata: {
-                    savedAt: new Date().toISOString(),
-                    version: '1.0',
-                    type: 'auto_orchestrate_result'
-                  }
+                 
                 },
                 overwrite: true
               }).unwrap();
@@ -115,6 +122,7 @@ export function useAutoOrchestrate({
     connections,
     finalData,
     finalizedResult,
-    executionResults
+    executionResults,
+    resetAutoOrchestrate
   };
 }

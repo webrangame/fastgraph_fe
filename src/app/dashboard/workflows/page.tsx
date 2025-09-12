@@ -29,7 +29,7 @@ export default function WorkflowsPage() {
   const [finalizedResult, setFinalizedResult] = useState<any>(null);
 
   // Custom hooks for workflow management
-  const { workflows, workflowStatus, workflowError, saveWorkflow, saveAutoOrchestrateWorkflow, deleteWorkflowById, isSaving } = useWorkflowPersistence();
+  const { workflows, workflowStatus, workflowError, saveWorkflow, saveAutoOrchestrateWorkflow, deleteWorkflowById, isSaving, clearWorkflowData } = useWorkflowPersistence();
   
   // Evolution API
   const [evolveAgent, { isLoading: isEvolving }] = useEvolveAgentMutation();
@@ -41,7 +41,7 @@ export default function WorkflowsPage() {
     setFinalData(processedFinalData);
   }, []);
   
-  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult, executionResults } = useAutoOrchestrate({
+  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult, executionResults, resetAutoOrchestrate } = useAutoOrchestrate({
     workflows,
     onAgentsProcessed: handleAgentsProcessed
   });
@@ -111,6 +111,14 @@ export default function WorkflowsPage() {
       setConnections(null);
     }
     originalDeleteWorkflow();
+  };
+
+  const handleClearWorkflowData = () => {
+    clearWorkflowData();
+    // Also clear auto orchestrate state manually
+    if (resetAutoOrchestrate) {
+      resetAutoOrchestrate();
+    }
   };
 
   const handleCloseWorkflow = (workflowId: string) => {
