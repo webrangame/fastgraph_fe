@@ -13,6 +13,7 @@ import storage from 'redux-persist/lib/storage';
 import authReducer from './slice/authSlice';
 import cartReducer from './reducer/CartReducer';
 import workflowReducer from './slice/workflowSlice';
+import uiReducer from './slice/uiSlice';
 import { authApi } from '../lib/api/authApi';
 import { autoOrchestrateApi } from './api/autoOrchestrate/autoOrchestrateApi';
 import { evolveAgentApi } from './api/evolveAgent/evolveAgentApi';
@@ -22,13 +23,14 @@ import { evolveAgentApi } from './api/evolveAgent/evolveAgentApi';
 const persistConfig = {
   key: 'root',
   storage: storage, // Use localStorage instead of sessionStorage
-  whitelist: ['auth', 'cart'], // Persist auth and cart reducers (workflows now server-backed)
+  whitelist: ['auth', 'cart', 'ui'], // Persist auth, cart and UI prefs
 };
 
 const rootReducer = combineReducers({
   auth: authReducer,
   CartReducer: cartReducer,
   workflows: workflowReducer,
+  ui: uiReducer,
   [authApi.reducerPath]: authApi.reducer,
   [autoOrchestrateApi.reducerPath]: autoOrchestrateApi.reducer,
   [evolveAgentApi.reducerPath]: evolveAgentApi.reducer,

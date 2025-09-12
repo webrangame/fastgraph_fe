@@ -2,6 +2,8 @@
 
 import { X, Bot, MessageSquare, Activity, Trash2, GripVertical, Settings, FileText, Terminal, CheckCircle } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useDispatch, useSelector } from 'react-redux';
+import { setLogSidebarWidth } from '@/redux/slice/uiSlice';
 import { useLogStreaming } from "@/hooks/workflows/useLogStreaming";
 import { useTheme } from "@/components/ThemeProvider"; // Theme provider import
 
@@ -67,14 +69,9 @@ export function LogSidebar({
   // Tab state management
   const [activeTab, setActiveTab] = useState<'input' | 'logs' | 'output'>('logs');
   
-  // State for sidebar width with localStorage persistence
-  const [width, setWidth] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('logSidebarWidth');
-      return saved ? parseInt(saved, 10) : initialWidth;
-    }
-    return initialWidth;
-  });
+  const dispatch = useDispatch();
+  const savedLogWidth = useSelector((state: any) => state.ui?.sidebar?.logWidth);
+  const [width, setWidth] = useState<number>(savedLogWidth || initialWidth);
   
   // State for tracking resize activity
   const [isActivelyResizing, setIsActivelyResizing] = useState(false);
@@ -83,28 +80,21 @@ export function LogSidebar({
   const MIN_WIDTH = 300;
   const MAX_WIDTH = 800;
 
-  // Debounced localStorage save to avoid excessive writes during resize
+  // Debounced Redux update to avoid excessive dispatches during resize
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Clear previous timeout
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      
-      // Debounce localStorage writes
-      saveTimeoutRef.current = setTimeout(() => {
-        localStorage.setItem('logSidebarWidth', width.toString());
-      }, 300);
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
-    
+    saveTimeoutRef.current = setTimeout(() => {
+      dispatch(setLogSidebarWidth(width));
+    }, 200);
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [width]);
+  }, [width, dispatch]);
 
   // Cleanup animation frames on unmount
   useEffect(() => {
