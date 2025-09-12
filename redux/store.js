@@ -22,7 +22,7 @@ import { evolveAgentApi } from './api/evolveAgent/evolveAgentApi';
 const persistConfig = {
   key: 'root',
   storage: storage, // Use localStorage instead of sessionStorage
-  whitelist: ['auth', 'cart' , 'workflows'], // Persist auth and cart reducers
+  whitelist: ['auth', 'cart'], // Persist auth and cart reducers (workflows now server-backed)
 };
 
 const rootReducer = combineReducers({
