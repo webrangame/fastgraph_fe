@@ -43,3 +43,6 @@ Thumbs.db
 
 # SWC compiler cache
 .swc/
+
+# Documentation files
+*.md

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Backend Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Google OAuth Backend Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Backend Endpoint</h2>
+        <p>This will test different token formats with your backend:</p>
+        <button onclick="testBackend()">Test All Formats</button>
+        <div id="results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Manual Test</h2>
+        <p>Test a specific format:</p>
+        <input type="text" id="tokenFormat" placeholder="e.g., access_token" value="access_token">
+        <input type="text" id="testToken" placeholder="Test token" value="test_token_123">
+        <button onclick="testSpecificFormat()">Test Format</button>
+        <div id="manualResults"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://jobaapi.hattonn.com/api/v1/auth/google/token';
+        
+        async function testBackend() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing backend endpoint...</p>';
+            
+            const formats = [
+                'access_token',
+                'id_token', 
+                'token',
+                'credential',
+                'google_token',
+                'jwt',
+                'google_id_token'
+            ];
+            
+            for (const format of formats) {
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ [format]: 'test_token_123' })
+                    });
+                    
+                    const result = await response.text();
+                    
+                    const resultDiv = document.createElement('div');
+                    resultDiv.className = response.ok ? 'success' : 'error';
+                    resultDiv.innerHTML = `
+                        <strong>${format}:</strong> 
+                        Status: ${response.status} ${response.statusText}
+                        <pre>${result}</pre>
+                    `;
+                    resultsDiv.appendChild(resultDiv);
+                    
+                } catch (error) {
+                    const resultDiv = document.createElement('div');
+                    resultDiv.className = 'error';
+                    resultDiv.innerHTML = `
+                        <strong>${format}:</strong> 
+                        Error: ${error.message}
+                    `;
+                    resultsDiv.appendChild(resultDiv);
+                }
+            }
+        }
+        
+        async function testSpecificFormat() {
+            const format = document.getElementById('tokenFormat').value;
+            const token = document.getElementById('testToken').value;
+            const resultsDiv = document.getElementById('manualResults');
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ [format]: token })
+                });
+                
+                const result = await response.text();
+                
+                resultsDiv.innerHTML = `
+                    <div class="${response.ok ? 'success' : 'error'}">
+                        <strong>Format:</strong> ${format}<br>
+                        <strong>Status:</strong> ${response.status} ${response.statusText}<br>
+                        <strong>Response:</strong>
+                        <pre>${result}</pre>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

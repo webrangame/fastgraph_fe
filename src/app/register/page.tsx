@@ -79,36 +79,28 @@ const RegisterPage = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     try {
-      // Initialize Google OAuth when button is clicked
-      if (typeof window !== 'undefined' && window.google) {
-        window.google.accounts.id.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-          callback: async (response: any) => {
-            try {
-              // The response.credential contains the JWT token from Google
-              // We need to send this as access_token to match your backend API
-              await googleLogin({ access_token: response.credential }).unwrap();
-              toast.success('Google registration successful! Welcome to FastGraph!');
-              // Redirect to dashboard after successful Google login
-              router.replace('/dashboard');
-            } catch (err) {
-              console.error('Google registration failed:', err);
-              toast.error('Google registration failed. Please try again.');
-            }
-          },
-        });
-        
-        // Trigger the Google sign-in prompt
+      console.log('🔵 Starting Google OAuth for registration');
+      
+      // Use Google's One Tap or redirect flow
+      if (window.google && window.google.accounts) {
+        // Try One Tap first (more reliable)
         window.google.accounts.id.prompt();
       } else {
-        console.error('Google OAuth not loaded');
-        toast.error('Google OAuth not available. Please try again.');
+        // Direct redirect if Google API not loaded
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?` +
+          `client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&` +
+          `redirect_uri=${encodeURIComponent(window.location.origin)}&` +
+          `scope=${encodeURIComponent('email profile')}&` +
+          `response_type=code&` +
+          `access_type=offline&` +
+          `prompt=select_account`;
       }
-    } catch (err) {
-      console.error('Failed to initialize Google registration:', err);
-      toast.error('Failed to initialize Google registration. Please try again.');
+
+    } catch (error) {
+      console.error('❌ Google auth failed:', error);
+      toast.error('Failed to start Google authentication. Please try again.');
     }
   };
 
@@ -119,7 +111,131 @@ const RegisterPage = () => {
     script.async = true;
     script.defer = true;
     script.onload = () => {
-      console.log('Google OAuth script loaded');
+      console.log('✅ Google OAuth script loaded for registration');
+      // Initialize Google OAuth when script loads
+      if (window.google && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: async (response: any) => {
+            try {
+              console.log('🔵 Google OAuth callback received for registration');
+              console.log('🔵 Response credential length:', response.credential?.length);
+              console.log('🔵 Response credential (first 100 chars):', response.credential?.substring(0, 100));
+              
+              if (!response.credential) {
+                console.error('❌ No credential received from Google');
+                toast.error('No authentication token received from Google. Please try again.');
+                return;
+              }
+
+              console.log('🔵 Sending credential to backend for registration...');
+              
+              // Try different token formats that backends commonly expect
+              try {
+                // Format 1: access_token (current)
+                console.log('🔵 Trying access_token format...');
+                const result = await googleLogin({ access_token: response.credential }).unwrap();
+                console.log('✅ Google registration successful with access_token:', result);
+                toast.success('Google registration successful! Welcome to FastGraph!');
+                router.replace('/dashboard');
+                return;
+              } catch (accessTokenError) {
+                console.log('❌ access_token format failed:', accessTokenError);
+                
+                // Format 2: id_token (common alternative)
+                try {
+                  console.log('🔵 Trying id_token format...');
+                  const result = await googleLogin({ id_token: response.credential }).unwrap();
+                  console.log('✅ Google registration successful with id_token:', result);
+                  toast.success('Google registration successful! Welcome to FastGraph!');
+                  router.replace('/dashboard');
+                  return;
+                } catch (idTokenError) {
+                  console.log('❌ id_token format failed:', idTokenError);
+                  
+                  // Format 3: token (generic)
+                  try {
+                    console.log('🔵 Trying token format...');
+                    const result = await googleLogin({ token: response.credential }).unwrap();
+                    console.log('✅ Google registration successful with token:', result);
+                    toast.success('Google registration successful! Welcome to FastGraph!');
+                    router.replace('/dashboard');
+                    return;
+                  } catch (tokenError) {
+                    console.log('❌ token format failed:', tokenError);
+                    
+                    // Format 4: credential (direct)
+                    try {
+                      console.log('🔵 Trying credential format...');
+                      const result = await googleLogin({ credential: response.credential }).unwrap();
+                      console.log('✅ Google registration successful with credential:', result);
+                      toast.success('Google registration successful! Welcome to FastGraph!');
+                      router.replace('/dashboard');
+                      return;
+                    } catch (credentialError) {
+                      console.log('❌ credential format failed:', credentialError);
+                      
+                      // Format 5: google_token
+                      try {
+                        console.log('🔵 Trying google_token format...');
+                        const result = await googleLogin({ google_token: response.credential }).unwrap();
+                        console.log('✅ Google registration successful with google_token:', result);
+                        toast.success('Google registration successful! Welcome to FastGraph!');
+                        router.replace('/dashboard');
+                        return;
+                      } catch (googleTokenError) {
+                        console.log('❌ google_token format failed:', googleTokenError);
+                        
+                        // Format 6: jwt
+                        try {
+                          console.log('🔵 Trying jwt format...');
+                          const result = await googleLogin({ jwt: response.credential }).unwrap();
+                          console.log('✅ Google registration successful with jwt:', result);
+                          toast.success('Google registration successful! Welcome to FastGraph!');
+                          router.replace('/dashboard');
+                          return;
+                        } catch (jwtError) {
+                          console.log('❌ jwt format failed:', jwtError);
+                          
+                          // Format 7: google_id_token
+                          try {
+                            console.log('🔵 Trying google_id_token format...');
+                            const result = await googleLogin({ google_id_token: response.credential }).unwrap();
+                            console.log('✅ Google registration successful with google_id_token:', result);
+                            toast.success('Google registration successful! Welcome to FastGraph!');
+                            router.replace('/dashboard');
+                            return;
+                          } catch (googleIdTokenError) {
+                            console.log('❌ google_id_token format failed:', googleIdTokenError);
+                            throw accessTokenError; // Throw the original error
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            } catch (err: any) {
+              console.error('❌ Google registration API call failed:', err);
+              
+              let errorMessage = 'Google registration failed. Please try again.';
+              if (err?.data?.message) {
+                errorMessage = err.data.message;
+              } else if (err?.data?.error) {
+                errorMessage = err.data.error;
+              } else if (err?.status === 401) {
+                errorMessage = 'Google authentication failed. Please check your backend configuration.';
+              } else if (err?.status === 400) {
+                errorMessage = 'Invalid Google authentication token. Please try again.';
+              } else if (err?.status === 0) {
+                errorMessage = 'Network error. Please check your connection and try again.';
+              }
+              
+              toast.error(errorMessage);
+            }
+          }
+        });
+      }
     };
     document.head.appendChild(script);
 
