@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { FileText, Play, Pause, Clock, CheckCircle, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { FileText, Play, Pause, Clock, CheckCircle, ChevronLeft, ChevronRight, Search, X, Loader2 } from 'lucide-react';
 import type { Workflow } from '@/types/workflow';
+import { useGetDataCreatedByQuery } from '../../../redux/api/autoOrchestrate/autoOrchestrateApi';
 
 interface WorkflowsSidebarProps {
   isMobile?: boolean;
@@ -10,59 +11,77 @@ interface WorkflowsSidebarProps {
   currentWorkflowId?: string;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  userId?: string; // Add userId prop
 }
 
-// Mock data for available workflows
-const mockWorkflows: Workflow[] = [
-  {
-    id: 'wf-1',
-    name: 'Poem Generator',
-    description: 'Create beautiful poems with AI assistance',
-    status: 'active',
-    lastModified: '2 hours ago',
-    nodes: [],
-    connections: []
-  },
-  {
-    id: 'wf-2', 
-    name: 'React Essay Writer',
-    description: 'Generate technical essays about React development',
-    status: 'draft',
-    lastModified: '1 day ago',
-    nodes: [],
-    connections: []
-  },
-  {
-    id: 'wf-3',
-    name: 'Code Review Assistant',
-    description: 'Automated code review and suggestions',
-    status: 'inactive',
-    lastModified: '3 days ago',
-    nodes: [],
-    connections: []
-  },
-  {
-    id: 'wf-4',
-    name: 'Data Analysis Pipeline',
-    description: 'Process and analyze datasets automatically',
-    status: 'running',
-    lastModified: '5 minutes ago',
-    nodes: [],
-    connections: []
-  },
-  {
-    id: 'wf-5',
-    name: 'Content Summarizer',
-    description: 'Summarize long articles and documents',
-    status: 'inactive',
-    lastModified: '1 week ago',
-    nodes: [],
-    connections: []
-  }
-];
+// API Response type for getDataCreatedBy
+interface DataCreatedByResponse {
+  dataId: string;
+  dataName: string;
+  description: string;
+  dataType: string;
+  dataContent: any;
+  status: string;
+  errorMessage?: string;
+  createdBy: string;
+  updatedBy: string;
+  createdAt: string;
+  updatedAt: string;
+  installedAt: string;
+}
 
-export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWorkflowId, isCollapsed = false, onToggleCollapse }: WorkflowsSidebarProps) {
+// Transform API response to Workflow format
+const transformDataToWorkflows = (dataResponse: DataCreatedByResponse[]): Workflow[] => {
+  return dataResponse
+    .filter(item => item.dataType === 'json' && item.dataContent?.autoOrchestrateResult)
+    .map((item) => {
+      const workflow = item.dataContent.autoOrchestrateResult;
+      return {
+        id: item.dataId,
+        name: item.dataName ,
+        description: item.description ,
+        status: item.status,
+        lastModified: formatDate(item.installedAt),
+        nodes:  [],
+        connections: []
+      };
+    });
+};
+
+
+
+// Format date to readable string
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+  
+  if (diffInMinutes < 1) return 'Just now';
+  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+  if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+  return `${Math.floor(diffInMinutes / 1440)} days ago`;
+};
+
+export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWorkflowId, isCollapsed = false, onToggleCollapse, userId = '1' }: WorkflowsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Use the API to fetch w orkflows - only if userId is provided
+  const { 
+    data: apiData, 
+    error, 
+    isLoading, 
+    isError 
+  } = useGetDataCreatedByQuery(userId, {
+    skip: !userId || userId === '1' // Skip if no userId or default value
+  });
+
+  // Transform API data to workflows
+  const workflows = useMemo(() => {
+    if (apiData) {
+      return transformDataToWorkflows(apiData as DataCreatedByResponse[]);
+    }
+    return [];
+  }, [apiData]);
 
   const handleWorkflowClick = (workflow: Workflow) => {
     if (onWorkflowSelect) {
@@ -76,14 +95,14 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
 
   // Filter workflows based on search query
   const filteredWorkflows = useMemo(() => {
-    if (!searchQuery.trim()) return mockWorkflows;
+    if (!searchQuery.trim()) return workflows;
     
     const query = searchQuery.toLowerCase();
-    return mockWorkflows.filter(workflow => 
+    return workflows.filter(workflow => 
       workflow.name.toLowerCase().includes(query) ||
       workflow.description.toLowerCase().includes(query)
     );
-  }, [searchQuery]);
+  }, [searchQuery, workflows]);
 
   const getStatusIcon = (status: Workflow['status']) => {
     switch (status) {
@@ -190,7 +209,33 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
         )}
         
         <div className="space-y-2">
-          {filteredWorkflows.length > 0 ? (
+          {!userId || userId === '1' ? (
+            // No user authenticated
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 theme-text-muted mx-auto mb-3 opacity-50" />
+              <p className="text-sm theme-text-muted mb-1">Please log in to view workflows</p>
+              <p className="text-xs theme-text-muted">
+                Authentication required to load your workflows
+              </p>
+            </div>
+          ) : isLoading ? (
+            // Loading state
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin theme-text-muted mr-2" />
+              <span className="text-sm theme-text-muted">Loading workflows...</span>
+            </div>
+          ) : isError ? (
+            // Error state
+            <div className="text-center py-8">
+              <div className="w-12 h-12 theme-text-muted mx-auto mb-3 opacity-50">
+                <FileText className="w-full h-full" />
+              </div>
+              <p className="text-sm theme-text-muted mb-1">Failed to load workflows</p>
+              <p className="text-xs theme-text-muted">
+                {'message' in error ? error.message : 'Please try again later'}
+              </p>
+            </div>
+          ) : filteredWorkflows.length > 0 ? (
             filteredWorkflows.map((workflow) => {
               const isSelected = currentWorkflowId === workflow.id;
               return (
@@ -247,7 +292,7 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
               );
             })
           ) : searchQuery ? (
-            // No results message
+            // No search results message
             <div className="text-center py-8">
               <Search className="w-12 h-12 theme-text-muted mx-auto mb-3 opacity-50" />
               <p className="text-sm theme-text-muted mb-1">No workflows found</p>
@@ -261,7 +306,16 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
                 </button>
               </p>
             </div>
-          ) : null}
+          ) : (
+            // No workflows available message
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 theme-text-muted mx-auto mb-3 opacity-50" />
+              <p className="text-sm theme-text-muted mb-1">No workflows available</p>
+              <p className="text-xs theme-text-muted">
+                Create your first workflow to get started
+              </p>
+            </div>
+          )}
         </div>
 
         {isMobile && !isCollapsed && (

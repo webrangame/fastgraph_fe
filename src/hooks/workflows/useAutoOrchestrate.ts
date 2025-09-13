@@ -53,9 +53,7 @@ export function useAutoOrchestrate({
   useEffect(() => {
     const autoOrchestrateFirstWorkflow = async () => {
       // Prevent multiple executions in development due to React strict mode
-      if (hasAutoOrchestrated.current) {
-        return;
-      }
+    
      
       if (workflows.length > 0) {
  
@@ -83,7 +81,6 @@ export function useAutoOrchestrate({
 
             // Save the auto orchestrate result using useInstallDataMutation
 
-            console.log(workflows[0] , 1111111)
             try {
               const saveResult = await installData({
                 dataName: workflows[0].name,
@@ -91,11 +88,10 @@ export function useAutoOrchestrate({
                 status:workflows[0].status,
                 dataType: 'json',
                 dataContent: {
-                  originalCommand: firstWorkflowDescription,
                   autoOrchestrateResult: result,
                  
                 },
-                overwrite: true
+                overwrite: false
               }).unwrap();
               
               console.log('Auto orchestrate result saved successfully:', saveResult);

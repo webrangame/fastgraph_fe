@@ -45,6 +45,16 @@ export const autoOrchestrateApi = createApi({
       }),
       invalidatesTags: ['Data'],
     }),
+    getDataCreatedBy: builder.query({
+      query: (userId) => ({
+        url: `/api/v1/data/created-by/${userId}`,
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+        },
+      }),
+      providesTags: ['Data'],
+    }),
   }),
 });
 
@@ -52,4 +62,5 @@ export const {
   useAutoOrchestrateMutation,
   useSaveWorkflowMutation,
   useInstallDataMutation,
+  useGetDataCreatedByQuery,
 } = autoOrchestrateApi;

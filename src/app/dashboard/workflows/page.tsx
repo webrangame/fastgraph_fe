@@ -8,11 +8,10 @@ import { WorkflowHeader } from '@/components/workflows/WorkflowHeader';
 import { useWorkflowManager } from '@/hooks/workflows/useWorkflowManager';
 import { usePromptHandler } from '@/hooks/workflows/usePromptHandler';
 import { useAutoOrchestrate } from '@/hooks/workflows/useAutoOrchestrate';
-import { useWorkflowPersistence } from '@/hooks/workflows/useWorkflowPersistence';
 import { useEvolveAgentMutation } from '../../../../redux/api/evolveAgent/evolveAgentApi';
 import { WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
-import { useDispatch } from 'react-redux';
-import { addWorkflow, removeAllWorkflows } from '@/redux/slice/workflowSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { addWorkflow, removeAllWorkflows, updateWorkflow, removeWorkflow } from '@/redux/slice/workflowSlice';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
@@ -33,7 +32,8 @@ export default function WorkflowsPage() {
   const [canUndo, setCanUndo] = useState(false);
 
   // Custom hooks for workflow management
-  const { workflows, workflowStatus, workflowError, saveWorkflow, saveAutoOrchestrateWorkflow, deleteWorkflowById, isSaving, clearWorkflowData } = useWorkflowPersistence();
+  const { workflows, workflowStatus, workflowError } = useSelector((state: any) => state.workflows);
+  const currentUser = useSelector((state: any) => state.auth.user);
   
   // Evolution API
   const [evolveAgent, { isLoading: isEvolving }] = useEvolveAgentMutation();
@@ -108,14 +108,17 @@ export default function WorkflowsPage() {
   // Event handlers
   const handleSave = () => {
     if (actualCurrentWorkflow) {
-      saveWorkflow(actualCurrentWorkflow);
+      // Update Redux store with the current workflow
+      dispatch(updateWorkflow(actualCurrentWorkflow));
+      toast.success('Workflow saved successfully!');
     }
   };
 
   const handleDeleteWorkflow = (workflowId?: string) => {
     const idToDelete = workflowId || actualCurrentWorkflow?.id;
     if (idToDelete) {
-      deleteWorkflowById(idToDelete);
+      // Remove from Redux store
+      dispatch(removeWorkflow(idToDelete));
       setAgents(null);
       setConnections(null);
     }
@@ -123,17 +126,19 @@ export default function WorkflowsPage() {
   };
 
   const handleClearWorkflowData = () => {
-    clearWorkflowData();
+    // Clear all workflows from Redux store
+    dispatch(removeAllWorkflows());
     // Also clear auto orchestrate state manually
     if (resetAutoOrchestrate) {
       resetAutoOrchestrate();
     }
+    toast.success('Workflow data cleared successfully!');
   };
 
   const handleCloseWorkflow = (workflowId: string) => {
     if (workflows.length > 0) {
       // If using Redux workflows, delete from Redux store
-      deleteWorkflowById(workflowId);
+      dispatch(removeWorkflow(workflowId));
       
       // Update active workflow if the closed one was active
       if (activeWorkflow === workflowId) {
@@ -320,6 +325,7 @@ export default function WorkflowsPage() {
             currentWorkflowId={activeWorkflow || undefined}
             isCollapsed={sidebarCollapsed}
             onToggleCollapse={handleSidebarToggle}
+            userId={currentUser?.id || currentUser?.userId || "1"} // Get user ID from auth slice
           />
         )}
         
