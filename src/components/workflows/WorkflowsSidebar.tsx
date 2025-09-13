@@ -42,8 +42,8 @@ const transformDataToWorkflows = (dataResponse: DataCreatedByResponse[]): Workfl
         description: item.description ,
         status: item.status,
         lastModified: formatDate(item.installedAt),
-        nodes:  [],
-        connections: []
+        nodes: workflow.nodes || [],
+        connections: workflow.connections || []
       };
     });
 };

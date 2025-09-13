@@ -33,7 +33,7 @@ export interface Connection {
 export interface Workflow {
   id: string;
   name: string;
-  status: 'active' | 'draft' | 'inactive' | 'running' | 'stopped';
+  status: any;
   lastModified: string;
   nodes: WorkflowNode[];
   connections: Connection[];
