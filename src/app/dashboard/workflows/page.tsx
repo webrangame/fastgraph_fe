@@ -12,7 +12,7 @@ import { useEvolveAgentMutation } from '../../../../redux/api/evolveAgent/evolve
 import { WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 import { useDispatch, useSelector } from 'react-redux';
 import { addWorkflow, removeAllWorkflows, updateWorkflow, removeWorkflow, setWorkflows } from '@/redux/slice/workflowSlice';
-import { useGetDataCreatedByQuery } from '../../../../redux/api/autoOrchestrate/autoOrchestrateApi';
+import { useGetDataCreatedByQuery, useInstallDataMutation } from '../../../../redux/api/autoOrchestrate/autoOrchestrateApi';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
@@ -27,6 +27,7 @@ export default function WorkflowsPage() {
   const [connections, setConnections] = useState<any[] | null>(null);
   const [finalData, setFinalData] = useState<any>(null);
   const [finalizedResult, setFinalizedResult] = useState<any>(null);
+  const [installData, { isLoading: isInstalling } ] = useInstallDataMutation();
   
   // Undo functionality state
   const [undoStack, setUndoStack] = useState<any[]>([]);
@@ -335,34 +336,61 @@ export default function WorkflowsPage() {
     setUndoStack(prev => [...prev, { ...action, timestamp: Date.now() }]);
   };
 
-  const handleWorkflowSubmit = (data: WorkflowFormData) => {
-    console.log('Creating workflow:', data);
-    
-    // Create workflow data that matches the Workflow interface
-    const workflowData = {
-      id: Date.now().toString(),
-      name: data.name,
-      description: `${data.description} (Type: ${data.type})`,
-      status: 'draft' as const,
-      lastModified: 'Just now',
-      nodes: [],
-      connections: []
-    };
-    
-    // Add to Redux store (don't remove existing workflows)
-    dispatch(addWorkflow(workflowData));
-    
-    // Set the new workflow as active
-    setActiveWorkflow(workflowData.id);
-    
-    // Add to undo stack
-    addToUndoStack({
-      type: 'CREATE_WORKFLOW',
-      description: `Created workflow "${data.name}"`,
-      data: { workflowId: workflowData.id, workflowData }
-    });
-    
-    toast.success('Workflow created successfully!');
+  const handleWorkflowSubmit = async (data: WorkflowFormData) => {
+    console.log('Creating workflow with command:', data);
+    try {
+      // 🧹 Clear existing workflow/state (single tab mode)
+      setActiveWorkflow(null);
+      setAgents(null);
+      setConnections(null);
+      setFinalData(null);
+      setFinalizedResult(null);
+      if (resetAutoOrchestrate) {
+        resetAutoOrchestrate();
+      }
+      dispatch(removeAllWorkflows());
+
+      // Prepare a new workflow shell
+      const newWorkflowId = Date.now().toString();
+      const workflowData = {
+        id: newWorkflowId,
+        name: data.name,
+        // Use the command directly so auto-orchestrate receives a clean prompt
+        description: data.description,
+        status: 'draft' as const,
+        lastModified: 'Just now',
+        nodes: [],
+        connections: []
+      };
+
+      // 📡 Persist an initial record (overwrite: true)
+      await installData({
+        dataName: data.name,
+        description: data.description,
+        dataType: 'json',
+        dataContent: {
+          command: data.description
+        },
+        overwrite: true
+      }).unwrap();
+
+      // 🎯 Load as the only active workflow (single tab)
+      dispatch(setWorkflows([workflowData]));
+      setActiveWorkflow(newWorkflowId);
+
+      // Add to undo stack
+      addToUndoStack({
+        type: 'CREATE_WORKFLOW',
+        description: `Created workflow "${data.name}"`,
+        data: { workflowId: workflowData.id, workflowData }
+      });
+
+      // 🤖 Auto-orchestration will start via useAutoOrchestrate effect
+      toast.success('Workflow created! Auto-orchestration starting...');
+    } catch (error) {
+      console.error('Failed to create workflow:', error);
+      toast.error('Failed to create workflow. Please try again.');
+    }
   };
 
   const handleAgentFeedback = async (agentId: string, agentName: string, action?: string, feedback?: string | string[]) => {

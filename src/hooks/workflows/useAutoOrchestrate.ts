@@ -80,20 +80,16 @@ export function useAutoOrchestrate({
             onAgentsProcessed(processedAgents, processedConnections, processedFinalData);
 
             // Save the auto orchestrate result using useInstallDataMutation
-
             try {
               const saveResult = await installData({
                 dataName: workflows[0].name,
                 description: firstWorkflowDescription,
-                status:workflows[0].status,
                 dataType: 'json',
                 dataContent: {
                   autoOrchestrateResult: result,
-                 
                 },
-                overwrite: false
+                overwrite: true
               }).unwrap();
-              
               console.log('Auto orchestrate result saved successfully:', saveResult);
             } catch (saveError) {
               console.error('Failed to save auto orchestrate result:', saveError);
