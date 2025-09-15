@@ -472,6 +472,8 @@ function WorkflowCanvasInner({
     if (node.id !== 'end-node' && node.id.startsWith('agent-')) {
       setSidebarAgent(node.id);
       setShowLogSidebar(true);
+      // Close EndNodeSidebar when LogSidebar opens
+      setShowEndNodeSidebar(false);
     }
   }, [onSelectNode]);
 
@@ -593,6 +595,9 @@ function WorkflowCanvasInner({
     setShowEndNodeSidebar(true);
     setEndNodeHovered(false);
     setHoveredNode(null);
+    // Close LogSidebar when EndNodeSidebar opens
+    setShowLogSidebar(false);
+    setSidebarAgent(null);
   }, []);
 
   const handleGetMediaLinks = useCallback(() => {
@@ -600,6 +605,9 @@ function WorkflowCanvasInner({
     setShowEndNodeSidebar(true);
     setEndNodeHovered(false);
     setHoveredNode(null);
+    // Close LogSidebar when EndNodeSidebar opens
+    setShowLogSidebar(false);
+    setSidebarAgent(null);
   }, []);
 
   const handleCloseEndNodeSidebar = useCallback(() => {
