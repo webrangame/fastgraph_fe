@@ -11,10 +11,12 @@ import { useAutoOrchestrate } from '@/hooks/workflows/useAutoOrchestrate';
 import { useEvolveAgentMutation } from '../../../../redux/api/evolveAgent/evolveAgentApi';
 import { WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 import { useDispatch, useSelector } from 'react-redux';
-import { addWorkflow, removeAllWorkflows, updateWorkflow, removeWorkflow } from '@/redux/slice/workflowSlice';
+import { addWorkflow, removeAllWorkflows, updateWorkflow, removeWorkflow, setWorkflows } from '@/redux/slice/workflowSlice';
+import { useGetDataCreatedByQuery, useInstallDataMutation } from '../../../../redux/api/autoOrchestrate/autoOrchestrateApi';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { processAgentsFromResponse } from '@/services/workflows/agentProcessor';
 
 export default function WorkflowsPage() {
   const dispatch = useDispatch();
@@ -26,15 +28,26 @@ export default function WorkflowsPage() {
   const [connections, setConnections] = useState<any[] | null>(null);
   const [finalData, setFinalData] = useState<any>(null);
   const [finalizedResult, setFinalizedResult] = useState<any>(null);
-  
+  const [cachedExecutionResults, setCachedExecutionResults] = useState<any>(null);
+  const [installData, { isLoading: isInstalling } ] = useInstallDataMutation();
   // Undo functionality state
   const [undoStack, setUndoStack] = useState<any[]>([]);
   const [canUndo, setCanUndo] = useState(false);
+  
 
   // Custom hooks for workflow management
   const { workflows, workflowStatus, workflowError } = useSelector((state: any) => state.workflows);
   const currentUser = useSelector((state: any) => state.auth.user);
   
+  // Fetch workflows from API and load into Redux store
+  const { 
+    data: apiWorkflowData, 
+    error: apiError, 
+    isLoading: isLoadingWorkflows 
+  } = useGetDataCreatedByQuery(currentUser?.id || currentUser?.userId || "1", {
+    skip: !currentUser?.id && !currentUser?.userId // Skip if no user ID
+  });
+
   // Evolution API
   const [evolveAgent, { isLoading: isEvolving }] = useEvolveAgentMutation();
   
@@ -70,16 +83,149 @@ export default function WorkflowsPage() {
   // Use Redux workflows if available, otherwise fallback to workflow manager
   const displayWorkflows = workflows.length > 0 ? workflows : workflowManagerWorkflows;
   
-  // Find the current workflow from the correct source
-  const actualCurrentWorkflow = displayWorkflows.find((w: any) => w.id === activeWorkflow) || 
-                                (displayWorkflows.length > 0 ? displayWorkflows[0] : null);
+  // Find the current workflow from the correct source - no default selection
+  const actualCurrentWorkflow = displayWorkflows.find((w: any) => w.id === activeWorkflow) || null;
   
-  // Auto-select first workflow if none is active and workflows are available
-  useEffect(() => {
-    if (displayWorkflows.length > 0 && !activeWorkflow) {
-      setActiveWorkflow(displayWorkflows[0].id);
+  // Handle workflow selection from sidebar - replace current workflow entirely (SINGLE TAB MODE)
+  const handleSidebarWorkflowSelect = useCallback(async (workflowId: string) => {
+    console.log('=== WORKFLOW SELECTION START ===');
+    console.log('Sidebar workflow selected:', workflowId);
+    console.log('Current active workflow:', activeWorkflow);
+    console.log('Current agents:', agents ? Object.keys(agents) : 'null');
+    console.log('Current connections:', connections ? connections.length : 'null');
+    console.log('Current workflows in Redux:', workflows.length);
+    
+    // FORCE COMPLETE STATE RESET
+    console.log('🧹 CLEARING ALL STATE...');
+    
+    // Clear active workflow first
+    setActiveWorkflow(null);
+    
+    // Clear all canvas data
+    setAgents(null);
+    setConnections(null);
+    setFinalData(null);
+    setFinalizedResult(null);
+    setCachedExecutionResults(null);
+    
+    // Clear Redux workflows
+    dispatch(removeAllWorkflows());
+    
+    // Wait a moment for state to clear
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Find the selected workflow from API data
+    if (apiWorkflowData && Array.isArray(apiWorkflowData)) {
+      const selectedApiItem = apiWorkflowData.find((item: any) => item.dataId === workflowId);
+      
+      if (selectedApiItem && selectedApiItem.dataContent?.autoOrchestrateResult) {
+        const workflowData = selectedApiItem.dataContent.autoOrchestrateResult;
+
+        // Build agents and connections from cached autoOrchestrate result
+        const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, executionResults: processedExecutionResults } = processAgentsFromResponse(workflowData);
+        
+        // Create the workflow object with reconstructed nodes/connections so hooks detect existing structure
+        const reconstructedNodes = Object.entries(processedAgents || {}).map(([agentName, agentData]: [string, any]) => ({
+          id: `agent-${agentName}`,
+          data: {
+            label: agentData.name || agentName,
+            role: agentData.role || 'Agent',
+            capabilities: agentData.capabilities || [],
+            inputs: agentData.inputs || [],
+            outputs: agentData.outputs || [],
+            logs: agentData.logs || [],
+            ...agentData
+          }
+        }));
+        
+        const selectedWorkflow = {
+          id: selectedApiItem.dataId,
+          name: selectedApiItem.dataName,
+          description: selectedApiItem.description,
+          status: selectedApiItem.status,
+          lastModified: new Date(selectedApiItem.installedAt).toLocaleString(),
+          nodes: reconstructedNodes,
+          connections: processedConnections || []
+        };
+        
+        console.log('🔄 LOADING NEW WORKFLOW:', selectedWorkflow.name);
+        console.log('Workflow nodes:', selectedWorkflow.nodes?.length || 0);
+        console.log('Workflow connections:', selectedWorkflow.connections?.length || 0);
+        
+        // SINGLE TAB MODE: Set only this workflow in Redux store
+        console.log('📝 Setting workflow in Redux store...');
+        dispatch(setWorkflows([selectedWorkflow]));
+        
+        // Set the selected workflow as active
+        console.log('🎯 Setting active workflow:', workflowId);
+        setActiveWorkflow(workflowId);
+        
+        // Load the new workflow data into canvas directly from processed results (no external API)
+        if (processedAgents && Object.keys(processedAgents).length > 0) {
+          console.log('🤖 LOADING AGENTS:', Object.keys(processedAgents));
+          setAgents(processedAgents);
+          console.log('✅ Agents set in state');
+        }
+        
+        if (processedConnections && processedConnections.length > 0) {
+          // Transform to canvas edge style
+          const workflowConnections = processedConnections.map((conn: any, index: number) => ({
+            id: conn.id || `${conn.source}-to-${conn.target}` || `connection-${index}`,
+            source: conn.source,
+            target: conn.target,
+            type: 'smoothstep',
+            animated: true,
+            style: {
+              stroke: '#6366f1',
+              strokeWidth: 2,
+            }
+          }));
+          console.log('🔗 LOADING CONNECTIONS:', workflowConnections.length);
+          setConnections(workflowConnections);
+          console.log('✅ Connections set in state');
+        }
+        
+        // Save final data and execution results for the sidebars
+        if (processedFinalData) {
+          setFinalData(processedFinalData);
+        }
+        if (processedFinalizedResult) {
+          setFinalizedResult(processedFinalizedResult);
+        }
+        if (processedExecutionResults) {
+          setCachedExecutionResults(processedExecutionResults);
+        }
+        
+        console.log('🎉 WORKFLOW LOADING COMPLETE');
+        console.log('=== WORKFLOW SELECTION END ===');
+        
+        toast.success(`Loaded workflow: ${selectedWorkflow.name}`, {
+          duration: 2000,
+          style: {
+            background: '#10B981',
+            color: '#fff',
+          },
+          iconTheme: {
+            primary: '#fff',
+            secondary: '#10B981',
+          },
+        });
+      } else {
+        console.log('Workflow not found in API data');
+        toast.error('Workflow not found');
+      }
+    } else {
+      console.log('No API data available');
+      toast.error('No workflow data available');
     }
-  }, [displayWorkflows, activeWorkflow, setActiveWorkflow]);
+  }, [apiWorkflowData, setActiveWorkflow, dispatch]);
+
+  // Handle tab selection - also replace workflow entirely (same behavior as sidebar)
+  const handleTabWorkflowSelect = useCallback((workflowId: string) => {
+    console.log('Tab workflow selected:', workflowId);
+    // Use the same replacement logic as sidebar
+    handleSidebarWorkflowSelect(workflowId);
+  }, [handleSidebarWorkflowSelect]);
 
   // Update undo availability
   useEffect(() => {
@@ -189,34 +335,62 @@ export default function WorkflowsPage() {
     setUndoStack(prev => [...prev, { ...action, timestamp: Date.now() }]);
   };
 
-  const handleWorkflowSubmit = (data: WorkflowFormData) => {
-    console.log('Creating workflow:', data);
-    
-    // Create workflow data that matches the Workflow interface
-    const workflowData = {
-      id: Date.now().toString(),
-      name: data.name,
-      description: `${data.description} (Type: ${data.type})`,
-      status: 'draft' as const,
-      lastModified: 'Just now',
-      nodes: [],
-      connections: []
-    };
-    
-    // Add to Redux store (don't remove existing workflows)
-    dispatch(addWorkflow(workflowData));
-    
-    // Set the new workflow as active
-    setActiveWorkflow(workflowData.id);
-    
-    // Add to undo stack
-    addToUndoStack({
-      type: 'CREATE_WORKFLOW',
-      description: `Created workflow "${data.name}"`,
-      data: { workflowId: workflowData.id, workflowData }
-    });
-    
-    toast.success('Workflow created successfully!');
+  const handleWorkflowSubmit = async (data: WorkflowFormData) => {
+    console.log('Creating workflow with command:', data);
+    try {
+      // 🧹 Clear existing workflow/state (single tab mode)
+      setActiveWorkflow(null);
+      setAgents(null);
+      setConnections(null);
+      setFinalData(null);
+      setFinalizedResult(null);
+      setCachedExecutionResults(null);
+      if (resetAutoOrchestrate) {
+        resetAutoOrchestrate();
+      }
+      dispatch(removeAllWorkflows());
+
+      // Prepare a new workflow shell
+      const newWorkflowId = Date.now().toString();
+      const workflowData = {
+        id: newWorkflowId,
+        name: data.name,
+        // Use the command directly so auto-orchestrate receives a clean prompt
+        description: data.description,
+        status: 'draft' as const,
+        lastModified: 'Just now',
+        nodes: [],
+        connections: []
+      };
+
+      // 📡 Persist an initial record (overwrite: true)
+      await installData({
+        dataName: data.name,
+        description: data.description,
+        dataType: 'json',
+        dataContent: {
+          command: data.description
+        },
+        overwrite: true
+      }).unwrap();
+
+      // 🎯 Load as the only active workflow (single tab)
+      dispatch(setWorkflows([workflowData]));
+      setActiveWorkflow(newWorkflowId);
+
+      // Add to undo stack
+      addToUndoStack({
+        type: 'CREATE_WORKFLOW',
+        description: `Created workflow "${data.name}"`,
+        data: { workflowId: workflowData.id, workflowData }
+      });
+
+      // 🤖 Auto-orchestration will start via useAutoOrchestrate effect
+      toast.success('Workflow created! Auto-orchestration starting...');
+    } catch (error) {
+      console.error('Failed to create workflow:', error);
+      toast.error('Failed to create workflow. Please try again.');
+    }
   };
 
   const handleAgentFeedback = async (agentId: string, agentName: string, action?: string, feedback?: string | string[]) => {
@@ -290,7 +464,7 @@ export default function WorkflowsPage() {
         agentCount={agents ? Object.keys(agents).length : 0}
         isRunning={isRunning}
         mobileMenuOpen={mobileMenuOpen}
-        onSelectWorkflow={setActiveWorkflow}
+        onSelectWorkflow={handleTabWorkflowSelect}
         onCloseWorkflow={handleCloseWorkflow}
         onCreateNew={createNewWorkflow}
         onCreateWithModal={handleWorkflowSubmit}
@@ -309,7 +483,7 @@ export default function WorkflowsPage() {
           isOpen={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
           onWorkflowSelect={(workflowId: string) => {
-            setActiveWorkflow(workflowId);
+            handleSidebarWorkflowSelect(workflowId);
             setMobileMenuOpen(false);
           }}
           currentWorkflowId={activeWorkflow || undefined}
@@ -321,7 +495,7 @@ export default function WorkflowsPage() {
         {/* Desktop Workflow Sidebar - Hidden on mobile */}
         {!isMobile && (
           <WorkflowsSidebar 
-            onWorkflowSelect={setActiveWorkflow}
+            onWorkflowSelect={handleSidebarWorkflowSelect}
             currentWorkflowId={activeWorkflow || undefined}
             isCollapsed={sidebarCollapsed}
             onToggleCollapse={handleSidebarToggle}
@@ -331,6 +505,7 @@ export default function WorkflowsPage() {
         
         {/* Workflow Canvas - Responsive */}
         <WorkflowCanvas
+          key={`canvas-${activeWorkflow || 'empty'}-${agents ? Object.keys(agents).length : 0}`}
           workflow={actualCurrentWorkflow}
           selectedNode={selectedNode}
           onSelectNode={setSelectedNode}
@@ -338,11 +513,11 @@ export default function WorkflowsPage() {
           onAddNode={addNodeToWorkflow}
           agents={agents || undefined}
           connections={connections || undefined}
-          isAutoOrchestrating={isAutoOrchestrating}
+          isAutoOrchestrating={isAutoOrchestrating || isLoadingWorkflows}
           onAgentFeedback={handleAgentFeedback}
           finalData={finalData}
-          finalizedResult={orchestratedFinalizedResult}
-          executionResults={executionResults}
+          finalizedResult={finalizedResult || orchestratedFinalizedResult}
+          executionResults={cachedExecutionResults || executionResults}
         />
       </div>
 
