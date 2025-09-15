@@ -28,6 +28,7 @@ export default function WorkflowsPage() {
   const [connections, setConnections] = useState<any[] | null>(null);
   const [finalData, setFinalData] = useState<any>(null);
   const [finalizedResult, setFinalizedResult] = useState<any>(null);
+  const [cachedExecutionResults, setCachedExecutionResults] = useState<any>(null);
   const [installData, { isLoading: isInstalling } ] = useInstallDataMutation();
   // Undo functionality state
   const [undoStack, setUndoStack] = useState<any[]>([]);
@@ -47,8 +48,6 @@ export default function WorkflowsPage() {
     skip: !currentUser?.id && !currentUser?.userId // Skip if no user ID
   });
 
-  // Don't auto-load workflows into Redux - wait for user selection
-  
   // Evolution API
   const [evolveAgent, { isLoading: isEvolving }] = useEvolveAgentMutation();
   
@@ -107,6 +106,7 @@ export default function WorkflowsPage() {
     setConnections(null);
     setFinalData(null);
     setFinalizedResult(null);
+    setCachedExecutionResults(null);
     
     // Clear Redux workflows
     dispatch(removeAllWorkflows());
@@ -122,7 +122,7 @@ export default function WorkflowsPage() {
         const workflowData = selectedApiItem.dataContent.autoOrchestrateResult;
 
         // Build agents and connections from cached autoOrchestrate result
-        const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData } = processAgentsFromResponse(workflowData);
+        const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, executionResults: processedExecutionResults } = processAgentsFromResponse(workflowData);
         
         // Create the workflow object with reconstructed nodes/connections so hooks detect existing structure
         const reconstructedNodes = Object.entries(processedAgents || {}).map(([agentName, agentData]: [string, any]) => ({
@@ -185,9 +185,15 @@ export default function WorkflowsPage() {
           console.log('✅ Connections set in state');
         }
         
-        // Save final data for the canvas/end node if present
+        // Save final data and execution results for the sidebars
         if (processedFinalData) {
           setFinalData(processedFinalData);
+        }
+        if (processedFinalizedResult) {
+          setFinalizedResult(processedFinalizedResult);
+        }
+        if (processedExecutionResults) {
+          setCachedExecutionResults(processedExecutionResults);
         }
         
         console.log('🎉 WORKFLOW LOADING COMPLETE');
@@ -220,8 +226,6 @@ export default function WorkflowsPage() {
     // Use the same replacement logic as sidebar
     handleSidebarWorkflowSelect(workflowId);
   }, [handleSidebarWorkflowSelect]);
-
-  // No default workflow selection - user must explicitly select from sidebar or tabs
 
   // Update undo availability
   useEffect(() => {
@@ -340,6 +344,7 @@ export default function WorkflowsPage() {
       setConnections(null);
       setFinalData(null);
       setFinalizedResult(null);
+      setCachedExecutionResults(null);
       if (resetAutoOrchestrate) {
         resetAutoOrchestrate();
       }
@@ -512,7 +517,7 @@ export default function WorkflowsPage() {
           onAgentFeedback={handleAgentFeedback}
           finalData={finalData}
           finalizedResult={orchestratedFinalizedResult}
-          executionResults={executionResults}
+          executionResults={cachedExecutionResults || executionResults}
         />
       </div>
 
