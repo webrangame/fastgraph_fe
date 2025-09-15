@@ -472,6 +472,8 @@ function WorkflowCanvasInner({
     if (node.id !== 'end-node' && node.id.startsWith('agent-')) {
       setSidebarAgent(node.id);
       setShowLogSidebar(true);
+      // Close EndNodeSidebar when LogSidebar opens
+      setShowEndNodeSidebar(false);
     }
   }, [onSelectNode]);
 
@@ -593,6 +595,9 @@ function WorkflowCanvasInner({
     setShowEndNodeSidebar(true);
     setEndNodeHovered(false);
     setHoveredNode(null);
+    // Close LogSidebar when EndNodeSidebar opens
+    setShowLogSidebar(false);
+    setSidebarAgent(null);
   }, []);
 
   const handleGetMediaLinks = useCallback(() => {
@@ -600,6 +605,9 @@ function WorkflowCanvasInner({
     setShowEndNodeSidebar(true);
     setEndNodeHovered(false);
     setHoveredNode(null);
+    // Close LogSidebar when EndNodeSidebar opens
+    setShowLogSidebar(false);
+    setSidebarAgent(null);
   }, []);
 
   const handleCloseEndNodeSidebar = useCallback(() => {
@@ -926,15 +934,83 @@ function WorkflowCanvasInner({
           
           <div className="space-y-3 text-sm">
             <div className="theme-input-bg rounded-lg p-3 border theme-border">
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-3">
                 <span className="font-medium theme-text-secondary">Text output:</span>
-                <button 
-                  onClick={handleGetOutput}
-                  className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
-                >
-                  Get Output
-                </button>
               </div>
+              {(() => {
+                // Extract and preview the first 10 words from workflow output
+                const extractOutputPreview = (data: any): string => {
+                  if (!data) return "No output available yet...";
+                  
+                  let outputText = "";
+                  
+                  // Try to extract output using similar logic as EndNodeSidebar
+                  if (typeof data === 'object' && data !== null) {
+                    // Pattern 1: finalizedResult structure - results.agent_name.outputs.output_name.result
+                    if (data.results && typeof data.results === 'object') {
+                      for (const agentKey of Object.keys(data.results)) {
+                        const agent = data.results[agentKey];
+                        if (agent?.outputs && typeof agent.outputs === 'object') {
+                          for (const outputKey of Object.keys(agent.outputs)) {
+                            const output = agent.outputs[outputKey];
+                            if (output?.result && typeof output.result === 'string') {
+                              outputText = output.result;
+                              break;
+                            }
+                          }
+                        }
+                        if (outputText) break;
+                      }
+                    }
+                    
+                    // Pattern 2: Direct result field
+                    if (!outputText && data.result && typeof data.result === 'string') {
+                      outputText = data.result;
+                    }
+                  }
+                  
+                  // If data is a string, try to parse it
+                  if (!outputText && typeof data === 'string') {
+                    const raw = data as string;
+                    // Try to extract from poem_output or similar structures
+                    const resultMatch = raw.match(/'result':\s*"([\s\S]*?)(?="[,}])/);
+                    if (resultMatch) {
+                      outputText = resultMatch[1].replace(/\\n/g, ' ').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+                    } else {
+                      outputText = raw.length > 100 ? `${raw.substring(0, 100)}...` : raw;
+                    }
+                  }
+                  
+                  if (!outputText) return "Processing workflow...";
+                  
+                  // Clean up the text and get first 10 words
+                  const cleanText = outputText
+                    .replace(/[\r\n]+/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                  
+                  const words = cleanText.split(' ').slice(0, 10);
+                  return words.length === 10 ? `${words.join(' ')}...` : words.join(' ');
+                };
+
+                const preview = extractOutputPreview(finalizedResult || finalData);
+                
+                return (
+                  <>
+                    <div className="text-xs theme-text-muted mb-3 leading-relaxed">
+                      {preview}
+                    </div>
+                    <div className="flex justify-end">
+                      <button 
+                        onClick={handleGetOutput}
+                        className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                      >
+                        See more
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
             <div className="theme-input-bg rounded-lg p-3 border theme-border">
               <div className="flex items-center justify-between mb-2">
