@@ -5,7 +5,6 @@ export interface MCPConfig {
   serverId: string;
   serverType: string;
   serverUrl: string;
-  description: string;
   authType: string;
   apiKey: string;
   timeout: number;
@@ -25,7 +24,6 @@ export const useMCPSettings = () => {
     serverId: '',
     serverType: '',
     serverUrl: '',
-    description: '',
     authType: 'none',
     apiKey: '',
     timeout: 30000,
@@ -60,7 +58,7 @@ export const useMCPSettings = () => {
     setMcpConfig(prev => ({
       ...prev,
       [field]: value,
-      ...(field === 'serverName' ? { 
+      ...(field === 'serverName' && !prev.serverId ? { 
         serverId: (value as string).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') 
       } : {})
     }));
