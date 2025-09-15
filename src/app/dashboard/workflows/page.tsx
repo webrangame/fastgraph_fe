@@ -16,6 +16,7 @@ import { useGetDataCreatedByQuery, useInstallDataMutation } from '../../../../re
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { processAgentsFromResponse } from '@/services/workflows/agentProcessor';
 
 export default function WorkflowsPage() {
   const dispatch = useDispatch();
@@ -28,7 +29,6 @@ export default function WorkflowsPage() {
   const [finalData, setFinalData] = useState<any>(null);
   const [finalizedResult, setFinalizedResult] = useState<any>(null);
   const [installData, { isLoading: isInstalling } ] = useInstallDataMutation();
-  
   // Undo functionality state
   const [undoStack, setUndoStack] = useState<any[]>([]);
   const [canUndo, setCanUndo] = useState(false);
@@ -120,16 +120,32 @@ export default function WorkflowsPage() {
       
       if (selectedApiItem && selectedApiItem.dataContent?.autoOrchestrateResult) {
         const workflowData = selectedApiItem.dataContent.autoOrchestrateResult;
+
+        // Build agents and connections from cached autoOrchestrate result
+        const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData } = processAgentsFromResponse(workflowData);
         
-        // Create the workflow object
+        // Create the workflow object with reconstructed nodes/connections so hooks detect existing structure
+        const reconstructedNodes = Object.entries(processedAgents || {}).map(([agentName, agentData]: [string, any]) => ({
+          id: `agent-${agentName}`,
+          data: {
+            label: agentData.name || agentName,
+            role: agentData.role || 'Agent',
+            capabilities: agentData.capabilities || [],
+            inputs: agentData.inputs || [],
+            outputs: agentData.outputs || [],
+            logs: agentData.logs || [],
+            ...agentData
+          }
+        }));
+        
         const selectedWorkflow = {
           id: selectedApiItem.dataId,
           name: selectedApiItem.dataName,
           description: selectedApiItem.description,
           status: selectedApiItem.status,
           lastModified: new Date(selectedApiItem.installedAt).toLocaleString(),
-          nodes: workflowData.nodes || [],
-          connections: workflowData.connections || []
+          nodes: reconstructedNodes,
+          connections: processedConnections || []
         };
         
         console.log('🔄 LOADING NEW WORKFLOW:', selectedWorkflow.name);
@@ -144,43 +160,19 @@ export default function WorkflowsPage() {
         console.log('🎯 Setting active workflow:', workflowId);
         setActiveWorkflow(workflowId);
         
-        // Load the new workflow data into canvas
-        if (selectedWorkflow.nodes && selectedWorkflow.nodes.length > 0) {
-          // Transform workflow nodes to agents format expected by canvas
-          const workflowAgents: Record<string, any> = {};
-          
-          selectedWorkflow.nodes.forEach((node: any) => {
-            // Skip end nodes
-            if (node.data && node.data.role !== 'End') {
-              // Extract agent name from node id or use the label
-              const agentName = node.id.replace('agent-', '') || node.data.label || `agent-${Object.keys(workflowAgents).length + 1}`;
-              
-              workflowAgents[agentName] = {
-                name: node.data.label || node.label || agentName,
-                role: node.data.role || 'Agent',
-                capabilities: node.data.capabilities || [],
-                inputs: node.data.inputs || [],
-                outputs: node.data.outputs || [],
-                logs: node.data.logs || [],
-                // Preserve any additional data from the API
-                ...node.data
-              };
-            }
-          });
-          
-          console.log('🤖 LOADING AGENTS:', Object.keys(workflowAgents));
-          console.log('Agent details:', workflowAgents);
-          setAgents(workflowAgents);
+        // Load the new workflow data into canvas directly from processed results (no external API)
+        if (processedAgents && Object.keys(processedAgents).length > 0) {
+          console.log('🤖 LOADING AGENTS:', Object.keys(processedAgents));
+          setAgents(processedAgents);
           console.log('✅ Agents set in state');
         }
         
-        // Handle connections
-        if (selectedWorkflow.connections && selectedWorkflow.connections.length > 0) {
-          // Transform workflow connections to canvas format
-          const workflowConnections = selectedWorkflow.connections.map((conn: any, index: number) => ({
-            id: conn.id || `${conn.from || conn.source}-to-${conn.to || conn.target}` || `connection-${index}`,
-            source: conn.from || conn.source,
-            target: conn.to || conn.target,
+        if (processedConnections && processedConnections.length > 0) {
+          // Transform to canvas edge style
+          const workflowConnections = processedConnections.map((conn: any, index: number) => ({
+            id: conn.id || `${conn.source}-to-${conn.target}` || `connection-${index}`,
+            source: conn.source,
+            target: conn.target,
             type: 'smoothstep',
             animated: true,
             style: {
@@ -188,11 +180,14 @@ export default function WorkflowsPage() {
               strokeWidth: 2,
             }
           }));
-          
           console.log('🔗 LOADING CONNECTIONS:', workflowConnections.length);
-          console.log('Connection details:', workflowConnections);
           setConnections(workflowConnections);
           console.log('✅ Connections set in state');
+        }
+        
+        // Save final data for the canvas/end node if present
+        if (processedFinalData) {
+          setFinalData(processedFinalData);
         }
         
         console.log('🎉 WORKFLOW LOADING COMPLETE');

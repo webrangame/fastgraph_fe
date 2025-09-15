@@ -52,26 +52,33 @@ export function useAutoOrchestrate({
  
   useEffect(() => {
     const autoOrchestrateFirstWorkflow = async () => {
-      // Prevent multiple executions in development due to React strict mode
-    
-     
+      // Skip if already executed
+      if (hasAutoOrchestrated.current) {
+        return;
+      }
       if (workflows.length > 0) {
- 
-        console.log("iii")
-        const firstWorkflowDescription = workflows[0]?.description;
+        const firstWorkflow = workflows[0];
+
+        // If loaded from sidebar/cache (already has nodes/connections), do not call external API
+        if ((firstWorkflow?.nodes && firstWorkflow.nodes.length > 0) ||
+            (firstWorkflow?.connections && firstWorkflow.connections.length > 0)) {
+          console.log('Detected cached workflow structure. Skipping auto-orchestrate API call.');
+          hasAutoOrchestrated.current = true;
+          return;
+        }
+
+        const firstWorkflowDescription = firstWorkflow?.description;
         if (firstWorkflowDescription) {
           console.log('Auto orchestrating with command:', firstWorkflowDescription);
           try {
-                        // Using hardcoded example for now - replace with actual API call when ready
-              const result = await autoOrchestrate({ command: firstWorkflowDescription, response_mode: 'full' }).unwrap();
-             //const result = mockAutoOrchestrateResult;
+            // Using hardcoded example for now - replace with actual API call when ready
+            const result = await autoOrchestrate({ command: firstWorkflowDescription, response_mode: 'full' }).unwrap();
+            //const result = mockAutoOrchestrateResult;
 
             // Process agents and connections
             const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, executionResults: processedExecutionResults } = 
               processAgentsFromResponse(result);
            
-           
-            
             setAgents(processedAgents);
             setConnections(processedConnections);
             setFinalData(processedFinalData);
