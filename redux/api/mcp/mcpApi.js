@@ -136,6 +136,21 @@ export const mcpApi = createApi({
       providesTags: (result, error, serverId) => [{ type: 'MCPServer', id: serverId }],
     }),
 
+    // Get MCP servers created by a specific user
+    getMCPServersByUser: builder.query({
+      query: (userId) => ({
+        url: `/api/v1/mcp/servers/created-by/${userId}`,
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+        },
+      }),
+      providesTags: (result, error, userId) => [
+        { type: 'MCPServer', id: `user-${userId}` },
+        'MCPServer'
+      ],
+    }),
+
   }),
 });
 
@@ -150,4 +165,5 @@ export const {
   useDisconnectMCPServerMutation,
   useGetMCPServerStatusQuery,
   useGetMCPServerCapabilitiesQuery,
+  useGetMCPServersByUserQuery,
 } = mcpApi;
