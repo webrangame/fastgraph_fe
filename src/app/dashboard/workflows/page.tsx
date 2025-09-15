@@ -516,7 +516,7 @@ export default function WorkflowsPage() {
           isAutoOrchestrating={isAutoOrchestrating || isLoadingWorkflows}
           onAgentFeedback={handleAgentFeedback}
           finalData={finalData}
-          finalizedResult={orchestratedFinalizedResult}
+          finalizedResult={finalizedResult || orchestratedFinalizedResult}
           executionResults={cachedExecutionResults || executionResults}
         />
       </div>
