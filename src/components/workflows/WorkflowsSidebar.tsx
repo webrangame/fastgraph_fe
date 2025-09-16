@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { FileText, Play, Pause, Clock, CheckCircle, ChevronLeft, ChevronRight, Search, X, Loader2 } from 'lucide-react';
+import { FileText, Play, Pause, Clock, CheckCircle, ChevronLeft, ChevronRight, Search, X, Loader2, Trash2 } from 'lucide-react';
 import type { Workflow } from '@/types/workflow';
-import { useGetDataCreatedByQuery } from '../../../redux/api/autoOrchestrate/autoOrchestrateApi';
+import { useGetDataCreatedByQuery, useDeleteDataMutation } from '../../../redux/api/autoOrchestrate/autoOrchestrateApi';
 
 interface WorkflowsSidebarProps {
   isMobile?: boolean;
@@ -64,8 +64,9 @@ const formatDate = (dateString: string): string => {
 
 export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWorkflowId, isCollapsed = false, onToggleCollapse, userId = '1' }: WorkflowsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [deletingWorkflow, setDeletingWorkflow] = useState<string | null>(null);
   
-  // Use the API to fetch w orkflows - only if userId is provided
+  // Use the API to fetch workflows - only if userId is provided
   const { 
     data: apiData, 
     error, 
@@ -74,6 +75,9 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
   } = useGetDataCreatedByQuery(userId, {
     skip: !userId || userId === '1' // Skip if no userId or default value
   });
+
+  // Delete workflow mutation
+  const [deleteData] = useDeleteDataMutation();
 
   // Transform API data to workflows
   const workflows = useMemo(() => {
@@ -91,6 +95,29 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
 
   const handleClearSearch = () => {
     setSearchQuery('');
+  };
+
+  const handleDeleteWorkflow = async (workflowId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent workflow selection when clicking delete
+    
+    if (!confirm('Are you sure you want to delete this workflow? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setDeletingWorkflow(workflowId);
+      await deleteData(workflowId).unwrap();
+      
+      // If the deleted workflow was currently selected, clear the selection
+      if (currentWorkflowId === workflowId && onWorkflowSelect) {
+        onWorkflowSelect('');
+      }
+    } catch (error) {
+      console.error('Failed to delete workflow:', error);
+      alert('Failed to delete workflow. Please try again.');
+    } finally {
+      setDeletingWorkflow(null);
+    }
   };
 
   // Filter workflows based on search query
@@ -258,13 +285,13 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
                     </div>
                   ) : (
                     // Expanded view - full content with theme colors
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-start space-x-3 relative">
                       <div className="p-2 rounded-lg theme-card-bg theme-border border theme-shadow">
                         <FileText className="w-4 h-4 theme-text-secondary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-1">
-                          <span className={`${isMobile ? 'text-base' : 'text-sm'} theme-text-primary font-medium truncate`}>
+                          <span className={`${isMobile ? 'text-base' : 'text-sm'} theme-text-primary font-medium truncate max-w-[150px]`} title={workflow.name}>
                             {workflow.name}
                           </span>
                           {getStatusIcon(workflow.status)}
@@ -286,6 +313,20 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
                           </span>
                         </div>
                       </div>
+                      
+                      {/* Delete Button - Top Right Corner */}
+                      <button
+                        onClick={(e) => handleDeleteWorkflow(workflow.id, e)}
+                        disabled={deletingWorkflow === workflow.id}
+                        className="absolute top-1 right-0 p-0 transition-all duration-200 hover:bg-red-500/10 rounded-md flex items-center justify-center"
+                        title="Delete workflow"
+                      >
+                        {deletingWorkflow === workflow.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-red-500" />
+                        ) : (
+                          <Trash2 className="w-3 h-3 text-red-500 hover:text-red-600" />
+                        )}
+                      </button>
                     </div>
                   )}
                 </div>
