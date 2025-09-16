@@ -938,7 +938,7 @@ function WorkflowCanvasInner({
                 <span className="font-medium theme-text-secondary">Text output:</span>
               </div>
               {(() => {
-                // Extract and preview the first 10 words from workflow output
+                // Extract and preview the first 14 words from workflow output
                 const extractOutputPreview = (data: any): string => {
                   if (!data) return "No output available yet...";
                   
@@ -983,14 +983,14 @@ function WorkflowCanvasInner({
                   
                   if (!outputText) return "Processing workflow...";
                   
-                  // Clean up the text and get first 10 words
+                  // Clean up the text and get first 14 words
                   const cleanText = outputText
                     .replace(/[\r\n]+/g, ' ')
                     .replace(/\s+/g, ' ')
                     .trim();
                   
-                  const words = cleanText.split(' ').slice(0, 10);
-                  return words.length === 10 ? `${words.join(' ')}...` : words.join(' ');
+                  const words = cleanText.split(' ').slice(0, 14);
+                  return words.length === 14 ? `${words.join(' ')}...` : words.join(' ');
                 };
 
                 const preview = extractOutputPreview(finalizedResult || finalData);
