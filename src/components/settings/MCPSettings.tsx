@@ -48,6 +48,7 @@ export default function MCPSettings({ activeSubSection, onSectionChange }: MCPSe
             connectionStatus={connectionStatus}
             onConfigChange={updateConfig}
             onConnect={handleConnect}
+            onNavigateToAvailableMCPs={() => onSectionChange?.('available-mcps')}
           />
         );
       default:
