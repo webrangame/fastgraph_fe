@@ -14,6 +14,7 @@ interface MCPConfig {
   apiKey: string;
   timeout: number;
   retries: number;
+  configYml?: string;
 }
 
 interface MCPToolsSetupProps {
@@ -86,6 +87,7 @@ export default function MCPToolsSetup({
         apiKey: formData.apiKey,
         timeout: formData.timeout,
         retries: formData.retries,
+        configYml: formData.configYml,
       }).unwrap();
 
       if (testResult.success) {
@@ -103,6 +105,7 @@ export default function MCPToolsSetup({
           apiKey: formData.apiKey,
           timeout: formData.timeout,
           retries: formData.retries,
+          configYml: formData.configYml,
           customHeaders: {},
           metadata: {
             description: `${formData.serverName} MCP Server`,
@@ -395,6 +398,42 @@ export default function MCPToolsSetup({
                 <p className="mt-1 text-sm text-red-500">{errors.retries.message}</p>
               )}
             </div>
+          </div>
+
+          {/* Config YAML Section */}
+          <div>
+            <label className="block text-sm font-medium theme-text-primary mb-2">
+              Configuration YAML (Optional)
+            </label>
+            <textarea
+              {...register('configYml', {
+                validate: (value) => {
+                  if (value && value.trim()) {
+                    // Basic YAML validation - check for common YAML syntax
+                    const lines = value.trim().split('\n');
+                    const hasValidStructure = lines.some(line => 
+                      line.includes(':') || line.startsWith('-') || line.trim() === ''
+                    );
+                    if (!hasValidStructure) {
+                      return 'Please enter valid YAML configuration';
+                    }
+                  }
+                  return true;
+                }
+              })}
+              placeholder="Enter YAML configuration (optional)&#10;Example:&#10;server:&#10;  host: localhost&#10;  port: 8080&#10;  timeout: 30s"
+              rows={6}
+              className={`w-full px-3 py-2 theme-border border rounded-sm theme-input-bg theme-input-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors resize-vertical ${
+                errors.configYml ? 'border-red-500' : ''
+              }`}
+              disabled={isConnecting}
+            />
+            {errors.configYml && (
+              <p className="mt-1 text-sm text-red-500">{errors.configYml.message}</p>
+            )}
+            <p className="mt-1 text-xs theme-text-muted">
+              Optional YAML configuration for advanced server settings
+            </p>
           </div>
         </div>
 
