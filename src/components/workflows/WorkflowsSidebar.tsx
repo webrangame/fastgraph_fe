@@ -269,7 +269,7 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
                 <div 
                   key={workflow.id}
                   className={`${isCollapsed ? 'p-2' : 'p-3'} rounded-lg cursor-pointer group transition-all duration-200 ${
-                    isSelected 
+                    isSelected && !isCollapsed
                       ? 'theme-card-bg theme-border border theme-shadow-sm' 
                       : 'theme-hover-bg hover:theme-shadow-sm'
                   } ${isMobile ? 'active:scale-95' : ''}`}
@@ -279,8 +279,22 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
                   {isCollapsed ? (
                     // Collapsed view - clean icon-only display with theme colors
                     <div className="flex justify-center">
-                      <div className="p-2 rounded-lg theme-card-bg theme-border border theme-shadow">
-                        <FileText className="w-4 h-4 theme-text-secondary" />
+                      <div className={`p-2 rounded-lg border theme-shadow relative ${
+                        isSelected 
+                          ? 'bg-blue-500/10 border-blue-500 theme-shadow-lg' 
+                          : 'theme-card-bg theme-border'
+                      }`}>
+                        <FileText className={`w-4 h-4 ${
+                          isSelected 
+                            ? 'text-blue-600 dark:text-blue-400' 
+                            : 'theme-text-secondary'
+                        }`} />
+                        {/* Selected indicator dot */}
+                        {isSelected && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                        )}
+                        {/* Status indicator for collapsed view */}
+                        {/* <div className={`absolute -bottom-1 -right-1 w-2 h-2 rounded-full ${getStatusColor(workflow.status)}`}></div> */}
                       </div>
                     </div>
                   ) : (
