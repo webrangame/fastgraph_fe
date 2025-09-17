@@ -108,12 +108,7 @@ export function useAutoOrchestrate({
               console.log('Response includes numberOfAgents:', saveResult);
             } catch (saveError) {
               console.error('Failed to save auto orchestrate result:', saveError);
-              console.error('Save error details:', {
-                error: saveError,
-                message: saveError?.message,
-                data: saveError?.data,
-                status: saveError?.status
-              });
+              
             }
            
             // Mark as executed to prevent multiple calls
