@@ -367,6 +367,7 @@ export default function WorkflowsPage() {
       await installData({
         dataName: data.name,
         description: data.description,
+        numberOfAgents:0,
         dataType: 'json',
         dataContent: {
           command: data.description

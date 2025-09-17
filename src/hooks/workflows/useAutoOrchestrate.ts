@@ -85,12 +85,19 @@ export function useAutoOrchestrate({
             setFinalizedResult(processedFinalizedResult);
             setExecutionResults(processedExecutionResults);
             onAgentsProcessed(processedAgents, processedConnections, processedFinalData);
+            
 
             // Save the auto orchestrate result using useInstallDataMutation
             try {
+              const numberOfAgents = Object.keys(processedAgents).length;
+              console.log('Saving auto orchestrate result with numberOfAgents:', numberOfAgents);
+              console.log('Processed agents keys:', Object.keys(processedAgents));
+              console.log('Processed agents:', processedAgents);
+              
               const saveResult = await installData({
                 dataName: workflows[0].name,
                 description: firstWorkflowDescription,
+                numberOfAgents: numberOfAgents,
                 dataType: 'json',
                 dataContent: {
                   autoOrchestrateResult: result,
@@ -98,8 +105,15 @@ export function useAutoOrchestrate({
                 overwrite: true
               }).unwrap();
               console.log('Auto orchestrate result saved successfully:', saveResult);
+              console.log('Response includes numberOfAgents:', saveResult);
             } catch (saveError) {
               console.error('Failed to save auto orchestrate result:', saveError);
+              console.error('Save error details:', {
+                error: saveError,
+                message: saveError?.message,
+                data: saveError?.data,
+                status: saveError?.status
+              });
             }
            
             // Mark as executed to prevent multiple calls
