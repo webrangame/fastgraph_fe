@@ -60,6 +60,16 @@ export const autoOrchestrateApi = createApi({
       }),
       providesTags: ['Data'],
     }),
+    deleteData: builder.mutation({
+      query: (dataId) => ({
+        url: `/api/v1/data/${dataId}`,
+        method: 'DELETE',
+        headers: {
+          'accept': 'application/json',
+        },
+      }),
+      invalidatesTags: ['Data'],
+    }),
   }),
 });
 
@@ -68,4 +78,5 @@ export const {
   useSaveWorkflowMutation,
   useInstallDataMutation,
   useGetDataCreatedByQuery,
+  useDeleteDataMutation,
 } = autoOrchestrateApi;

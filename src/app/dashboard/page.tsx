@@ -10,12 +10,23 @@ import { ActivityItem } from '@/components/dashboard/ActivityItem';
 import { CreateWorkflowModal, WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 import { CreateAgentModal, AgentFormData } from '@/components/dashboard/CreateAgentModal';
 import { addWorkflow, removeAllWorkflows } from '@/redux/slice/workflowSlice';
-import { STATS_CARDS, RECENT_ACTIVITIES } from '@/lib/constants';
+import { RECENT_ACTIVITIES } from '@/lib/constants';
+import { useGetUserStatsQuery } from '@/redux/api/userStats/userStatsApi';
+import { createDynamicStatsCards } from '@/lib/statsUtils';
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
   const router = useRouter();
   const user = useSelector(selectCurrentUser);
+  
+  // Fetch user stats
+  const userId = user?.id || user?.userId;
+  const { data: userStats, isLoading: isStatsLoading, error: statsError } = useGetUserStatsQuery(userId, {
+    skip: !userId
+  });
+  
+  // Create dynamic stats cards based on API data
+  const statsCards = createDynamicStatsCards(userStats);
   
   const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState(false);
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
@@ -108,9 +119,28 @@ export default function DashboardPage() {
         
         {/* Stats Cards - Responsive Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-          {STATS_CARDS.map((card, index) => (
-            <StatsCard key={index} {...card} />
-          ))}
+          {isStatsLoading ? (
+            // Loading skeleton
+            [...Array(4)].map((_, index) => (
+              <div key={index} className="animate-pulse">
+                <div className="theme-card-bg rounded-lg p-6 h-32">
+                  <div className="h-4 theme-input-bg rounded w-3/4 mb-2"></div>
+                  <div className="h-8 theme-input-bg rounded w-1/2 mb-2"></div>
+                  <div className="h-3 theme-input-bg rounded w-2/3"></div>
+                </div>
+              </div>
+            ))
+          ) : statsError ? (
+            // Error state
+            <div className="col-span-full text-center p-6 theme-card-bg rounded-lg">
+              <p className="theme-text-muted">Failed to load stats. Using default values.</p>
+            </div>
+          ) : (
+            // Actual stats cards
+            statsCards.map((card, index) => (
+              <StatsCard key={index} {...card} />
+            ))
+          )}
         </div>
 
 

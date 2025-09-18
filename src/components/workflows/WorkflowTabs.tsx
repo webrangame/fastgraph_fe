@@ -45,7 +45,7 @@ export function WorkflowTabs({
           >
             <StatusIndicator status={workflow.status} />
             <span className="text-sm font-medium">{workflow.name}</span>
-            <button
+            {/* <button
               onClick={(e) => {
                 e.stopPropagation();
                 onCloseWorkflow(workflow.id);
@@ -53,7 +53,7 @@ export function WorkflowTabs({
               className="theme-text-muted hover:text-red-500 transition-colors"
             >
               <X className="w-4 h-4" />
-            </button>
+            </button> */}
           </div>
         ))}
       </div>

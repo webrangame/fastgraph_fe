@@ -33,7 +33,7 @@ export function WorkflowActions({
   return (
     <div className="flex items-center space-x-2">
       <Button {...getExecuteButtonProps()} />
-      <Button 
+      {/* <Button 
         variant="primary" 
         icon={Save} 
         size="sm"
@@ -42,8 +42,8 @@ export function WorkflowActions({
         onClick={onSave}
       >
         Save 
-      </Button>
-      <Button 
+      </Button> */}
+      {/* <Button 
         variant="danger" 
         icon={Trash2}
         size="sm"
@@ -52,7 +52,7 @@ export function WorkflowActions({
         disabled={!agentCount}
       >
         Delete
-      </Button>
+      </Button> */}
     </div>
   );
 }
