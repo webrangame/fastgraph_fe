@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '@/redux/slice/authSlice';
+import { useGetMCPServersByUserQuery } from '@/redux/api/mcp/mcpApi';
 
 export interface MCPConfig {
   serverName: string;
   serverId: string;
   serverType: string;
   serverUrl: string;
-  description: string;
   authType: string;
   apiKey: string;
   timeout: number;
@@ -19,48 +21,81 @@ export interface MCPCapability {
   enabled: boolean;
 }
 
+export interface MCPServer {
+  id: string;
+  serverName: string;
+  serverId: string;
+  serverType: string;
+  serverUrl: string;
+  protocolVersion: string;
+  authType: string;
+  timeout: number;
+  retries: number;
+  connectionStatus: string;
+  lastErrorMessage: string;
+  lastConnectedAt: string;
+  lastDisconnectedAt: string;
+  customHeaders: Record<string, any>;
+  metadata: Record<string, any>;
+  isActive: boolean;
+  connectionAttempts: number;
+  successfulConnections: number;
+  failedConnections: number;
+  createdBy: string;
+  updatedBy: string;
+  createdAt: string;
+  updatedAt: string;
+  connectionUptime: number;
+}
+
 export const useMCPSettings = () => {
+  const user = useSelector(selectCurrentUser);
+  const userId = user?.id || user?.userId || '1'; // Fallback to '1' if user ID not available
+  
+  // Fetch MCP servers created by the current user
+  const { data: mcpServers, isLoading, error } = useGetMCPServersByUserQuery(userId, {
+    skip: !userId
+  });
+
   const [mcpConfig, setMcpConfig] = useState<MCPConfig>({
     serverName: '',
     serverId: '',
     serverType: '',
     serverUrl: '',
-    description: '',
     authType: 'none',
     apiKey: '',
     timeout: 30000,
     retries: 3
   });
 
-  const [availableMCPs, setAvailableMCPs] = useState<MCPCapability[]>([
-    {
-      name: 'get_weather',
-      type: 'Tool',
-      description: 'Get current weather information for a location',
-      enabled: true
-    },
-    {
-      name: 'search_web',
-      type: 'Tool', 
-      description: 'Search the web for information',
-      enabled: true
-    },
-    {
-      name: 'user_context',
-      type: 'Resource',
-      description: 'Access to user context and preferences',
-      enabled: false
-    }
-  ]);
+  const [availableMCPs, setAvailableMCPs] = useState<MCPCapability[]>([]);
 
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Transform MCP servers to capabilities
+  const transformServersToCapabilities = (servers: MCPServer[]): MCPCapability[] => {
+    return servers.map(server => ({
+      name: server.serverName,
+      type: 'Tool' as const,
+      description: `MCP Server: ${server.serverName} (${server.serverType}) - ${server.connectionStatus}`,
+      enabled: server.isActive && server.connectionStatus === 'connected'
+    }));
+  };
+
+  // Update availableMCPs when mcpServers data changes
+  useEffect(() => {
+    if (mcpServers && Array.isArray(mcpServers)) {
+      const capabilities = transformServersToCapabilities(mcpServers);
+      setAvailableMCPs(capabilities);
+    }
+  }, [mcpServers]);
 
   const updateConfig = (field: keyof MCPConfig, value: string | number) => {
     setMcpConfig(prev => ({
       ...prev,
       [field]: value,
-      ...(field === 'serverName' ? { 
+      ...(field === 'serverName' && !prev.serverId ? { 
         serverId: (value as string).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') 
       } : {})
     }));
@@ -116,6 +151,10 @@ export const useMCPSettings = () => {
     toggleCapability,
     handleConnect,
     handleSuccessModalClose,
-    handleViewCapabilities
+    handleViewCapabilities,
+    // API states
+    isLoadingMCPServers: isLoading,
+    mcpServersError: error,
+    mcpServers
   };
 };
