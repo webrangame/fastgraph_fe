@@ -11,31 +11,31 @@ import {
 } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import authReducer from './slice/authSlice';
-import cartReducer from './reducer/CartReducer';
 import workflowReducer from './slice/workflowSlice';
 import uiReducer from './slice/uiSlice';
 import { authApi } from '../lib/api/authApi';
 import { autoOrchestrateApi } from './api/autoOrchestrate/autoOrchestrateApi';
 import { evolveAgentApi } from './api/evolveAgent/evolveAgentApi';
 import { mcpApi } from './api/mcp/mcpApi';
+import { userStatsApi } from './api/userStats/userStatsApi';
 
 
 
 const persistConfig = {
   key: 'root',
   storage: storage, // Use localStorage instead of sessionStorage
-  whitelist: ['auth', 'cart', 'ui'], // Persist auth, cart and UI prefs
+  whitelist: ['auth', 'ui'], // Persist auth and UI prefs
 };
 
 const rootReducer = combineReducers({
   auth: authReducer,
-  CartReducer: cartReducer,
   workflows: workflowReducer,
   ui: uiReducer,
   [authApi.reducerPath]: authApi.reducer,
   [autoOrchestrateApi.reducerPath]: autoOrchestrateApi.reducer,
   [evolveAgentApi.reducerPath]: evolveAgentApi.reducer,
   [mcpApi.reducerPath]: mcpApi.reducer,
+  [userStatsApi.reducerPath]: userStatsApi.reducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -47,7 +47,7 @@ export const Store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(authApi.middleware, autoOrchestrateApi.middleware, evolveAgentApi.middleware, mcpApi.middleware),
+    }).concat(authApi.middleware, autoOrchestrateApi.middleware, evolveAgentApi.middleware, mcpApi.middleware, userStatsApi.middleware),
   devTools: process.env.NODE_ENV !== 'production',
 });
 
