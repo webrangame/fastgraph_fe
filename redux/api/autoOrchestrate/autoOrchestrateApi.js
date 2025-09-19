@@ -9,7 +9,7 @@ export const autoOrchestrateApi = createApi({
     
     autoOrchestrate: builder.mutation({
       query: ({ command  ,  response_mode = 'full'}) => ({
-        url: 'https://fatgraph-main-289021246668.us-central1.run.app/autoOrchestrate',
+        url: 'https://fatgraph-prod-twu675cviq-uc.a.run.app/autoOrchestrate',       
         method: 'POST',
         body: { command, response_mode: 'json' },
       }),

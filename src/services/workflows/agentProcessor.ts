@@ -29,6 +29,7 @@ export interface AgentProcessingResult {
   connections: AgentConnection[];
   finalData?: any;
   finalizedResult?: any;
+  finalizedArtifactLinks?: any[];
   executionResults?: {
     [agentName: string]: {
       result?: any;
@@ -45,6 +46,7 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   const finalData = result.auto_orchestrate_response?.swarm_result?.final_data || {};
   const executionResults = result.auto_orchestrate_response?.swarm_result?.execution_results?.results || {};
   const finalizedResultRaw = (result as any)?.finalizedResult;
+  const finalizedArtifactLinks = (result as any)?.finalizedArtifactLinks || [];
 
   // Attempt to parse finalizedResult if it's provided as a stringified Python-like dict
   const parseFinalizedResult = (input: any): any => {
@@ -89,7 +91,7 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   const finalizedResultParsed = parseFinalizedResult(finalizedResultRaw);
   
   if (!swarmSpec?.agents || !executionPlan?.data_flow) {
-    return { agents: {}, connections: [], finalData, finalizedResult: finalizedResultParsed, executionResults };
+    return { agents: {}, connections: [], finalData, finalizedResult: finalizedResultParsed, finalizedArtifactLinks, executionResults };
   }
 
   // Combine agent info from swarm_spec.agents and execution_plan.data_flow
@@ -192,7 +194,7 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   // Create connections based on input/output matching
   const connections = createConnections(agentsRecord);
   
-  return { agents: agentsRecord, connections, finalData, finalizedResult: finalizedResultParsed, executionResults };
+  return { agents: agentsRecord, connections, finalData, finalizedResult: finalizedResultParsed, finalizedArtifactLinks, executionResults };
 }
 
 function createConnections(agentsRecord: Record<string, ProcessedAgent>): AgentConnection[] {

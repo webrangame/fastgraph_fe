@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Zap, GripVertical, FileText, Link } from "lucide-react";
+import { X, Zap, GripVertical, FileText, Link, ExternalLink } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { setEndNodeSidebarWidth } from '@/redux/slice/uiSlice';
@@ -10,6 +10,7 @@ interface EndNodeSidebarProps {
   onClose: () => void;
   sidebarType: 'output' | 'media';
   finalData?: any;
+  finalizedArtifactLinks?: any[];
   initialWidth?: number;
   onWidthChange?: (width: number) => void;
 }
@@ -19,6 +20,7 @@ export function EndNodeSidebar({
   onClose, 
   sidebarType,
   finalData,
+  finalizedArtifactLinks = [],
   initialWidth = 400,
   onWidthChange
 }: EndNodeSidebarProps) {
@@ -334,6 +336,14 @@ export function EndNodeSidebar({
       const extractMediaLinks = (obj: any): string[] => {
         if (!obj || typeof obj !== 'object') return [];
         
+        // Pattern 0: finalizedArtifactLinks - highest priority
+        if (Array.isArray(finalizedArtifactLinks) && finalizedArtifactLinks.length > 0) {
+          const mediaUrls = finalizedArtifactLinks
+            .filter(artifact => artifact?.type === 'image' && artifact?.url)
+            .map(artifact => artifact.url);
+          if (mediaUrls.length > 0) return mediaUrls;
+        }
+        
         // Pattern 1: finalizedResult structure - results.agent_name.outputs.output_name (array of links)
         if (obj.results && typeof obj.results === 'object') {
           for (const agentKey of Object.keys(obj.results)) {
@@ -393,6 +403,47 @@ export function EndNodeSidebar({
       };
 
       const mediaLinks: string[] = extractMediaLinks(normalized);
+      
+      // Helper function to get file name and type from URL
+      const getFileInfo = (url: string) => {
+        const fileName = url.split('/').pop() || 'Media File';
+        const fileExtension = fileName.split('.').pop()?.toLowerCase();
+        
+        let fileType = 'Media';
+        let icon = ExternalLink;
+        
+        if (fileExtension) {
+          switch (fileExtension) {
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+            case 'gif':
+            case 'webp':
+            case 'svg':
+              fileType = 'Image';
+              break;
+            case 'mp4':
+            case 'webm':
+            case 'avi':
+            case 'mov':
+              fileType = 'Video';
+              break;
+            case 'mp3':
+            case 'wav':
+            case 'ogg':
+              fileType = 'Audio';
+              break;
+            case 'pdf':
+              fileType = 'PDF';
+              break;
+            default:
+              fileType = 'File';
+          }
+        }
+        
+        return { fileName, fileType, icon };
+      };
+      
       return (
         <div className="p-4 space-y-4">
           <div className="theme-card-bg rounded-lg p-4 border theme-border">
@@ -401,13 +452,42 @@ export function EndNodeSidebar({
               Media Links
             </h3>
             {Array.isArray(mediaLinks) && mediaLinks.length > 0 ? (
-              <ul className="list-disc pl-5 space-y-1 text-sm">
-                {mediaLinks.map((m, idx) => (
-                  <li key={idx} className="break-all">
-                    {m}
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-2">
+                {mediaLinks.map((m, idx) => {
+                  const { fileName, fileType } = getFileInfo(m);
+                  return (
+                    <div key={idx} className="group">
+                      <a
+                        href={m}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-3 p-3 rounded-lg theme-hover-bg border theme-border transition-all duration-200 hover:theme-shadow-sm hover:scale-[1.02] cursor-pointer"
+                        title={`Open ${fileName} in new tab`}
+                      >
+                        <div className="p-2 rounded-md bg-blue-500/10 border border-blue-500/20">
+                          <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className="text-sm theme-text-primary font-medium truncate">
+                              {fileName}
+                            </span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 font-medium">
+                              {fileType}
+                            </span>
+                          </div>
+                          <div className="text-xs theme-text-muted truncate">
+                            {m}
+                          </div>
+                        </div>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <ExternalLink className="w-4 h-4 theme-text-muted" />
+                        </div>
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
               <div className="text-sm theme-text-secondary">
                 No media links available for this workflow.

@@ -111,6 +111,7 @@ function WorkflowCanvasInner({
   onAgentFeedback,
   finalData,
   finalizedResult,
+  finalizedArtifactLinks,
   executionResults,
 }: WorkflowCanvasProps) {
   const [isMobile, setIsMobile] = useState(false);
@@ -1125,6 +1126,7 @@ function WorkflowCanvasInner({
         onClose={handleCloseEndNodeSidebar}
         sidebarType={endNodeSidebarType}
         finalData={finalizedResult || finalData}
+        finalizedArtifactLinks={finalizedArtifactLinks}
         initialWidth={endNodeSidebarWidth}
         onWidthChange={setEndNodeSidebarWidth}
       />
