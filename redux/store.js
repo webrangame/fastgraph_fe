@@ -18,6 +18,7 @@ import { autoOrchestrateApi } from './api/autoOrchestrate/autoOrchestrateApi';
 import { evolveAgentApi } from './api/evolveAgent/evolveAgentApi';
 import { mcpApi } from './api/mcp/mcpApi';
 import { userStatsApi } from './api/userStats/userStatsApi';
+import { auditApi } from './api/audit/auditApi';
 
 
 
@@ -36,6 +37,7 @@ const rootReducer = combineReducers({
   [evolveAgentApi.reducerPath]: evolveAgentApi.reducer,
   [mcpApi.reducerPath]: mcpApi.reducer,
   [userStatsApi.reducerPath]: userStatsApi.reducer,
+  [auditApi.reducerPath]: auditApi.reducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -47,7 +49,7 @@ export const Store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(authApi.middleware, autoOrchestrateApi.middleware, evolveAgentApi.middleware, mcpApi.middleware, userStatsApi.middleware),
+    }).concat(authApi.middleware, autoOrchestrateApi.middleware, evolveAgentApi.middleware, mcpApi.middleware, userStatsApi.middleware, auditApi.middleware),
   devTools: process.env.NODE_ENV !== 'production',
 });
 

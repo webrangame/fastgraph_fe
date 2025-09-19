@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import { UserPlus, X } from 'lucide-react';
 
 interface CreateAgentModalProps {
@@ -30,6 +31,7 @@ export function CreateAgentModal({ isOpen, onClose, onSubmit }: CreateAgentModal
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState('');
+  const { logAgentAction } = useAuditLog();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +55,9 @@ export function CreateAgentModal({ isOpen, onClose, onSubmit }: CreateAgentModal
     if (Object.keys(newErrors).length === 0) {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Log audit trail
+      await logAgentAction('create', formData);
       
       onSubmit(formData);
       handleClose();

@@ -17,10 +17,12 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { processAgentsFromResponse } from '@/services/workflows/agentProcessor';
+import { useAuditLog } from '@/hooks/useAuditLog';
 
 export default function WorkflowsPage() {
   const dispatch = useDispatch();
   const router = useRouter();
+  const { logWorkflowAction, logDataAction } = useAuditLog();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -375,9 +377,20 @@ export default function WorkflowsPage() {
         overwrite: true
       }).unwrap();
 
+      // Log data installation audit
+      await logDataAction('create', {
+        dataName: data.name,
+        description: data.description,
+        dataType: 'json',
+        numberOfAgents: 0
+      });
+
       // 🎯 Load as the only active workflow (single tab)
       dispatch(setWorkflows([workflowData]));
       setActiveWorkflow(newWorkflowId);
+
+      // Log workflow creation audit
+      await logWorkflowAction('create', workflowData);
 
       // Add to undo stack
       addToUndoStack({
