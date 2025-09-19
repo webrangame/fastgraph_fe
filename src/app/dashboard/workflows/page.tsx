@@ -63,6 +63,12 @@ export default function WorkflowsPage() {
     workflows,
     onAgentsProcessed: handleAgentsProcessed
   });
+  
+  console.log('🔍 Dashboard Debug:', {
+    localFinalizedArtifactLinksLength: finalizedArtifactLinks?.length,
+    orchestratedFinalizedArtifactLinksLength: orchestratedFinalizedArtifactLinks?.length,
+    finalPassedToCanvas: (finalizedArtifactLinks || orchestratedFinalizedArtifactLinks)?.length
+  });
 
   const {
     workflows: workflowManagerWorkflows,
@@ -123,7 +129,19 @@ export default function WorkflowsPage() {
         const workflowData = selectedApiItem.dataContent.autoOrchestrateResult;
 
         // Build agents and connections from cached autoOrchestrate result
+        console.log('🔍 Existing Workflow - workflowData structure:', {
+          workflowDataKeys: Object.keys(workflowData),
+          hasFinalizedArtifactLinks: !!workflowData?.finalizedArtifactLinks,
+          finalizedArtifactLinksLength: workflowData?.finalizedArtifactLinks?.length,
+          workflowData: workflowData
+        });
+        
         const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, finalizedArtifactLinks: processedFinalizedArtifactLinks, executionResults: processedExecutionResults } = processAgentsFromResponse(workflowData);
+        
+        console.log('🔍 Existing Workflow - processed result:', {
+          processedFinalizedArtifactLinksLength: processedFinalizedArtifactLinks?.length,
+          processedFinalizedArtifactLinks: processedFinalizedArtifactLinks
+        });
         
         // Create the workflow object with reconstructed nodes/connections so hooks detect existing structure
         const reconstructedNodes = Object.entries(processedAgents || {}).map(([agentName, agentData]: [string, any]) => ({

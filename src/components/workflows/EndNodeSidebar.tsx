@@ -184,7 +184,20 @@ export function EndNodeSidebar({
         return { result: content };
       }
       
-      // Strategy 3: Try to parse media_links array
+      // Strategy 3: Try to parse artifacts array with URLs
+      const artifactsMatch = raw.match(/'artifacts':\s*\[([\s\S]*?)\]/);
+      if (artifactsMatch) {
+        // Extract URLs from artifacts array
+        const urlMatches = artifactsMatch[1].match(/'url':\s*'([^']+)'/g);
+        if (urlMatches) {
+          const urls = urlMatches.map(match => match.match(/'url':\s*'([^']+)'/)?.[1]).filter(Boolean);
+          if (urls.length > 0) {
+            return { media_links: urls };
+          }
+        }
+      }
+      
+      // Strategy 4: Try to parse media_links array
       const mediaLinksMatch = raw.match(/'media_links':\s*\[([\s\S]*?)\]/);
       if (mediaLinksMatch) {
         const items = mediaLinksMatch[1]
@@ -195,7 +208,7 @@ export function EndNodeSidebar({
         return { media_links: items };
       }
       
-      // Strategy 4: If we can't parse it, return it wrapped so our extraction logic can try
+      // Strategy 5: If we can't parse it, return it wrapped so our extraction logic can try
       return { raw_string: raw };
     }
     
@@ -336,14 +349,6 @@ export function EndNodeSidebar({
       const extractMediaLinks = (obj: any): string[] => {
         if (!obj || typeof obj !== 'object') return [];
         
-        // Pattern 0: finalizedArtifactLinks - highest priority
-        if (Array.isArray(finalizedArtifactLinks) && finalizedArtifactLinks.length > 0) {
-          const mediaUrls = finalizedArtifactLinks
-            .filter(artifact => artifact?.type === 'image' && artifact?.url)
-            .map(artifact => artifact.url);
-          if (mediaUrls.length > 0) return mediaUrls;
-        }
-        
         // Pattern 1: finalizedResult structure - results.agent_name.outputs.output_name (array of links)
         if (obj.results && typeof obj.results === 'object') {
           for (const agentKey of Object.keys(obj.results)) {
@@ -402,7 +407,36 @@ export function EndNodeSidebar({
         return [];
       };
 
-      const mediaLinks: string[] = extractMediaLinks(normalized);
+      // Check finalizedArtifactLinks first (highest priority)
+      let mediaLinks: string[] = [];
+      
+      console.log('🔍 EndNodeSidebar Media Links Debug:', {
+        sidebarType,
+        finalizedArtifactLinksLength: finalizedArtifactLinks?.length,
+        finalizedArtifactLinks: finalizedArtifactLinks,
+        normalizedData: normalized,
+        finalDataType: typeof finalData,
+        finalDataKeys: finalData && typeof finalData === 'object' ? Object.keys(finalData) : 'not-object'
+      });
+      
+      if (Array.isArray(finalizedArtifactLinks) && finalizedArtifactLinks.length > 0) {
+        mediaLinks = finalizedArtifactLinks
+          .filter(artifact => artifact?.url && (
+            artifact?.type === 'image' || 
+            artifact?.type === 'video' || 
+            artifact?.type === 'audio' ||
+            artifact?.type === 'media' ||
+            !artifact?.type  // Include items without type specified
+          ))
+          .map(artifact => artifact.url);
+        console.log('✅ Using finalizedArtifactLinks:', mediaLinks);
+      }
+      
+      // Fallback to extracting from normalized data
+      if (mediaLinks.length === 0) {
+        mediaLinks = extractMediaLinks(normalized);
+        console.log('🔄 Fallback to extractMediaLinks:', mediaLinks);
+      }
       
       // Helper function to get file name and type from URL
       const getFileInfo = (url: string) => {

@@ -81,6 +81,11 @@ export function useAutoOrchestrate({
             // Process agents and connections
             const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, finalizedArtifactLinks: processedFinalizedArtifactLinks, executionResults: processedExecutionResults } = 
               processAgentsFromResponse(result);
+              
+            console.log('🔍 useAutoOrchestrate Debug:', {
+              processedFinalizedArtifactLinksLength: processedFinalizedArtifactLinks?.length,
+              processedFinalizedArtifactLinks: processedFinalizedArtifactLinks
+            });
            
             setAgents(processedAgents);
             setConnections(processedConnections);
@@ -92,12 +97,18 @@ export function useAutoOrchestrate({
 
             // Save the auto orchestrate result using useInstallDataMutation
             try {
+              // Ensure the result includes finalizedArtifactLinks at the top level for consistency
+              const resultWithArtifacts = {
+                ...result,
+                finalizedArtifactLinks: processedFinalizedArtifactLinks || []
+              };
+              
               const saveResult = await installData({
                 dataName: workflows[0].name,
                 description: firstWorkflowDescription,
                 dataType: 'json',
                 dataContent: {
-                  autoOrchestrateResult: result,
+                  autoOrchestrateResult: resultWithArtifacts,
                 },
                 overwrite: true
               }).unwrap();

@@ -114,6 +114,11 @@ function WorkflowCanvasInner({
   finalizedArtifactLinks,
   executionResults,
 }: WorkflowCanvasProps) {
+  
+  console.log('🔍 WorkflowCanvas Debug:', {
+    finalizedArtifactLinksLength: finalizedArtifactLinks?.length,
+    finalizedArtifactLinks: finalizedArtifactLinks
+  });
   const [isMobile, setIsMobile] = useState(false);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
