@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Zap, GripVertical, FileText, Link, ExternalLink } from "lucide-react";
+import { X, Zap, GripVertical, FileText, Link, ExternalLink, Image, AlertCircle } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { setEndNodeSidebarWidth } from '@/redux/slice/uiSlice';
@@ -228,7 +228,7 @@ export function EndNodeSidebar({
             )}
           </div>
           <h3 className="text-base font-medium theme-text-primary mb-2">
-            No {sidebarType === 'output' ? 'output' : 'media links'} available
+            No {sidebarType === 'output' ? 'output' : 'media links'} available 
           </h3>
           <p className="theme-text-secondary text-sm max-w-xs">
             {sidebarType === 'output' 
@@ -478,35 +478,107 @@ export function EndNodeSidebar({
         return { fileName, fileType, icon };
       };
       
+      // Image Preview Component
+      const ImagePreview = ({ url, fileName, onError }: { url: string; fileName: string; onError: () => void }) => {
+        const [isLoading, setIsLoading] = useState(true);
+        const [hasError, setHasError] = useState(false);
+
+        const handleLoad = () => {
+          setIsLoading(false);
+        };
+
+        const handleError = () => {
+          setIsLoading(false);
+          setHasError(true);
+          onError();
+        };
+
+        if (hasError) {
+          return (
+            <div className="w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600">
+              <div className="text-center">
+                <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-xs text-gray-500">Preview unavailable</p>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="relative w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+              </div>
+            )}
+            <img
+              src={url}
+              alt={fileName}
+              onLoad={handleLoad}
+              onError={handleError}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${
+                isLoading ? 'opacity-0' : 'opacity-100'
+              }`}
+              loading="lazy"
+            />
+          </div>
+        );
+      };
+
       return (
         <div className="p-4 space-y-4">
           <div className="theme-card-bg rounded-lg p-4 border theme-border">
             <h3 className="text-sm font-semibold theme-text-primary mb-3 flex items-center">
               <Link className="w-4 h-4 mr-2" />
-              Media Links
+                Artifacts Links
             </h3>
             {Array.isArray(mediaLinks) && mediaLinks.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {mediaLinks.map((m, idx) => {
                   const { fileName, fileType } = getFileInfo(m);
+                  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(
+                    fileName.split('.').pop()?.toLowerCase() || ''
+                  );
+                  
                   return (
-                    <div key={idx} className="group">
+                    <div key={idx} className="group theme-card-bg rounded-lg p-3 border theme-border hover:theme-shadow-sm transition-all duration-200">
+                      {/* Image Preview for image files */}
+                      {isImage && (
+                        <div className="mb-3">
+                          <ImagePreview 
+                            url={m} 
+                            fileName={fileName}
+                            onError={() => {}}
+                          />
+                        </div>
+                      )}
+                      
+                      {/* File Info and Link */}
                       <a
                         href={m}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center space-x-3 p-3 rounded-lg theme-hover-bg border theme-border transition-all duration-200 hover:theme-shadow-sm hover:scale-[1.02] cursor-pointer"
+                        className="flex items-center space-x-3 p-2 rounded-lg theme-hover-bg transition-all duration-200 hover:scale-[1.01] cursor-pointer"
                         title={`Open ${fileName} in new tab`}
                       >
-                        <div className="p-2 rounded-md bg-blue-500/10 border border-blue-500/20">
-                          <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <div className="p-2 rounded-md bg-blue-500/10 border border-blue-500/20 flex-shrink-0">
+                          {isImage ? (
+                            <Image className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          ) : (
+                            <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 mb-1">
                             <span className="text-sm theme-text-primary font-medium truncate">
                               {fileName}
                             </span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 font-medium">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              fileType === 'Image' ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
+                              fileType === 'Video' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' :
+                              fileType === 'Audio' ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400' :
+                              'bg-gray-500/10 text-gray-600 dark:text-gray-400'
+                            }`}>
                               {fileType}
                             </span>
                           </div>
@@ -514,7 +586,7 @@ export function EndNodeSidebar({
                             {m}
                           </div>
                         </div>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <div className="opacity-100 transition-opacity duration-200 flex-shrink-0">
                           <ExternalLink className="w-4 h-4 theme-text-muted" />
                         </div>
                       </a>
@@ -523,8 +595,12 @@ export function EndNodeSidebar({
                 })}
               </div>
             ) : (
-              <div className="text-sm theme-text-secondary">
-                No media links available for this workflow.
+              <div className="text-center py-8">
+                <Image className="w-12 h-12 theme-text-muted mx-auto mb-3 opacity-50" />
+                <p className="text-sm theme-text-muted mb-1">No Artifacts links available</p>
+                <p className="text-xs theme-text-muted">
+                  Artifacts links will appear here when available
+                </p>
               </div>
             )}
           </div>
@@ -534,7 +610,7 @@ export function EndNodeSidebar({
   };
 
   const getTitle = () => {
-    return sidebarType === 'output' ? 'Workflow Output' : 'Media Links';
+    return sidebarType === 'output' ? 'Workflow Output' : 'Artifacts';
   };
 
   const getIcon = () => {
