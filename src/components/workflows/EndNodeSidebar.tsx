@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Zap, GripVertical, FileText, Link } from "lucide-react";
+import { X, Zap, GripVertical, FileText, Link, ExternalLink, Image, AlertCircle } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { setEndNodeSidebarWidth } from '@/redux/slice/uiSlice';
@@ -10,6 +10,7 @@ interface EndNodeSidebarProps {
   onClose: () => void;
   sidebarType: 'output' | 'media';
   finalData?: any;
+  finalizedArtifactLinks?: any[];
   initialWidth?: number;
   onWidthChange?: (width: number) => void;
 }
@@ -19,6 +20,7 @@ export function EndNodeSidebar({
   onClose, 
   sidebarType,
   finalData,
+  finalizedArtifactLinks = [],
   initialWidth = 400,
   onWidthChange
 }: EndNodeSidebarProps) {
@@ -182,7 +184,20 @@ export function EndNodeSidebar({
         return { result: content };
       }
       
-      // Strategy 3: Try to parse media_links array
+      // Strategy 3: Try to parse artifacts array with URLs
+      const artifactsMatch = raw.match(/'artifacts':\s*\[([\s\S]*?)\]/);
+      if (artifactsMatch) {
+        // Extract URLs from artifacts array
+        const urlMatches = artifactsMatch[1].match(/'url':\s*'([^']+)'/g);
+        if (urlMatches) {
+          const urls = urlMatches.map(match => match.match(/'url':\s*'([^']+)'/)?.[1]).filter(Boolean);
+          if (urls.length > 0) {
+            return { media_links: urls };
+          }
+        }
+      }
+      
+      // Strategy 4: Try to parse media_links array
       const mediaLinksMatch = raw.match(/'media_links':\s*\[([\s\S]*?)\]/);
       if (mediaLinksMatch) {
         const items = mediaLinksMatch[1]
@@ -193,7 +208,7 @@ export function EndNodeSidebar({
         return { media_links: items };
       }
       
-      // Strategy 4: If we can't parse it, return it wrapped so our extraction logic can try
+      // Strategy 5: If we can't parse it, return it wrapped so our extraction logic can try
       return { raw_string: raw };
     }
     
@@ -213,7 +228,7 @@ export function EndNodeSidebar({
             )}
           </div>
           <h3 className="text-base font-medium theme-text-primary mb-2">
-            No {sidebarType === 'output' ? 'output' : 'media links'} available
+            No {sidebarType === 'output' ? 'output' : 'media links'} available 
           </h3>
           <p className="theme-text-secondary text-sm max-w-xs">
             {sidebarType === 'output' 
@@ -392,25 +407,200 @@ export function EndNodeSidebar({
         return [];
       };
 
-      const mediaLinks: string[] = extractMediaLinks(normalized);
+      // Check finalizedArtifactLinks first (highest priority)
+      let mediaLinks: string[] = [];
+      
+      console.log('🔍 EndNodeSidebar Media Links Debug:', {
+        sidebarType,
+        finalizedArtifactLinksLength: finalizedArtifactLinks?.length,
+        finalizedArtifactLinks: finalizedArtifactLinks,
+        normalizedData: normalized,
+        finalDataType: typeof finalData,
+        finalDataKeys: finalData && typeof finalData === 'object' ? Object.keys(finalData) : 'not-object'
+      });
+      
+      if (Array.isArray(finalizedArtifactLinks) && finalizedArtifactLinks.length > 0) {
+        mediaLinks = finalizedArtifactLinks
+          .filter(artifact => artifact?.url && (
+            artifact?.type === 'image' || 
+            artifact?.type === 'video' || 
+            artifact?.type === 'audio' ||
+            artifact?.type === 'media' ||
+            !artifact?.type  // Include items without type specified
+          ))
+          .map(artifact => artifact.url);
+        console.log('✅ Using finalizedArtifactLinks:', mediaLinks);
+      }
+      
+      // Fallback to extracting from normalized data
+      if (mediaLinks.length === 0) {
+        mediaLinks = extractMediaLinks(normalized);
+        console.log('🔄 Fallback to extractMediaLinks:', mediaLinks);
+      }
+      
+      // Helper function to get file name and type from URL
+      const getFileInfo = (url: string) => {
+        const fileName = url.split('/').pop() || 'Media File';
+        const fileExtension = fileName.split('.').pop()?.toLowerCase();
+        
+        let fileType = 'Media';
+        let icon = ExternalLink;
+        
+        if (fileExtension) {
+          switch (fileExtension) {
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+            case 'gif':
+            case 'webp':
+            case 'svg':
+              fileType = 'Image';
+              break;
+            case 'mp4':
+            case 'webm':
+            case 'avi':
+            case 'mov':
+              fileType = 'Video';
+              break;
+            case 'mp3':
+            case 'wav':
+            case 'ogg':
+              fileType = 'Audio';
+              break;
+            case 'pdf':
+              fileType = 'PDF';
+              break;
+            default:
+              fileType = 'File';
+          }
+        }
+        
+        return { fileName, fileType, icon };
+      };
+      
+      // Image Preview Component
+      const ImagePreview = ({ url, fileName, onError }: { url: string; fileName: string; onError: () => void }) => {
+        const [isLoading, setIsLoading] = useState(true);
+        const [hasError, setHasError] = useState(false);
+
+        const handleLoad = () => {
+          setIsLoading(false);
+        };
+
+        const handleError = () => {
+          setIsLoading(false);
+          setHasError(true);
+          onError();
+        };
+
+        if (hasError) {
+          return (
+            <div className="w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600">
+              <div className="text-center">
+                <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-xs text-gray-500">Preview unavailable</p>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="relative w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+              </div>
+            )}
+            <img
+              src={url}
+              alt={fileName}
+              onLoad={handleLoad}
+              onError={handleError}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${
+                isLoading ? 'opacity-0' : 'opacity-100'
+              }`}
+              loading="lazy"
+            />
+          </div>
+        );
+      };
+
       return (
         <div className="p-4 space-y-4">
           <div className="theme-card-bg rounded-lg p-4 border theme-border">
             <h3 className="text-sm font-semibold theme-text-primary mb-3 flex items-center">
               <Link className="w-4 h-4 mr-2" />
-              Media Links
+                Artifacts Links
             </h3>
             {Array.isArray(mediaLinks) && mediaLinks.length > 0 ? (
-              <ul className="list-disc pl-5 space-y-1 text-sm">
-                {mediaLinks.map((m, idx) => (
-                  <li key={idx} className="break-all">
-                    {m}
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-3">
+                {mediaLinks.map((m, idx) => {
+                  const { fileName, fileType } = getFileInfo(m);
+                  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(
+                    fileName.split('.').pop()?.toLowerCase() || ''
+                  );
+                  
+                  return (
+                    <div key={idx} className="group theme-card-bg rounded-lg p-3 border theme-border hover:theme-shadow-sm transition-all duration-200">
+                      {/* Image Preview for image files */}
+                      {isImage && (
+                        <div className="mb-3">
+                          <ImagePreview 
+                            url={m} 
+                            fileName={fileName}
+                            onError={() => {}}
+                          />
+                        </div>
+                      )}
+                      
+                      {/* File Info and Link */}
+                      <a
+                        href={m}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-3 p-2 rounded-lg theme-hover-bg transition-all duration-200 hover:scale-[1.01] cursor-pointer"
+                        title={`Open ${fileName} in new tab`}
+                      >
+                        <div className="p-2 rounded-md bg-blue-500/10 border border-blue-500/20 flex-shrink-0">
+                          {isImage ? (
+                            <Image className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          ) : (
+                            <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className="text-sm theme-text-primary font-medium truncate">
+                              {fileName}
+                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              fileType === 'Image' ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
+                              fileType === 'Video' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' :
+                              fileType === 'Audio' ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400' :
+                              'bg-gray-500/10 text-gray-600 dark:text-gray-400'
+                            }`}>
+                              {fileType}
+                            </span>
+                          </div>
+                          <div className="text-xs theme-text-muted truncate">
+                            {m}
+                          </div>
+                        </div>
+                        <div className="opacity-100 transition-opacity duration-200 flex-shrink-0">
+                          <ExternalLink className="w-4 h-4 theme-text-muted" />
+                        </div>
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-              <div className="text-sm theme-text-secondary">
-                No media links available for this workflow.
+              <div className="text-center py-8">
+                <Image className="w-12 h-12 theme-text-muted mx-auto mb-3 opacity-50" />
+                <p className="text-sm theme-text-muted mb-1">No Artifacts links available</p>
+                <p className="text-xs theme-text-muted">
+                  Artifacts links will appear here when available
+                </p>
               </div>
             )}
           </div>
@@ -420,7 +610,7 @@ export function EndNodeSidebar({
   };
 
   const getTitle = () => {
-    return sidebarType === 'output' ? 'Workflow Output' : 'Media Links';
+    return sidebarType === 'output' ? 'Workflow Output' : 'Artifacts';
   };
 
   const getIcon = () => {

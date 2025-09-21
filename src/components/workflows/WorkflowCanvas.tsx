@@ -111,8 +111,14 @@ function WorkflowCanvasInner({
   onAgentFeedback,
   finalData,
   finalizedResult,
+  finalizedArtifactLinks,
   executionResults,
 }: WorkflowCanvasProps) {
+  
+  console.log('🔍 WorkflowCanvas Debug:', {
+    finalizedArtifactLinksLength: finalizedArtifactLinks?.length,
+    finalizedArtifactLinks: finalizedArtifactLinks
+  });
   const [isMobile, setIsMobile] = useState(false);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
@@ -1014,12 +1020,12 @@ function WorkflowCanvasInner({
             </div>
             <div className="theme-input-bg rounded-lg p-3 border theme-border">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-medium theme-text-secondary">Media Links:</span>
+                <span className="font-medium theme-text-secondary">Artifacts Links:</span>
                 <button 
                   onClick={handleGetMediaLinks}
                   className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
                 >
-                  Get Media Links
+                  Get Artifacts Links
                 </button>
               </div>
             </div>
@@ -1125,6 +1131,7 @@ function WorkflowCanvasInner({
         onClose={handleCloseEndNodeSidebar}
         sidebarType={endNodeSidebarType}
         finalData={finalizedResult || finalData}
+        finalizedArtifactLinks={finalizedArtifactLinks}
         initialWidth={endNodeSidebarWidth}
         onWidthChange={setEndNodeSidebarWidth}
       />
