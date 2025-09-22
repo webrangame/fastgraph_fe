@@ -29,6 +29,7 @@ export interface AgentProcessingResult {
   connections: AgentConnection[];
   finalData?: any;
   finalizedResult?: any;
+  finalizedArtifactLinks?: any[];
   executionResults?: {
     [agentName: string]: {
       result?: any;
@@ -45,6 +46,62 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   const finalData = result.auto_orchestrate_response?.swarm_result?.final_data || {};
   const executionResults = result.auto_orchestrate_response?.swarm_result?.execution_results?.results || {};
   const finalizedResultRaw = (result as any)?.finalizedResult;
+  // Try multiple possible locations and naming conventions for finalizedArtifactLinks
+  let finalizedArtifactLinks = 
+    (result as any)?.finalizedArtifactLinks || 
+    (result as any)?.finalized_artifact_links || 
+    (result as any)?.auto_orchestrate_response?.finalizedArtifactLinks ||
+    (result as any)?.auto_orchestrate_response?.finalized_artifact_links ||
+    [];
+  
+  // Search for artifact links anywhere in the response
+  const searchForArtifacts = (obj: any, path = ''): string[] => {
+    if (!obj || typeof obj !== 'object') return [];
+    
+    // Check if current object has artifacts array
+    if (Array.isArray(obj.artifacts)) {
+      return obj.artifacts.filter((a: any) => a?.url).map((a: any) => a.url);
+    }
+    
+    // Check common field names
+    const artifactFields = ['finalizedArtifactLinks', 'finalized_artifact_links', 'artifacts', 'media_links'];
+    for (const field of artifactFields) {
+      if (Array.isArray(obj[field])) {
+        return obj[field].filter(item => item?.url || typeof item === 'string').map(item => item?.url || item);
+      }
+    }
+    
+    // Recursively search nested objects
+    let found: string[] = [];
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value === 'object' && value !== null) {
+        const nested = searchForArtifacts(value, `${path}.${key}`);
+        if (nested.length > 0) {
+          found = [...found, ...nested];
+        }
+      }
+    }
+    
+    return found;
+  };
+  
+  const foundArtifacts = searchForArtifacts(result);
+  
+  // If we didn't find artifacts in the expected location but found them via search, use those
+  if (finalizedArtifactLinks.length === 0 && foundArtifacts.length > 0) {
+    finalizedArtifactLinks = foundArtifacts.map(url => ({ type: 'image', url }));
+  }
+  
+  console.log('🔍 agentProcessor Debug:', {
+    hasResult: !!result,
+    hasFinalizedArtifactLinks: !!result?.finalizedArtifactLinks,
+    hasFinalizedArtifactLinksUnderscore: !!result?.finalized_artifact_links,
+    finalizedArtifactLinksLength: finalizedArtifactLinks?.length,
+    finalizedArtifactLinksData: finalizedArtifactLinks,
+    foundArtifactsFromSearch: foundArtifacts,
+    fullResultKeys: result ? Object.keys(result) : [],
+    autoOrchestrateResponseKeys: result?.auto_orchestrate_response ? Object.keys(result.auto_orchestrate_response) : []
+  });
 
   // Attempt to parse finalizedResult if it's provided as a stringified Python-like dict
   const parseFinalizedResult = (input: any): any => {
@@ -89,7 +146,7 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   const finalizedResultParsed = parseFinalizedResult(finalizedResultRaw);
   
   if (!swarmSpec?.agents || !executionPlan?.data_flow) {
-    return { agents: {}, connections: [], finalData, finalizedResult: finalizedResultParsed, executionResults };
+    return { agents: {}, connections: [], finalData, finalizedResult: finalizedResultParsed, finalizedArtifactLinks, executionResults };
   }
 
   // Combine agent info from swarm_spec.agents and execution_plan.data_flow
@@ -192,7 +249,7 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   // Create connections based on input/output matching
   const connections = createConnections(agentsRecord);
   
-  return { agents: agentsRecord, connections, finalData, finalizedResult: finalizedResultParsed, executionResults };
+  return { agents: agentsRecord, connections, finalData, finalizedResult: finalizedResultParsed, finalizedArtifactLinks, executionResults };
 }
 
 function createConnections(agentsRecord: Record<string, ProcessedAgent>): AgentConnection[] {

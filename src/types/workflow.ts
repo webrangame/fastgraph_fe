@@ -59,6 +59,7 @@ export interface WorkflowCanvasProps {
   onAgentFeedback?: (agentId: string, agentName: string, action?: string, feedback?: string | string[]) => void;
   finalData?: any;
   finalizedResult?: any;
+  finalizedArtifactLinks?: any[];
   executionResults?: {
     [agentName: string]: {
       result?: any;

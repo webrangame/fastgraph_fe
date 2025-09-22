@@ -30,6 +30,7 @@ export default function WorkflowsPage() {
   const [connections, setConnections] = useState<any[] | null>(null);
   const [finalData, setFinalData] = useState<any>(null);
   const [finalizedResult, setFinalizedResult] = useState<any>(null);
+  const [finalizedArtifactLinks, setFinalizedArtifactLinks] = useState<any[]>([]);
   const [cachedExecutionResults, setCachedExecutionResults] = useState<any>(null);
   const [installData, { isLoading: isInstalling } ] = useInstallDataMutation();
   // Undo functionality state
@@ -60,9 +61,15 @@ export default function WorkflowsPage() {
     setFinalData(processedFinalData);
   }, []);
   
-  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult, executionResults, resetAutoOrchestrate } = useAutoOrchestrate({
+  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult, finalizedArtifactLinks: orchestratedFinalizedArtifactLinks, executionResults, resetAutoOrchestrate } = useAutoOrchestrate({
     workflows,
     onAgentsProcessed: handleAgentsProcessed
+  });
+  
+  console.log('🔍 Dashboard Debug:', {
+    localFinalizedArtifactLinksLength: finalizedArtifactLinks?.length,
+    orchestratedFinalizedArtifactLinksLength: orchestratedFinalizedArtifactLinks?.length,
+    finalPassedToCanvas: (finalizedArtifactLinks || orchestratedFinalizedArtifactLinks)?.length
   });
 
   const {
@@ -124,7 +131,19 @@ export default function WorkflowsPage() {
         const workflowData = selectedApiItem.dataContent.autoOrchestrateResult;
 
         // Build agents and connections from cached autoOrchestrate result
-        const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, executionResults: processedExecutionResults } = processAgentsFromResponse(workflowData);
+        console.log('🔍 Existing Workflow - workflowData structure:', {
+          workflowDataKeys: Object.keys(workflowData),
+          hasFinalizedArtifactLinks: !!workflowData?.finalizedArtifactLinks,
+          finalizedArtifactLinksLength: workflowData?.finalizedArtifactLinks?.length,
+          workflowData: workflowData
+        });
+        
+        const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, finalizedArtifactLinks: processedFinalizedArtifactLinks, executionResults: processedExecutionResults } = processAgentsFromResponse(workflowData);
+        
+        console.log('🔍 Existing Workflow - processed result:', {
+          processedFinalizedArtifactLinksLength: processedFinalizedArtifactLinks?.length,
+          processedFinalizedArtifactLinks: processedFinalizedArtifactLinks
+        });
         
         // Create the workflow object with reconstructed nodes/connections so hooks detect existing structure
         const reconstructedNodes = Object.entries(processedAgents || {}).map(([agentName, agentData]: [string, any]) => ({
@@ -193,6 +212,9 @@ export default function WorkflowsPage() {
         }
         if (processedFinalizedResult) {
           setFinalizedResult(processedFinalizedResult);
+        }
+        if (processedFinalizedArtifactLinks) {
+          setFinalizedArtifactLinks(processedFinalizedArtifactLinks);
         }
         if (processedExecutionResults) {
           setCachedExecutionResults(processedExecutionResults);
@@ -346,6 +368,7 @@ export default function WorkflowsPage() {
       setConnections(null);
       setFinalData(null);
       setFinalizedResult(null);
+      setFinalizedArtifactLinks([]);
       setCachedExecutionResults(null);
       if (resetAutoOrchestrate) {
         resetAutoOrchestrate();
@@ -531,6 +554,7 @@ export default function WorkflowsPage() {
           onAgentFeedback={handleAgentFeedback}
           finalData={finalData}
           finalizedResult={finalizedResult || orchestratedFinalizedResult}
+          finalizedArtifactLinks={finalizedArtifactLinks || orchestratedFinalizedArtifactLinks}
           executionResults={cachedExecutionResults || executionResults}
         />
       </div>

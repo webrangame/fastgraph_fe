@@ -19,6 +19,7 @@ interface UseAutoOrchestrateReturn {
   connections: AgentConnection[] | null;
   finalData: any;
   finalizedResult: any;
+  finalizedArtifactLinks: any[];
   executionResults: any;
   resetAutoOrchestrate: () => void;
 }
@@ -31,6 +32,7 @@ export function useAutoOrchestrate({
   const [connections, setConnections] = useState<AgentConnection[] | null>(null);
   const [finalData, setFinalData] = useState<any>(null);
   const [finalizedResult, setFinalizedResult] = useState<any>(null);
+  const [finalizedArtifactLinks, setFinalizedArtifactLinks] = useState<any[]>([]);
   const [executionResults, setExecutionResults] = useState<any>(null);
   const hasAutoOrchestrated = useRef(false);
   
@@ -53,6 +55,7 @@ export function useAutoOrchestrate({
     setConnections(null);
     setFinalData(null);
     setFinalizedResult(null);
+    setFinalizedArtifactLinks([]);
     setExecutionResults(null);
     hasAutoOrchestrated.current = false;
     console.log('Auto orchestrate state reset successfully');
@@ -84,23 +87,37 @@ export function useAutoOrchestrate({
             //const result = mockAutoOrchestrateResult;
 
             // Process agents and connections
-            const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, executionResults: processedExecutionResults } = 
+            const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, finalizedArtifactLinks: processedFinalizedArtifactLinks, executionResults: processedExecutionResults } = 
               processAgentsFromResponse(result);
+              
+            console.log('🔍 useAutoOrchestrate Debug:', {
+              processedFinalizedArtifactLinksLength: processedFinalizedArtifactLinks?.length,
+              processedFinalizedArtifactLinks: processedFinalizedArtifactLinks
+            });
            
             setAgents(processedAgents);
             setConnections(processedConnections);
             setFinalData(processedFinalData);
             setFinalizedResult(processedFinalizedResult);
+            setFinalizedArtifactLinks(processedFinalizedArtifactLinks || []);
             setExecutionResults(processedExecutionResults);
             onAgentsProcessed(processedAgents, processedConnections, processedFinalData);
             
 
             // Save the auto orchestrate result using useInstallDataMutation
             try {
+<<<<<<< HEAD
               const numberOfAgents = Object.keys(processedAgents).length;
               console.log('Saving auto orchestrate result with numberOfAgents:', numberOfAgents);
               console.log('Processed agents keys:', Object.keys(processedAgents));
               console.log('Processed agents:', processedAgents);
+=======
+              // Ensure the result includes finalizedArtifactLinks at the top level for consistency
+              const resultWithArtifacts = {
+                ...result,
+                finalizedArtifactLinks: processedFinalizedArtifactLinks || []
+              };
+>>>>>>> 66e94e7a5e9375af0665e2e7321f671552c30da5
               
               const saveResult = await installData({
                 dataName: workflows[0].name,
@@ -108,7 +125,7 @@ export function useAutoOrchestrate({
                 numberOfAgents: numberOfAgents,
                 dataType: 'json',
                 dataContent: {
-                  autoOrchestrateResult: result,
+                  autoOrchestrateResult: resultWithArtifacts,
                 },
                 overwrite: true
               }).unwrap();
@@ -168,6 +185,7 @@ export function useAutoOrchestrate({
     connections,
     finalData,
     finalizedResult,
+    finalizedArtifactLinks,
     executionResults,
     resetAutoOrchestrate
   };
