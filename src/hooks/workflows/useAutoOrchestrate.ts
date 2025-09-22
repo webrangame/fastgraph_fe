@@ -106,18 +106,15 @@ export function useAutoOrchestrate({
 
             // Save the auto orchestrate result using useInstallDataMutation
             try {
-<<<<<<< HEAD
               const numberOfAgents = Object.keys(processedAgents).length;
               console.log('Saving auto orchestrate result with numberOfAgents:', numberOfAgents);
               console.log('Processed agents keys:', Object.keys(processedAgents));
               console.log('Processed agents:', processedAgents);
-=======
               // Ensure the result includes finalizedArtifactLinks at the top level for consistency
               const resultWithArtifacts = {
                 ...result,
                 finalizedArtifactLinks: processedFinalizedArtifactLinks || []
               };
->>>>>>> 66e94e7a5e9375af0665e2e7321f671552c30da5
               
               const saveResult = await installData({
                 dataName: workflows[0].name,
