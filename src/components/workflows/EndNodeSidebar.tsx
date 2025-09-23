@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Zap, GripVertical, FileText, Link, ExternalLink, Image, AlertCircle } from "lucide-react";
+import { X, Zap, GripVertical, FileText, Link, ExternalLink, Image, AlertCircle, FileText as PdfIcon } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { setEndNodeSidebarWidth } from '@/redux/slice/uiSlice';
@@ -525,6 +525,76 @@ export function EndNodeSidebar({
         );
       };
 
+      // PDF Preview Component
+      const PDFPreview = ({ url, fileName, onError }: { url: string; fileName: string; onError: () => void }) => {
+        const [isLoading, setIsLoading] = useState(true);
+        const [hasError, setHasError] = useState(false);
+        const iframeRef = useRef<HTMLIFrameElement>(null);
+
+        const handleLoad = () => {
+          setIsLoading(false);
+        };
+
+        const handleError = () => {
+          setIsLoading(false);
+          setHasError(true);
+          onError();
+        };
+
+        useEffect(() => {
+          const iframe = iframeRef.current;
+          if (iframe) {
+            const timer = setTimeout(() => {
+              if (isLoading) {
+                handleError();
+              }
+            }, 10000); // 10 second timeout
+
+            return () => clearTimeout(timer);
+          }
+        }, [isLoading]);
+
+        if (hasError) {
+          return (
+            <div className="w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600">
+              <div className="text-center">
+                <PdfIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-xs text-gray-500">PDF preview unavailable</p>
+                <p className="text-xs text-gray-400">Click to open</p>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="relative w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800 z-10">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                  <p className="text-xs text-gray-500">Loading PDF...</p>
+                </div>
+              </div>
+            )}
+            <iframe
+              ref={iframeRef}
+              src={`${url}#view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
+              onLoad={handleLoad}
+              onError={handleError}
+              className={`w-full h-full border-0 transition-opacity duration-300 ${
+                isLoading ? 'opacity-0' : 'opacity-100'
+              }`}
+              title={`PDF Preview: ${fileName}`}
+              sandbox="allow-same-origin"
+            />
+            {/* PDF Overlay Indicator */}
+            <div className="absolute top-2 right-2 bg-red-500/90 text-white text-xs px-2 py-1 rounded-md font-medium">
+              PDF
+            </div>
+          </div>
+        );
+      };
+
       return (
         <div className="p-4 space-y-4">
           <div className="theme-card-bg rounded-lg p-4 border theme-border">
@@ -536,9 +606,9 @@ export function EndNodeSidebar({
               <div className="space-y-3">
                 {mediaLinks.map((m, idx) => {
                   const { fileName, fileType } = getFileInfo(m);
-                  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(
-                    fileName.split('.').pop()?.toLowerCase() || ''
-                  );
+                  const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
+                  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExtension);
+                  const isPDF = fileExtension === 'pdf';
                   
                   return (
                     <div key={idx} className="group theme-card-bg rounded-lg p-3 border theme-border hover:theme-shadow-sm transition-all duration-200">
@@ -546,6 +616,17 @@ export function EndNodeSidebar({
                       {isImage && (
                         <div className="mb-3">
                           <ImagePreview 
+                            url={m} 
+                            fileName={fileName}
+                            onError={() => {}}
+                          />
+                        </div>
+                      )}
+                      
+                      {/* PDF Preview for PDF files */}
+                      {isPDF && (
+                        <div className="mb-3">
+                          <PDFPreview 
                             url={m} 
                             fileName={fileName}
                             onError={() => {}}
@@ -564,6 +645,8 @@ export function EndNodeSidebar({
                         <div className="p-2 rounded-md bg-blue-500/10 border border-blue-500/20 flex-shrink-0">
                           {isImage ? (
                             <Image className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          ) : isPDF ? (
+                            <PdfIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
                           ) : (
                             <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                           )}
@@ -577,6 +660,7 @@ export function EndNodeSidebar({
                               fileType === 'Image' ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
                               fileType === 'Video' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' :
                               fileType === 'Audio' ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400' :
+                              fileType === 'PDF' ? 'bg-red-500/10 text-red-600 dark:text-red-400' :
                               'bg-gray-500/10 text-gray-600 dark:text-gray-400'
                             }`}>
                               {fileType}
