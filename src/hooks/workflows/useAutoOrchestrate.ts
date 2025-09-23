@@ -63,10 +63,18 @@ export function useAutoOrchestrate({
  
   useEffect(() => {
     const autoOrchestrateFirstWorkflow = async () => {
-      // Skip if already executed
+      // Reset auto-orchestrate state for new prompts
       if (hasAutoOrchestrated.current) {
-        return;
+        console.log('Resetting auto-orchestrate state for new prompt...');
+        hasAutoOrchestrated.current = false;
+        setAgents(null);
+        setConnections(null);
+        setFinalData(null);
+        setFinalizedResult(null);
+        setFinalizedArtifactLinks([]);
+        setExecutionResults(null);
       }
+      
       if (workflows.length > 0) {
         const firstWorkflow = workflows[0];
 

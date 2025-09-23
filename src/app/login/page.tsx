@@ -386,12 +386,7 @@ const LoginPage = () => {
     console.log('🔵 LoginPage component mounted');
   }, []);
 
-  // Show success toast when login is successful
-  useEffect(() => {
-    if (isSuccess) {
-      toast.success('Login successful!');
-    }
-  }, [isSuccess]);
+ 
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gray-900">
