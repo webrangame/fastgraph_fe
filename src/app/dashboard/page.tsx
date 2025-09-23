@@ -10,14 +10,54 @@ import { ActivityItem } from '@/components/dashboard/ActivityItem';
 import { CreateWorkflowModal, WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 import { CreateAgentModal, AgentFormData } from '@/components/dashboard/CreateAgentModal';
 import { addWorkflow, removeAllWorkflows } from '@/redux/slice/workflowSlice';
-import { RECENT_ACTIVITIES } from '@/lib/constants';
 import { useGetUserStatsQuery } from '@/redux/api/userStats/userStatsApi';
+import { useGetAuditLogsByUserQuery } from '@/redux/api/audit/auditApi';
 import { createDynamicStatsCards } from '@/lib/statsUtils';
+import { useAuditLog } from '@/hooks/useAuditLog';
+
+// Type definitions for audit log data
+interface AuditLog {
+  id?: string | number;
+  action: string;
+  resource: string;
+  description?: string;
+  details?: string;
+  createdAt?: string;
+  statusCode?: number;
+}
+
+interface ActivityItem {
+  id: string | number;
+  title: string;
+  description: string;
+  time: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  icon: string;
+}
+
+// Helper functions to transform audit logs to activity items
+const getActivityType = (action: string, statusCode?: number): 'success' | 'error' | 'warning' | 'info' => {
+  if (statusCode && statusCode >= 400) return 'error';
+  if (action === 'create' || action === 'update') return 'success';
+  if (action === 'delete') return 'warning';
+  return 'info';
+};
+
+const getActivityIcon = (action: string, resource: string): string => {
+  if (action === 'create') return 'PlusCircle';
+  if (action === 'update') return 'Edit';
+  if (action === 'delete') return 'Trash2';
+  if (resource === 'workflow') return 'Workflow';
+  if (resource === 'data') return 'Database';
+  if (resource === 'agent') return 'Bot';
+  return 'Activity';
+};
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
   const router = useRouter();
   const user = useSelector(selectCurrentUser);
+  const { logWorkflowAction, logAgentAction } = useAuditLog();
   
   // Fetch user stats
   const userId = user?.id || user?.userId;
@@ -25,8 +65,23 @@ export default function DashboardPage() {
     skip: !userId
   });
   
+  // Fetch audit logs for recent activities
+  const { data: auditLogs, isLoading: isAuditLoading, error: auditError } = useGetAuditLogsByUserQuery(userId, {
+    skip: !userId
+  });
+  
   // Create dynamic stats cards based on API data
   const statsCards = createDynamicStatsCards(userStats);
+  
+  // Transform audit logs to activity items
+  const recentActivities: ActivityItem[] = auditLogs?.map((log: AuditLog, index: number) => ({
+    id: log.id || index,
+    title: log.description || 'Activity',
+    description: log.details || 'No details available',
+    time: log.createdAt ? new Date(log.createdAt).toLocaleString() : 'Unknown time',
+    type: getActivityType(log.action, log.statusCode),
+    icon: getActivityIcon(log.action, log.resource)
+  })) || [];
   
   const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState(false);
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
@@ -39,7 +94,7 @@ export default function DashboardPage() {
     setIsAgentModalOpen(true);
   };
 
-  const handleWorkflowSubmit = (data: WorkflowFormData) => {
+  const handleWorkflowSubmit = async (data: WorkflowFormData) => {
     // Handle the workflow creation here
     console.log('Creating workflow:', data);
     
@@ -56,6 +111,9 @@ export default function DashboardPage() {
     
     dispatch(addWorkflow(workflowData));
     
+    // Log audit trail
+    await logWorkflowAction('create', workflowData);
+    
     // Close the modal
     setIsWorkflowModalOpen(false);
     
@@ -63,9 +121,12 @@ export default function DashboardPage() {
     router.push('/dashboard/workflows');
   };
 
-  const handleAgentSubmit = (data: AgentFormData) => {
+  const handleAgentSubmit = async (data: AgentFormData) => {
     // Handle the agent creation here
     console.log('Creating agent:', data);
+    
+    // Log audit trail
+    await logAgentAction('create', data);
     
     // You can add your agent creation logic here
     // For example: save to database, deploy agent, etc.
@@ -153,16 +214,54 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="p-4 md:p-6">
-            <div className="space-y-3 md:space-y-4">
-              {RECENT_ACTIVITIES.map((activity) => (
-                <ActivityItem key={activity.id} {...activity} />
-              ))}
-            </div>
-            <div className="mt-6 text-center">
-              <button className="text-blue-500 hover:text-blue-600 text-sm font-medium py-2 px-4 rounded-lg theme-hover-bg">
-                View all activities →
-              </button>
-            </div>
+            {isAuditLoading ? (
+              // Loading skeleton for activities
+              <div className="space-y-3 md:space-y-4">
+                {[...Array(3)].map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="flex items-start space-x-4 p-4 rounded-xl">
+                      <div className="w-8 h-8 theme-input-bg rounded-lg"></div>
+                      <div className="flex-1">
+                        <div className="h-4 theme-input-bg rounded w-3/4 mb-2"></div>
+                        <div className="h-3 theme-input-bg rounded w-1/2 mb-2"></div>
+                        <div className="h-3 theme-input-bg rounded w-1/4"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : auditError ? (
+              // Error state
+              <div className="text-center p-6">
+                <p className="theme-text-muted">Failed to load recent activities.</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="mt-2 text-blue-500 hover:text-blue-600 text-sm font-medium"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : recentActivities.length > 0 ? (
+              // Actual activities
+              <div className="space-y-3 md:space-y-4">
+                {recentActivities.slice(0, 5).map((activity: ActivityItem) => (
+                  <ActivityItem key={activity.id} {...activity} />
+                ))}
+              </div>
+            ) : (
+              // No activities
+              <div className="text-center p-6">
+                <p className="theme-text-muted">No recent activities found.</p>
+              </div>
+            )}
+            
+            {!isAuditLoading && !auditError && recentActivities.length > 0 && (
+              <div className="mt-6 text-center">
+                <button className="text-blue-500 hover:text-blue-600 text-sm font-medium py-2 px-4 rounded-lg theme-hover-bg">
+                  View all activities →
+                </button>
+              </div>
+            )}
           </div>
         </Card>
       </div>

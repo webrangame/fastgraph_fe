@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import { useAutoOrchestrateMutation, useInstallDataMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
+import { useLogAuditMutation } from '@/redux/api/audit/auditApi';
+import { selectCurrentUser } from '@/redux/slice/authSlice';
 import { mockAutoOrchestrateResult } from '@/services/workflows/mockData';
 import { processAgentsFromResponse } from '@/services/workflows/agentProcessor';
 import type { ProcessedAgent, AgentConnection } from '@/services/workflows/agentProcessor';
@@ -32,6 +35,10 @@ export function useAutoOrchestrate({
   const [finalizedArtifactLinks, setFinalizedArtifactLinks] = useState<any[]>([]);
   const [executionResults, setExecutionResults] = useState<any>(null);
   const hasAutoOrchestrated = useRef(false);
+  
+  const user = useSelector(selectCurrentUser);
+
+  console.log('user 123', user)
  
   const [autoOrchestrate, {
     isLoading: isAutoOrchestrating,
@@ -39,6 +46,7 @@ export function useAutoOrchestrate({
   }] = useAutoOrchestrateMutation();
 
   const [installData] = useInstallDataMutation();
+  const [logAudit] = useLogAuditMutation();
 
   // Reset function to clear auto orchestrate state
   const resetAutoOrchestrate = () => {
@@ -94,6 +102,7 @@ export function useAutoOrchestrate({
             setFinalizedArtifactLinks(processedFinalizedArtifactLinks || []);
             setExecutionResults(processedExecutionResults);
             onAgentsProcessed(processedAgents, processedConnections, processedFinalData);
+            
 
             // Save the auto orchestrate result using useInstallDataMutation
             try {
@@ -103,9 +112,15 @@ export function useAutoOrchestrate({
                 finalizedArtifactLinks: processedFinalizedArtifactLinks || []
               };
               
+              const numberOfAgents = Object.keys(processedAgents).length;
+              console.log('Saving auto orchestrate result with numberOfAgents:', numberOfAgents);
+              console.log('Processed agents keys:', Object.keys(processedAgents));
+              console.log('Processed agents:', processedAgents);
+              
               const saveResult = await installData({
                 dataName: workflows[0].name,
                 description: firstWorkflowDescription,
+                numberOfAgents: numberOfAgents,
                 dataType: 'json',
                 dataContent: {
                   autoOrchestrateResult: resultWithArtifacts,
@@ -113,8 +128,40 @@ export function useAutoOrchestrate({
                 overwrite: true
               }).unwrap();
               console.log('Auto orchestrate result saved successfully:', saveResult);
+              console.log('Response includes numberOfAgents:', saveResult);
+
+              // Log audit trail after successful data installation
+              try {
+                const auditData = {
+                  action: 'create',
+                  resource: 'data',
+                  description: 'User created new data installation',
+                  details: `Data installation with ${numberOfAgents} agents`,
+                  createdBy: user?.id || user?.userId || 'unknown-user',
+                  task: 'data-installation',
+                 // ipAddress: '192.168.1.100', // TODO: Get actual IP from request
+                  userAgent: navigator.userAgent,
+                  endpoint: '/api/v1/data/install',
+                  method: 'POST',
+                  statusCode: 201,
+                  metadata: {
+                    numberOfAgents: numberOfAgents,
+                    dataType: 'json',
+                    workflowName: workflows[0].name,
+                    description: firstWorkflowDescription
+                  }
+                };
+                
+                await logAudit(auditData).unwrap();
+                console.log('Audit log created successfully for data installation');
+              } catch (auditError) {
+                console.error('Failed to create audit log:', auditError);
+                // Don't throw error here as the main operation was successful
+              }
+              
             } catch (saveError) {
               console.error('Failed to save auto orchestrate result:', saveError);
+              
             }
            
             // Mark as executed to prevent multiple calls

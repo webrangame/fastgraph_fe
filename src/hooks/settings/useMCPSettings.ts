@@ -12,6 +12,7 @@ export interface MCPConfig {
   apiKey: string;
   timeout: number;
   retries: number;
+  configYml?: string;
 }
 
 export interface MCPCapability {
@@ -65,7 +66,8 @@ export const useMCPSettings = () => {
     authType: 'none',
     apiKey: '',
     timeout: 30000,
-    retries: 3
+    retries: 3,
+    configYml: ''
   });
 
   const [availableMCPs, setAvailableMCPs] = useState<MCPCapability[]>([]);
