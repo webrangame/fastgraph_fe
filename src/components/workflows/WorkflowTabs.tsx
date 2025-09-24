@@ -1,9 +1,10 @@
 'use client';
 
-import { Plus, X, Undo2 } from 'lucide-react';
+import { Plus, X, Undo2, Bot } from 'lucide-react';
 import { Workflow } from '@/types/workflow';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { CreateWorkflowModal, WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
+import { NewAgentPopup } from './NewAgentPopup';
 import { useState } from 'react';
 
 interface WorkflowTabsProps {
@@ -30,6 +31,7 @@ export function WorkflowTabs({
   maxWorkflows
 }: WorkflowTabsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAgentPopupOpen, setIsAgentPopupOpen] = useState(false);
   return (
     <div className="flex items-center px-4 pb-2">
       <div className="flex space-x-1 flex-1">
@@ -92,6 +94,15 @@ export function WorkflowTabs({
             <span className="text-sm">New Workflow</span>
           </button>
         )}
+
+        {/* New Agent Button */}
+        <button
+          onClick={() => setIsAgentPopupOpen(true)}
+          className="flex items-center space-x-1 px-3 py-2 theme-text-secondary hover:theme-text-primary theme-hover-bg rounded-lg transition-colors"
+        >
+          <Bot className="w-4 h-4" />
+          <span className="text-sm">New Agent</span>
+        </button>
       </div>
 
       {/* Create Workflow Modal */}
@@ -105,6 +116,12 @@ export function WorkflowTabs({
           }}
         />
       )}
+
+      {/* New Agent Popup */}
+      <NewAgentPopup
+        isOpen={isAgentPopupOpen}
+        onClose={() => setIsAgentPopupOpen(false)}
+      />
     </div>
   );
 }
