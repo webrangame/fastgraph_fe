@@ -438,7 +438,7 @@ export default function WorkflowsPage() {
     console.log('Creating/regenerating workflow with command:', data);
     try {
       // Check if there's an existing workflow to regenerate
-      const existingWorkflow = workflows.find(w => w.name === data.name);
+      const existingWorkflow = workflows.find((w: any) => w.name === data.name);
       const isRegenerating = !!existingWorkflow;
 
       // 🧹 Clear existing workflow/state (single tab mode)
