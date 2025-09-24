@@ -29,8 +29,8 @@ const LoginPage = () => {
   // React Hook Form setup
   const loginForm = useForm<LoginFormData>({
     defaultValues: {
-      email: 'prageeth.mahendra@gmail.com',
-      password: 'prageeth'
+      email: '',
+      password: ''
     },
     mode: 'onChange'
   });
@@ -550,7 +550,7 @@ const LoginPage = () => {
           </div>
         </form>
         
-        <div className="mt-6">
+        {/* <div className="mt-6">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-600/50" />
@@ -563,7 +563,7 @@ const LoginPage = () => {
           <div className="mt-6">
             <div id="google-signin-button" className="w-full"></div>
           </div>
-        </div>
+        </div> */}
 
         {/* Registration Link */}
         <div className="mt-6 text-center">
