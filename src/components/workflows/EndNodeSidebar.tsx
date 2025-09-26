@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Zap, GripVertical, FileText, Link, ExternalLink, Image, AlertCircle, FileText as PdfIcon } from "lucide-react";
+import { X, Zap, GripVertical, FileText, Link, ExternalLink, Image, AlertCircle, FileText as PdfIcon, Upload } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { setEndNodeSidebarWidth } from '@/redux/slice/uiSlice';
@@ -774,7 +774,17 @@ export function EndNodeSidebar({
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="font-mono">{width}px</span>
+          <button
+            onClick={() => {
+              // Add your upload logic here
+              console.log('Upload button clicked');
+            }}
+            className="flex items-center space-x-1 px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-md transition-all duration-200 hover:scale-105"
+            title="Upload file"
+          >
+            <Upload className="w-3 h-3" />
+            <span className="text-xs font-medium">Upload Artifacts</span>
+          </button>
         </div>
       </div>
     </div>

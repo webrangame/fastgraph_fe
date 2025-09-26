@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, Plus, User, Zap } from 'lucide-react';
+import { Bot, Plus, User, Zap, Play } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
@@ -24,6 +24,16 @@ export function NewAgentPopup({ isOpen, onClose }: NewAgentPopupProps) {
     
     // Handle form submission logic here
     console.log('Creating agent:', { agentName, agentType, description });
+    
+    handleClose();
+    setIsSubmitting(false);
+  };
+
+  const handleTriggerAgent = async () => {
+    setIsSubmitting(true);
+    
+    // Handle trigger agent logic here
+    console.log('Triggering agent:', { agentName, agentType, description });
     
     handleClose();
     setIsSubmitting(false);
@@ -168,6 +178,25 @@ export function NewAgentPopup({ isOpen, onClose }: NewAgentPopupProps) {
               </>
             ) : (
               'Create Agent'
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            icon={Play}
+            onClick={handleTriggerAgent}
+            disabled={isSubmitting}
+            className={`transition-all duration-200 hover:scale-105 bg-green-600 hover:bg-green-700 ${
+              isSubmitting ? 'animate-pulse' : ''
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Triggering...
+              </>
+            ) : (
+              'Trigger Agent'
             )}
           </Button>
         </div>
