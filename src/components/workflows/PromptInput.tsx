@@ -17,6 +17,7 @@ interface PromptInputProps {
   onSubmit: (message: string) => void;
   isProcessing: boolean;
   isMobile?: boolean;
+  isRegenerating?: boolean;
 }
 
 const getFileIcon = (type: string) => {
@@ -27,14 +28,14 @@ const getFileIcon = (type: string) => {
   return <FileText className="w-4 h-4" />;
 };
 
-export function PromptInput({ onSubmit, isProcessing, isMobile = false }: PromptInputProps) {
+export function PromptInput({ onSubmit, isProcessing, isMobile = false, isRegenerating = false }: PromptInputProps) {
   const [inputValue, setInputValue] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = () => {
-    if (inputValue.trim() && !isProcessing) {
+    if (inputValue.trim() && !isProcessing && !isRegenerating) {
       onSubmit(inputValue.trim());
       setInputValue('');
       setAttachedFiles([]);
@@ -151,13 +152,13 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
         </div>
 
         {/* Processing Status - Mobile */}
-        {isProcessing && (
+        {(isProcessing || isRegenerating) && (
           <div className="mt-3">
             <div className="flex items-center gap-3 p-3 bg-cyan-500/10 dark:bg-cyan-400/10 rounded-lg border border-cyan-200/30 dark:border-cyan-700/30">
               <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
               <div className="flex-1">
                 <div className="font-medium text-cyan-700 dark:text-cyan-300 text-sm">
-                  Processing your request
+                  {isRegenerating ? 'Regenerating workflow...' : 'Processing your request'}
                 </div>
               </div>
               <Sparkles className="w-4 h-4 text-cyan-500 animate-pulse" />
@@ -208,10 +209,10 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
                 adjustTextareaHeight();
               }}
               onKeyPress={handleKeyPress}
-              placeholder="Describe what you want to add to your workflow..."
+              placeholder={isRegenerating ? "Regenerating workflow..." : "Describe what you want to add to your workflow..."}
               className="w-full min-h-12 max-h-32 px-4 py-3 pr-24 theme-surface border theme-border rounded-xl resize-none theme-text-primary placeholder:theme-text-muted focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400/50 transition-all scrollbar-hide overflow-y-auto"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              disabled={isProcessing}
+              disabled={isProcessing || isRegenerating}
               rows={1}
             />
             
@@ -236,14 +237,14 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
               
               <button
                 onClick={handleSubmit}
-                disabled={!inputValue.trim() || isProcessing}
+                disabled={!inputValue.trim() || isProcessing || isRegenerating}
                 className={`p-2 rounded-lg transition-all ${
-                  inputValue.trim() && !isProcessing
+                  inputValue.trim() && !isProcessing && !isRegenerating
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl'
                     : 'theme-input-bg theme-text-muted cursor-not-allowed'
                 }`}
               >
-                {isProcessing ? (
+                {isProcessing || isRegenerating ? (
                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <Send className="w-4 h-4" />
@@ -254,16 +255,16 @@ export function PromptInput({ onSubmit, isProcessing, isMobile = false }: Prompt
         </div>
 
         {/* Processing Status */}
-        {isProcessing && (
+        {(isProcessing || isRegenerating) && (
           <div className="px-4 pb-4">
             <div className="flex items-center gap-3 p-3 bg-cyan-500/10 dark:bg-cyan-400/10 rounded-lg border border-cyan-200/30 dark:border-cyan-700/30">
               <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
               <div className="flex-1">
                 <div className="font-medium text-cyan-700 dark:text-cyan-300">
-                  Processing your request
+                  {isRegenerating ? 'Regenerating workflow...' : 'Processing your request'}
                 </div>
                 <div className="text-sm text-cyan-600 dark:text-cyan-400">
-                  Analyzing your request and updating workflow...
+                  {isRegenerating ? 'Creating new workflow with your prompt...' : 'Analyzing your request and updating workflow...'}
                 </div>
               </div>
               <Sparkles className="w-5 h-5 text-cyan-500 animate-pulse" />

@@ -28,21 +28,26 @@ export const autoOrchestrateApi = createApi({
       invalidatesTags: ['Workflow'],
     }),
     installData: builder.mutation({
-      query: ({ dataName, description, dataType, dataContent, overwrite = false }) => ({
-        url: '/api/v1/data/install',
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: { 
+      query: ({ dataName, description, dataType, dataContent, numberOfAgents = 0, overwrite = false }) => {
+        const requestBody = { 
           dataName, 
           description, 
           dataType, 
+          numberOfAgents,
           dataContent, 
           overwrite 
-        },
-      }),
+        };
+        console.log('installData API call with body:', requestBody);
+        return {
+          url: '/api/v1/data/install',
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: requestBody,
+        };
+      },
       invalidatesTags: ['Data'],
     }),
     getDataCreatedBy: builder.query({

@@ -113,6 +113,7 @@ export default function AuthTester() {
 
     setIsRunning(false);
   };
+  //test me
 
   const clearAuth = () => {
     Cookies.remove('access_token');
