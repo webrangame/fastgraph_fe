@@ -9,6 +9,7 @@ interface UsePromptHandlerProps {
   addNodeToWorkflow: (nodeData: any, position: { x: number; y: number }) => void;
   deleteNode: (nodeId: string) => void;
   executeWorkflow: () => void;
+  onWorkflowRegenerate?: (prompt: string) => void;
 }
 
 export function usePromptHandler({
@@ -16,7 +17,8 @@ export function usePromptHandler({
   selectedNode,
   addNodeToWorkflow,
   deleteNode,
-  executeWorkflow
+  executeWorkflow,
+  onWorkflowRegenerate
 }: UsePromptHandlerProps) {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [messages, setMessages] = useState<PromptMessage[]>([]);
@@ -36,7 +38,20 @@ export function usePromptHandler({
     // Process the command based on message content
     let responseText = '';
     
-    if (message.toLowerCase().includes('auto') || message.toLowerCase().includes('orchestrate')) {
+    // Check if this is a new prompt that should regenerate the workflow
+    const isNewPrompt = !message.toLowerCase().includes('add') && 
+                       !message.toLowerCase().includes('execute') && 
+                       !message.toLowerCase().includes('run') && 
+                       !message.toLowerCase().includes('stats') && 
+                       !message.toLowerCase().includes('statistics') && 
+                       !message.toLowerCase().includes('delete') && 
+                       !message.toLowerCase().includes('remove');
+    
+    if (isNewPrompt && onWorkflowRegenerate) {
+      // This is a new prompt - regenerate the workflow
+      responseText = 'Regenerating workflow with your new prompt...';
+      onWorkflowRegenerate(message);
+    } else if (message.toLowerCase().includes('auto') || message.toLowerCase().includes('orchestrate')) {
       // Auto-orchestration is now handled automatically by useAutoOrchestrate hook
       responseText = 'Auto-orchestration is running automatically when workflows are available. Check the workflow canvas for results.';
     } else if (message.toLowerCase().includes('add') && message.toLowerCase().includes('agent')) {

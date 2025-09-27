@@ -63,10 +63,18 @@ export function useAutoOrchestrate({
  
   useEffect(() => {
     const autoOrchestrateFirstWorkflow = async () => {
-      // Skip if already executed
+      // Reset auto-orchestrate state for new prompts
       if (hasAutoOrchestrated.current) {
-        return;
+        console.log('Resetting auto-orchestrate state for new prompt...');
+        hasAutoOrchestrated.current = false;
+        setAgents(null);
+        setConnections(null);
+        setFinalData(null);
+        setFinalizedResult(null);
+        setFinalizedArtifactLinks([]);
+        setExecutionResults(null);
       }
+      
       if (workflows.length > 0) {
         const firstWorkflow = workflows[0];
 
@@ -116,6 +124,11 @@ export function useAutoOrchestrate({
               console.log('Saving auto orchestrate result with numberOfAgents:', numberOfAgents);
               console.log('Processed agents keys:', Object.keys(processedAgents));
               console.log('Processed agents:', processedAgents);
+              // Ensure the result includes finalizedArtifactLinks at the top level for consistency
+              const resultWithArtifacts = {
+                ...result,
+                finalizedArtifactLinks: processedFinalizedArtifactLinks || []
+              };
               
               const saveResult = await installData({
                 dataName: workflows[0].name,

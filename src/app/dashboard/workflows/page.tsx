@@ -256,13 +256,92 @@ export default function WorkflowsPage() {
     setCanUndo(undoStack.length > 0);
   }, [undoStack]);
 
+  // Function to add action to undo stack
+  const addToUndoStack = (action: { type: string; description: string; data?: any }) => {
+    setUndoStack(prev => [...prev, { ...action, timestamp: Date.now() }]);
+  };
+
+  // Handle workflow regeneration when new prompt is entered
+  const handleWorkflowRegenerate = useCallback(async (prompt: string) => {
+    if (!actualCurrentWorkflow) return;
+    
+    setIsRegenerating(true);
+    
+    try {
+      // Create new workflow data with the new prompt
+      const regeneratedWorkflowData = {
+        id: actualCurrentWorkflow.id,
+        name: actualCurrentWorkflow.name,
+        description: prompt,
+        status: 'draft' as const,
+        lastModified: 'Just now',
+        nodes: [],
+        connections: []
+      };
+
+      // Clear existing state
+      setAgents(null);
+      setConnections(null);
+      setFinalData(null);
+      setFinalizedResult(null);
+      setFinalizedArtifactLinks([]);
+      setCachedExecutionResults(null);
+      if (resetAutoOrchestrate) {
+        resetAutoOrchestrate();
+      }
+
+      // Update the workflow in Redux store
+      dispatch(setWorkflows([regeneratedWorkflowData]));
+
+      // Persist the new prompt
+      await installData({
+        dataName: actualCurrentWorkflow.name,
+        description: prompt,
+        numberOfAgents: 0,
+        dataType: 'json',
+        dataContent: {
+          command: prompt
+        },
+        overwrite: true
+      }).unwrap();
+
+      // Log the regeneration
+      await logDataAction('update', {
+        dataName: actualCurrentWorkflow.name,
+        description: prompt,
+        dataType: 'json',
+        numberOfAgents: 0
+      });
+
+      await logWorkflowAction('update', regeneratedWorkflowData);
+
+      // Add to undo stack
+      addToUndoStack({
+        type: 'REGENERATE_WORKFLOW',
+        description: `Regenerated workflow "${actualCurrentWorkflow.name}" with new prompt`,
+        data: { workflowId: regeneratedWorkflowData.id, workflowData: regeneratedWorkflowData }
+      });
+
+      toast.success('Workflow regenerated with new prompt! Auto-orchestration starting...');
+    } catch (error) {
+      console.error('Failed to regenerate workflow:', error);
+      toast.error('Failed to regenerate workflow. Please try again.');
+    } finally {
+      setIsRegenerating(false);
+    }
+  }, [actualCurrentWorkflow, dispatch, installData, logDataAction, logWorkflowAction, resetAutoOrchestrate, addToUndoStack]);
+
   const { handlePromptSubmit, isProcessing } = usePromptHandler({
     currentWorkflow: actualCurrentWorkflow,
     selectedNode,
     addNodeToWorkflow,
     deleteNode,
-    executeWorkflow
+    executeWorkflow,
+    onWorkflowRegenerate: handleWorkflowRegenerate
   });
+
+  // Track regeneration state
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   // Mobile detection
   useEffect(() => {
@@ -354,14 +433,14 @@ export default function WorkflowsPage() {
     }
   };
 
-  // Function to add action to undo stack
-  const addToUndoStack = (action: { type: string; description: string; data?: any }) => {
-    setUndoStack(prev => [...prev, { ...action, timestamp: Date.now() }]);
-  };
 
   const handleWorkflowSubmit = async (data: WorkflowFormData) => {
-    console.log('Creating workflow with command:', data);
+    console.log('Creating/regenerating workflow with command:', data);
     try {
+      // Check if there's an existing workflow to regenerate
+      const existingWorkflow = workflows.find((w: any) => w.name === data.name);
+      const isRegenerating = !!existingWorkflow;
+
       // 🧹 Clear existing workflow/state (single tab mode)
       setActiveWorkflow(null);
       setAgents(null);
@@ -375,10 +454,10 @@ export default function WorkflowsPage() {
       }
       dispatch(removeAllWorkflows());
 
-      // Prepare a new workflow shell
-      const newWorkflowId = Date.now().toString();
+      // Prepare workflow data (new or regenerated)
+      const workflowId = isRegenerating ? existingWorkflow.id : Date.now().toString();
       const workflowData = {
-        id: newWorkflowId,
+        id: workflowId,
         name: data.name,
         // Use the command directly so auto-orchestrate receives a clean prompt
         description: data.description,
@@ -401,7 +480,7 @@ export default function WorkflowsPage() {
       }).unwrap();
 
       // Log data installation audit
-      await logDataAction('create', {
+      await logDataAction(isRegenerating ? 'update' : 'create', {
         dataName: data.name,
         description: data.description,
         dataType: 'json',
@@ -410,23 +489,23 @@ export default function WorkflowsPage() {
 
       // 🎯 Load as the only active workflow (single tab)
       dispatch(setWorkflows([workflowData]));
-      setActiveWorkflow(newWorkflowId);
+      setActiveWorkflow(workflowId);
 
-      // Log workflow creation audit
-      await logWorkflowAction('create', workflowData);
+      // Log workflow creation/regeneration audit
+      await logWorkflowAction(isRegenerating ? 'update' : 'create', workflowData);
 
       // Add to undo stack
       addToUndoStack({
-        type: 'CREATE_WORKFLOW',
-        description: `Created workflow "${data.name}"`,
+        type: isRegenerating ? 'REGENERATE_WORKFLOW' : 'CREATE_WORKFLOW',
+        description: isRegenerating ? `Regenerated workflow "${data.name}"` : `Created workflow "${data.name}"`,
         data: { workflowId: workflowData.id, workflowData }
       });
 
       // 🤖 Auto-orchestration will start via useAutoOrchestrate effect
-      toast.success('Workflow created! Auto-orchestration starting...');
+      toast.success(isRegenerating ? 'Workflow regenerated! Auto-orchestration starting...' : 'Workflow created! Auto-orchestration starting...');
     } catch (error) {
-      console.error('Failed to create workflow:', error);
-      toast.error('Failed to create workflow. Please try again.');
+      console.error('Failed to create/regenerate workflow:', error);
+      toast.error('Failed to create/regenerate workflow. Please try again.');
     }
   };
 
@@ -564,6 +643,7 @@ export default function WorkflowsPage() {
           onSubmit={handlePromptSubmit}
           isProcessing={isProcessing}
           isMobile={isMobile}
+          isRegenerating={isRegenerating}
         />
     </div>
   );

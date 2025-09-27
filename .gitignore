@@ -44,5 +44,31 @@ Thumbs.db
 # SWC compiler cache
 .swc/
 
+# Test files - exclude all test JavaScript files
+test-*.js
+*-test.js
+test-*.html
+*-test.html
+aws-test-*.js
+test-aws-*.js
+test-live-*.js
+test-web-*.js
+test-*.sh
+*.test.js
+*.spec.js
+
+# Brave-related files - exclude all Brave API and MCP files
+brave-*.js
+brave-*.md
+brave-*.html
+brave-*.sh
+*brave*.js
+*brave*.md
+*brave*.html
+*brave*.sh
+test-brave-*.js
+test-brave-*.html
+test-brave-*.sh
+
 # Documentation files
 *.md
