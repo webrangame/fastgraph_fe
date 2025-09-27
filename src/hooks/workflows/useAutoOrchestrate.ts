@@ -114,6 +114,12 @@ export function useAutoOrchestrate({
 
             // Save the auto orchestrate result using useInstallDataMutation
             try {
+              // Ensure the result includes finalizedArtifactLinks at the top level for consistency
+              const resultWithArtifacts = {
+                ...result,
+                finalizedArtifactLinks: processedFinalizedArtifactLinks || []
+              };
+              
               const numberOfAgents = Object.keys(processedAgents).length;
               console.log('Saving auto orchestrate result with numberOfAgents:', numberOfAgents);
               console.log('Processed agents keys:', Object.keys(processedAgents));
