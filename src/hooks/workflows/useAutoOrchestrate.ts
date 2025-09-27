@@ -124,11 +124,6 @@ export function useAutoOrchestrate({
               console.log('Saving auto orchestrate result with numberOfAgents:', numberOfAgents);
               console.log('Processed agents keys:', Object.keys(processedAgents));
               console.log('Processed agents:', processedAgents);
-              // Ensure the result includes finalizedArtifactLinks at the top level for consistency
-              const resultWithArtifacts = {
-                ...result,
-                finalizedArtifactLinks: processedFinalizedArtifactLinks || []
-              };
               
               const saveResult = await installData({
                 dataName: workflows[0].name,
