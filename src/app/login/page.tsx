@@ -64,11 +64,11 @@ const LoginPage = () => {
       // Extract specific error message from the API response
       let errorMessage = 'Login failed. Please check your credentials and try again.';
       
-      if (err?.data?.message) {
+      if (err?.data?.message && typeof err.data.message === 'string') {
         errorMessage = err.data.message;
-      } else if (err?.data?.error) {
+      } else if (err?.data?.error && typeof err.data.error === 'string') {
         errorMessage = err.data.error;
-      } else if (err?.message) {
+      } else if (err?.message && typeof err.message === 'string') {
         errorMessage = err.message;
       } else if (err?.status === 401) {
         errorMessage = 'Invalid email or password. Please try again.';
@@ -76,6 +76,8 @@ const LoginPage = () => {
         errorMessage = 'Please check your email and password format.';
       } else if (err?.status === 429) {
         errorMessage = 'Too many login attempts. Please try again later.';
+      } else if (err?.status) {
+        errorMessage = `Login failed with status ${err.status}`;
       }
       
       console.log('🔴 Setting error message:', errorMessage);

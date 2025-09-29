@@ -4,6 +4,8 @@ import { X, Zap, GripVertical, FileText, Link, ExternalLink, Image, AlertCircle,
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { setEndNodeSidebarWidth } from '@/redux/slice/uiSlice';
+import { usePublishWorkflowMutation } from '@/lib/api/publishApi';
+import toast from 'react-hot-toast';
 
 interface EndNodeSidebarProps {
   isOpen: boolean;
@@ -13,6 +15,8 @@ interface EndNodeSidebarProps {
   finalizedArtifactLinks?: any[];
   initialWidth?: number;
   onWidthChange?: (width: number) => void;
+  workflowId?: string;
+  workflowPrompt?: string;
 }
 
 export function EndNodeSidebar({ 
@@ -22,7 +26,9 @@ export function EndNodeSidebar({
   finalData,
   finalizedArtifactLinks = [],
   initialWidth = 400,
-  onWidthChange
+  onWidthChange,
+  workflowId,
+  workflowPrompt
 }: EndNodeSidebarProps) {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isResizingRef = useRef(false);
@@ -34,6 +40,61 @@ export function EndNodeSidebar({
   
   // State for tracking resize activity
   const [isActivelyResizing, setIsActivelyResizing] = useState(false);
+  
+  // Publish workflow mutation
+  const [publishWorkflow, { isLoading: isPublishing }] = usePublishWorkflowMutation();
+  
+  // Handle upload artifacts
+  const handleUploadArtifacts = useCallback(async () => {
+    try {
+      const loadingToast = toast.loading('Publishing workflow artifacts...', {
+        duration: 0, // Keep loading until dismissed
+      });
+
+      // Generate unique request ID
+      const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Use provided workflow ID or generate a fallback
+      const currentWorkflowId = workflowId || `workflow_${Date.now()}`;
+      
+      // Extract overridden result from finalData
+      const overriddenResult = typeof finalData === 'string' ? finalData : JSON.stringify(finalData);
+      
+      // Convert finalizedArtifactLinks to the expected format
+      const overriddenArtifactLinks = finalizedArtifactLinks.map((artifact, index) => ({
+        [`artifact_${index}`]: {
+          url: artifact.url || artifact,
+          type: artifact.type || 'media',
+          name: artifact.name || `Artifact ${index + 1}`
+        }
+      }));
+      
+      // Use provided workflow prompt or generate a fallback
+      const currentWorkflowPrompt = workflowPrompt || 'Generated workflow';
+
+      const result = await publishWorkflow({
+        requestId,
+        workflowId: currentWorkflowId,
+        overriddenResult,
+        overriddenArtifactLinks,
+        workflowPrompt: currentWorkflowPrompt
+      }).unwrap();
+
+      toast.dismiss(loadingToast);
+      toast.success('Workflow artifacts published successfully!', {
+        duration: 4000,
+        icon: '🚀',
+      });
+
+      console.log('✅ Workflow published successfully:', result);
+    } catch (error) {
+      console.error('❌ Failed to publish workflow:', error);
+      toast.error('Failed to publish workflow artifacts. Please try again.', {
+        duration: 4000,
+        icon: '❌',
+      });
+    }
+  }, [publishWorkflow, finalData, finalizedArtifactLinks]);
   
   // Constraints for resizing
   const MIN_WIDTH = 300;
@@ -775,15 +836,23 @@ export function EndNodeSidebar({
         </div>
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => {
-              // Add your upload logic here
-              console.log('Upload button clicked');
-            }}
-            className="flex items-center space-x-1 px-2 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-md transition-all duration-200 hover:scale-105"
-            title="Upload file"
+            onClick={handleUploadArtifacts}
+            disabled={isPublishing}
+            className={`flex items-center space-x-1 px-2 py-1 rounded-md transition-all duration-200 hover:scale-105 ${
+              isPublishing 
+                ? 'bg-gray-500/10 text-gray-500 cursor-not-allowed' 
+                : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400'
+            }`}
+            title={isPublishing ? "Publishing artifacts..." : "Upload artifacts to publish workflow"}
           >
-            <Upload className="w-3 h-3" />
-            <span className="text-xs font-medium">Upload Artifacts</span>
+            {isPublishing ? (
+              <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Upload className="w-3 h-3" />
+            )}
+            <span className="text-xs font-medium">
+              {isPublishing ? 'Publishing...' : 'Upload Artifacts'}
+            </span>
           </button>
         </div>
       </div>
