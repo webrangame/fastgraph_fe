@@ -46,10 +46,8 @@ export function EndNodeSidebar({
   
   // Handle upload artifacts
   const handleUploadArtifacts = useCallback(async () => {
-    let loadingToast: string | undefined;
-    
     try {
-      loadingToast = toast.loading('Publishing workflow artifacts...', {
+      const loadingToast = toast.loading('Publishing workflow artifacts...', {
         duration: 0, // Keep loading until dismissed
       });
 
@@ -74,14 +72,6 @@ export function EndNodeSidebar({
       // Use provided workflow prompt or generate a fallback
       const currentWorkflowPrompt = workflowPrompt || 'Generated workflow';
 
-      console.log('🚀 Publishing workflow with data:', {
-        requestId,
-        workflowId: currentWorkflowId,
-        overriddenResult: overriddenResult.substring(0, 100) + '...',
-        overriddenArtifactLinks,
-        workflowPrompt: currentWorkflowPrompt
-      });
-
       const result = await publishWorkflow({
         requestId,
         workflowId: currentWorkflowId,
@@ -98,58 +88,13 @@ export function EndNodeSidebar({
 
       console.log('✅ Workflow published successfully:', result);
     } catch (error) {
-      // Enhanced error logging and handling
-      console.group('❌ Upload Failed - Debug Info');
-      console.error('Raw error object:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error constructor:', error?.constructor?.name);
-      console.error('Error keys:', error && typeof error === 'object' ? Object.keys(error) : 'not an object');
-      console.error('Error stringified:', JSON.stringify(error, null, 2));
-      
-      // Try to extract meaningful error message
-      let errorMessage = 'Failed to publish workflow artifacts. Please try again.';
-      
-      // Extract meaningful error message from RTK Query error
-      if (error && typeof error === 'object') {
-        if ('data' in error && error.data && typeof error.data === 'object' && 'detail' in error.data) {
-          errorMessage = `Publishing failed: ${error.data.detail}`;
-          console.log('✅ Found error.data.detail:', error.data.detail);
-        } else if ('data' in error && error.data && typeof error.data === 'object' && 'message' in error.data) {
-          errorMessage = `Publishing failed: ${error.data.message}`;
-          console.log('✅ Found error.data.message:', error.data.message);
-        } else if ('data' in error && error.data && typeof error.data === 'string') {
-          errorMessage = `Publishing failed: ${error.data}`;
-          console.log('✅ Found error.data string:', error.data);
-        } else if ('message' in error && error.message) {
-          errorMessage = `Publishing failed: ${error.message}`;
-          console.log('✅ Found error.message:', error.message);
-        } else if ('status' in error && error.status) {
-          errorMessage = `Publishing failed with status ${error.status}`;
-          console.log('✅ Found error.status:', error.status);
-        } else {
-          errorMessage = 'Publishing failed: Unknown error occurred';
-          console.log('❌ No recognizable error pattern found');
-        }
-      } else if (typeof error === 'string') {
-        errorMessage = `Publishing failed: ${error}`;
-        console.log('✅ Found string error:', error);
-      } else {
-        errorMessage = 'Publishing failed: Unknown error occurred';
-        console.log('❌ No recognizable error pattern found');
-      }
-      
-      console.error('Final error message for toast:', errorMessage);
-      console.groupEnd();
-
-      if (loadingToast) {
-        toast.dismiss(loadingToast);
-      }
-      toast.error(errorMessage, {
-        duration: 6000,
+      console.error('❌ Failed to publish workflow:', error);
+      toast.error('Failed to publish workflow artifacts. Please try again.', {
+        duration: 4000,
         icon: '❌',
       });
     }
-  }, [publishWorkflow, finalData, finalizedArtifactLinks, workflowId, workflowPrompt]);
+  }, [publishWorkflow, finalData, finalizedArtifactLinks]);
   
   // Constraints for resizing
   const MIN_WIDTH = 300;

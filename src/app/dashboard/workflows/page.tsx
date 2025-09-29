@@ -5,6 +5,7 @@ import { WorkflowsSidebar } from '@/components/workflows/WorkflowsSidebar';
 import { PromptInput } from '@/components/workflows/PromptInput';
 import { MobileAgentDrawer } from '@/components/workflows/mobile/MobileAgentDrawer';
 import { WorkflowHeader } from '@/components/workflows/WorkflowHeader';
+import { StreamingProgress } from '@/components/workflows/StreamingProgress';
 import { useWorkflowManager } from '@/hooks/workflows/useWorkflowManager';
 import { usePromptHandler } from '@/hooks/workflows/usePromptHandler';
 import { useAutoOrchestrate } from '@/hooks/workflows/useAutoOrchestrate';
@@ -55,13 +56,27 @@ export default function WorkflowsPage() {
   const [evolveAgent, { isLoading: isEvolving }] = useEvolveAgentMutation();
   
   // Memoize the callback to prevent infinite re-renders
-  const handleAgentsProcessed = useCallback((processedAgents: Record<string, any>, processedConnections: any[], processedFinalData?: any) => {
+  const handleAgentsProcessed = useCallback((processedAgents: Record<string, any>, processedConnections: any[], processedFinalData?: any, processedFinalizedArtifactLinks?: any[]) => {
     setAgents(processedAgents);
     setConnections(processedConnections);
     setFinalData(processedFinalData);
+    if (processedFinalizedArtifactLinks) {
+      setFinalizedArtifactLinks(processedFinalizedArtifactLinks);
+    }
   }, []);
   
-  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult, finalizedArtifactLinks: orchestratedFinalizedArtifactLinks, executionResults, resetAutoOrchestrate } = useAutoOrchestrate({
+  const { 
+    isAutoOrchestrating, 
+    autoOrchestrateError,
+    finalizedResult: orchestratedFinalizedResult, 
+    finalizedArtifactLinks: orchestratedFinalizedArtifactLinks, 
+    executionResults, 
+    streamData,
+    progress,
+    resetAutoOrchestrate,
+    startAutoOrchestrate,
+    stopAutoOrchestrate
+  } = useAutoOrchestrate({
     workflows,
     onAgentsProcessed: handleAgentsProcessed
   });
@@ -69,7 +84,11 @@ export default function WorkflowsPage() {
   console.log('🔍 Dashboard Debug:', {
     localFinalizedArtifactLinksLength: finalizedArtifactLinks?.length,
     orchestratedFinalizedArtifactLinksLength: orchestratedFinalizedArtifactLinks?.length,
-    finalPassedToCanvas: (finalizedArtifactLinks || orchestratedFinalizedArtifactLinks)?.length
+    finalPassedToCanvas: (finalizedArtifactLinks || orchestratedFinalizedArtifactLinks)?.length,
+    localFinalizedArtifactLinks: finalizedArtifactLinks,
+    orchestratedFinalizedArtifactLinks: orchestratedFinalizedArtifactLinks,
+    agentsCount: agents ? Object.keys(agents).length : 0,
+    connectionsCount: connections ? connections.length : 0
   });
 
   const {
@@ -606,6 +625,14 @@ export default function WorkflowsPage() {
         />
       )}
       
+      {/* Streaming Progress - Bottom Right */}
+      <StreamingProgress
+        isStreaming={isAutoOrchestrating}
+        progress={progress}
+        error={autoOrchestrateError}
+        onStop={stopAutoOrchestrate}
+      />
+
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Workflow Sidebar - Hidden on mobile */}

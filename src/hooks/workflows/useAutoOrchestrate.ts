@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useAutoOrchestrateMutation, useInstallDataMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
 import { useLogAuditMutation } from '@/redux/api/audit/auditApi';
@@ -6,12 +6,12 @@ import { selectCurrentUser } from '@/redux/slice/authSlice';
 import { mockAutoOrchestrateResult } from '@/services/workflows/mockData';
 import { processAgentsFromResponse } from '@/services/workflows/agentProcessor';
 import type { ProcessedAgent, AgentConnection } from '@/services/workflows/agentProcessor';
- 
+
 interface UseAutoOrchestrateProps {
   workflows: any[];
-  onAgentsProcessed: (agents: Record<string, ProcessedAgent>, connections: AgentConnection[], finalData?: any) => void;
+  onAgentsProcessed: (agents: Record<string, ProcessedAgent>, connections: AgentConnection[], finalData?: any, finalizedArtifactLinks?: any[]) => void;
 }
- 
+
 interface UseAutoOrchestrateReturn {
   isAutoOrchestrating: boolean;
   autoOrchestrateError: any;
@@ -21,9 +21,17 @@ interface UseAutoOrchestrateReturn {
   finalizedResult: any;
   finalizedArtifactLinks: any[];
   executionResults: any;
+  streamData: any;
+  progress: {
+    step: string;
+    progress: number;
+    message: string;
+  } | null;
   resetAutoOrchestrate: () => void;
+  startAutoOrchestrate: (command: string) => void;
+  stopAutoOrchestrate: () => void;
 }
- 
+
 export function useAutoOrchestrate({
   workflows,
   onAgentsProcessed
@@ -34,22 +42,23 @@ export function useAutoOrchestrate({
   const [finalizedResult, setFinalizedResult] = useState<any>(null);
   const [finalizedArtifactLinks, setFinalizedArtifactLinks] = useState<any[]>([]);
   const [executionResults, setExecutionResults] = useState<any>(null);
+  const [streamData, setStreamData] = useState<any>(null);
+  const [progress, setProgress] = useState<{ step: string; progress: number; message: string } | null>(null);
+  const [isAutoOrchestrating, setIsAutoOrchestrating] = useState(false);
+  const [autoOrchestrateError, setAutoOrchestrateError] = useState<any>(null);
   const hasAutoOrchestrated = useRef(false);
   
+  const eventSourceRef = useRef<EventSource | null>(null);
   const user = useSelector(selectCurrentUser);
 
-  console.log('user 123', user)
- 
-  const [autoOrchestrate, {
-    isLoading: isAutoOrchestrating,
-    error: autoOrchestrateError
-  }] = useAutoOrchestrateMutation();
+  console.log('user 123', user);
 
+  const [autoOrchestrate] = useAutoOrchestrateMutation();
   const [installData] = useInstallDataMutation();
   const [logAudit] = useLogAuditMutation();
 
   // Reset function to clear auto orchestrate state
-  const resetAutoOrchestrate = () => {
+  const resetAutoOrchestrate = useCallback(() => {
     console.log('Resetting auto orchestrate state...');
     setAgents(null);
     setConnections(null);
@@ -57,133 +66,310 @@ export function useAutoOrchestrate({
     setFinalizedResult(null);
     setFinalizedArtifactLinks([]);
     setExecutionResults(null);
+    setStreamData(null);
+    setProgress(null);
+    setAutoOrchestrateError(null);
+    setIsAutoOrchestrating(false);
     hasAutoOrchestrated.current = false;
+    
+    // Close any existing EventSource
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    
     console.log('Auto orchestrate state reset successfully');
-  };
- 
+  }, []);
+
+  const stopAutoOrchestrate = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    setIsAutoOrchestrating(false);
+  }, []);
+
+  const startAutoOrchestrate = useCallback(async (command: string) => {
+    if (!command) {
+      console.error('No command provided for auto orchestrate');
+      return;
+    }
+
+    // Check if already orchestrating
+    if (isAutoOrchestrating) {
+      console.warn('Auto orchestrate already in progress, skipping...');
+      return;
+    }
+
+    // Reset state before starting
+    resetAutoOrchestrate();
+    setIsAutoOrchestrating(true);
+    setAutoOrchestrateError(null);
+
+    try {
+      // Use direct external API call and handle streaming response
+      const url = `https://fatgraph-prod-twu675cviq-uc.a.run.app/autoOrchestrateStreamSSE?command=${encodeURIComponent(command)}`;
+      console.log('🔗 Calling external API directly:', url);
+      
+      // Set initial progress
+      setProgress({
+        step: 'initializing',
+        progress: 0,
+        message: 'Starting auto orchestration...'
+      });
+
+      // Make direct API call
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/event-stream',
+        },
+      });
+
+      console.log('📡 API response status:', response.status);
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+
+      // Read the streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      const decoder = new TextDecoder();
+      let finalData = null;
+      let buffer = '';
+
+      // Read the stream
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Process complete lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const jsonData = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
+              console.log('📨 Stream data received:', jsonData);
+              
+              // Update progress based on event type
+              if (jsonData.event === 'step_start') {
+                setProgress({
+                  step: jsonData.step,
+                  progress: 0,
+                  message: jsonData.message || `Starting ${jsonData.step}...`
+                });
+              } else if (jsonData.event === 'progress') {
+                setProgress({
+                  step: jsonData.step,
+                  progress: jsonData.progress,
+                  message: jsonData.message || `Processing ${jsonData.step}... ${jsonData.progress}%`
+                });
+              } else if (jsonData.event === 'workflow_complete') {
+                finalData = jsonData;
+                console.log('✅ Workflow completed, final data:', finalData);
+              }
+              
+              // Update stream data for UI
+              setStreamData(jsonData);
+              
+            } catch (parseError) {
+              console.warn('Failed to parse stream data:', parseError, 'Line:', line);
+            }
+          }
+        }
+      }
+
+      if (!finalData) {
+        throw new Error('No complete workflow data received from stream');
+      }
+
+      console.log('📨 Final API response data:', finalData);
+
+      // Process the result
+      const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, finalizedArtifactLinks: processedFinalizedArtifactLinks, executionResults: processedExecutionResults } = 
+        processAgentsFromResponse(finalData);
+      
+      console.log('🔍 useAutoOrchestrate Debug:', {
+        processedAgentsCount: Object.keys(processedAgents).length,
+        processedAgentsKeys: Object.keys(processedAgents),
+        processedConnectionsCount: processedConnections.length,
+        processedFinalizedArtifactLinksLength: processedFinalizedArtifactLinks?.length,
+        processedFinalizedArtifactLinks: processedFinalizedArtifactLinks
+      });
+     
+      setAgents(processedAgents);
+      setConnections(processedConnections);
+      setFinalData(processedFinalData);
+      setFinalizedResult(processedFinalizedResult);
+      setFinalizedArtifactLinks(processedFinalizedArtifactLinks || []);
+      setExecutionResults(processedExecutionResults);
+      onAgentsProcessed(processedAgents, processedConnections, processedFinalData, processedFinalizedArtifactLinks);
+
+      // Update progress to complete
+      setProgress({
+        step: 'completed',
+        progress: 100,
+        message: 'Auto orchestration completed'
+      });
+
+      // Save the auto orchestrate result using useInstallDataMutation
+      if (user?.id) {
+        try {
+                console.log('💾 Attempting to save auto orchestrate data...', {
+                  userId: user.id,
+                  dataName: `Auto Orchestrate - ${command}`,
+                  dataType: 'json',
+                  numberOfAgents: Object.keys(processedAgents).length,
+                  processedAgentsKeys: Object.keys(processedAgents),
+                  dataContentKeys: finalData ? Object.keys(finalData) : 'no finalData',
+                  autoOrchestrateResponseKeys: finalData?.auto_orchestrate_response ? Object.keys(finalData.auto_orchestrate_response) : 'no auto_orchestrate_response'
+                });
+
+          // Prepare data content with fallback
+          let dataContent = finalData.auto_orchestrate_response || finalData;
+          
+          // If data is too large or invalid, create a summary
+          const dataStr = JSON.stringify(dataContent);
+          if (dataStr.length > 5 * 1024 * 1024) { // 5MB limit
+            console.warn('⚠️ Data too large, creating summary...');
+            dataContent = {
+              summary: 'Auto orchestrate result (data too large for storage)',
+              command: command,
+              agentsCount: Object.keys(processedAgents).length,
+              connectionsCount: processedConnections.length,
+              timestamp: new Date().toISOString(),
+              originalDataSize: dataStr.length
+            };
+          }
+
+          // Calculate number of agents - use processedAgents if available, otherwise try to extract from data
+          let numberOfAgents = Object.keys(processedAgents).length;
+          if (numberOfAgents === 0) {
+            // Try to extract agent count from the data content
+            const swarmSpec = dataContent?.swarm_result?.swarm_spec;
+            if (swarmSpec?.agents) {
+              numberOfAgents = Object.keys(swarmSpec.agents).length;
+            } else if (dataContent?.m_language_spec) {
+              // Count agents in the M Language spec string
+              const agentMatches = dataContent.m_language_spec.match(/agent\s+\w+/g);
+              numberOfAgents = agentMatches ? agentMatches.length : 1; // Default to 1 if we can't count
+            } else {
+              numberOfAgents = 1; // Default fallback
+            }
+          }
+
+          console.log('📊 Agent count calculation:', {
+            processedAgentsCount: Object.keys(processedAgents).length,
+            calculatedNumberOfAgents: numberOfAgents,
+            swarmSpecAgents: dataContent?.swarm_result?.swarm_spec?.agents ? Object.keys(dataContent.swarm_result.swarm_spec.agents) : 'none',
+            hasMLanguageSpec: !!dataContent?.m_language_spec
+          });
+
+          const saveResult = await installData({
+            dataName: `Auto Orchestrate - ${command}`,
+            description: `Auto orchestrate result for: ${command}`,
+            dataType: 'json',
+            dataContent: dataContent,
+            numberOfAgents: numberOfAgents,
+            overwrite: false
+          }).unwrap();
+
+          console.log('✅ Auto orchestrate data saved successfully:', saveResult);
+
+          // Log audit (optional - don't fail if audit fails)
+          try {
+            console.log('📝 Attempting to save audit log...');
+            await logAudit({
+              userId: user.id,
+              action: 'auto_orchestrate_completed',
+              details: {
+                command,
+                agentsCount: Object.keys(processedAgents).length,
+                connectionsCount: processedConnections.length
+              }
+            }).unwrap();
+            console.log('✅ Audit log saved successfully');
+          } catch (auditError) {
+            console.warn('⚠️ Audit log failed (non-critical):', {
+              errorType: typeof auditError,
+              errorMessage: (auditError as any)?.message || 'No message',
+              errorStatus: (auditError as any)?.status || 'No status',
+              errorData: (auditError as any)?.data || 'No data',
+              fullError: auditError
+            });
+            // Don't throw - audit logging is optional
+          }
+        } catch (error) {
+          console.error('❌ Error saving auto orchestrate data:', error);
+          console.error('Error details:', {
+            errorType: typeof error,
+            errorMessage: (error as any)?.message || 'No message',
+            errorStatus: (error as any)?.status || 'No status',
+            errorData: (error as any)?.data || 'No data',
+            errorStack: (error as any)?.stack || 'No stack',
+            fullError: error
+          });
+          
+          // Don't throw the error, just log it so the workflow can continue
+          console.warn('⚠️ Continuing despite save error...');
+        }
+      } else {
+        console.warn('⚠️ No user ID available, skipping data save');
+      }
+
+      setIsAutoOrchestrating(false);
+
+    } catch (error) {
+      console.error('Error calling auto orchestrate API:', error);
+      setAutoOrchestrateError(error);
+      setIsAutoOrchestrating(false);
+    }
+  }, [user, installData, logAudit, onAgentsProcessed, resetAutoOrchestrate, isAutoOrchestrating]);
+
   useEffect(() => {
     const autoOrchestrateFirstWorkflow = async () => {
       // Reset auto-orchestrate state for new prompts
       if (hasAutoOrchestrated.current) {
-        console.log('Resetting auto-orchestrate state for new prompt...');
-        hasAutoOrchestrated.current = false;
-        setAgents(null);
-        setConnections(null);
-        setFinalData(null);
-        setFinalizedResult(null);
-        setFinalizedArtifactLinks([]);
-        setExecutionResults(null);
+        console.log('Auto orchestrate already completed, skipping...');
+        return;
       }
+
+      if (workflows.length === 0) {
+        console.log('No workflows available for auto orchestrate');
+        return;
+      }
+
+      const firstWorkflow = workflows[0];
+      const firstWorkflowDescription = firstWorkflow?.description;
       
-      if (workflows.length > 0) {
-        const firstWorkflow = workflows[0];
-
-        // If loaded from sidebar/cache (already has nodes/connections), do not call external API
-        if ((firstWorkflow?.nodes && firstWorkflow.nodes.length > 0) ||
-            (firstWorkflow?.connections && firstWorkflow.connections.length > 0)) {
-          console.log('Detected cached workflow structure. Skipping auto-orchestrate API call.');
-          hasAutoOrchestrated.current = true;
-          return;
-        }
-
-        const firstWorkflowDescription = firstWorkflow?.description;
-        if (firstWorkflowDescription) {
-          console.log('Auto orchestrating with command:', firstWorkflowDescription);
-          try {
-            // Using hardcoded example for now - replace with actual API call when ready
-            const result = await autoOrchestrate({ command: firstWorkflowDescription, response_mode: 'full' }).unwrap();
-            //const result = mockAutoOrchestrateResult;
-
-            // Process agents and connections
-            const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, finalizedArtifactLinks: processedFinalizedArtifactLinks, executionResults: processedExecutionResults } = 
-              processAgentsFromResponse(result);
-              
-            console.log('🔍 useAutoOrchestrate Debug:', {
-              processedFinalizedArtifactLinksLength: processedFinalizedArtifactLinks?.length,
-              processedFinalizedArtifactLinks: processedFinalizedArtifactLinks
-            });
-           
-            setAgents(processedAgents);
-            setConnections(processedConnections);
-            setFinalData(processedFinalData);
-            setFinalizedResult(processedFinalizedResult);
-            setFinalizedArtifactLinks(processedFinalizedArtifactLinks || []);
-            setExecutionResults(processedExecutionResults);
-            onAgentsProcessed(processedAgents, processedConnections, processedFinalData);
-            
-
-            // Save the auto orchestrate result using useInstallDataMutation
-            try {
-              // Ensure the result includes finalizedArtifactLinks at the top level for consistency
-              const resultWithArtifacts = {
-                ...result,
-                finalizedArtifactLinks: processedFinalizedArtifactLinks || []
-              };
-              
-              const numberOfAgents = Object.keys(processedAgents).length;
-              console.log('Saving auto orchestrate result with numberOfAgents:', numberOfAgents);
-              console.log('Processed agents keys:', Object.keys(processedAgents));
-              console.log('Processed agents:', processedAgents);
-              
-              const saveResult = await installData({
-                dataName: workflows[0].name,
-                description: firstWorkflowDescription,
-                numberOfAgents: numberOfAgents,
-                dataType: 'json',
-                dataContent: {
-                  autoOrchestrateResult: resultWithArtifacts,
-                },
-                overwrite: true
-              }).unwrap();
-              console.log('Auto orchestrate result saved successfully:', saveResult);
-              console.log('Response includes numberOfAgents:', saveResult);
-
-              // Log audit trail after successful data installation
-              try {
-                const auditData = {
-                  action: 'create',
-                  resource: 'data',
-                  description: 'User created new data installation',
-                  details: `Data installation with ${numberOfAgents} agents`,
-                  createdBy: user?.id || user?.userId || 'unknown-user',
-                  task: 'data-installation',
-                 // ipAddress: '192.168.1.100', // TODO: Get actual IP from request
-                  userAgent: navigator.userAgent,
-                  endpoint: '/api/v1/data/install',
-                  method: 'POST',
-                  statusCode: 201,
-                  metadata: {
-                    numberOfAgents: numberOfAgents,
-                    dataType: 'json',
-                    workflowName: workflows[0].name,
-                    description: firstWorkflowDescription
-                  }
-                };
-                
-                await logAudit(auditData).unwrap();
-                console.log('Audit log created successfully for data installation');
-              } catch (auditError) {
-                console.error('Failed to create audit log:', auditError);
-                // Don't throw error here as the main operation was successful
-              }
-              
-            } catch (saveError) {
-              console.error('Failed to save auto orchestrate result:', saveError);
-              
-            }
-           
-            // Mark as executed to prevent multiple calls
-            hasAutoOrchestrated.current = true;
-          } catch (error) {
-            console.error('Auto orchestrate failed:', error);
-          }
-        }
+      if (firstWorkflowDescription) {
+        console.log('Auto orchestrating with command:', firstWorkflowDescription);
+        hasAutoOrchestrated.current = true;
+        await startAutoOrchestrate(firstWorkflowDescription);
       }
     };
- 
+
     autoOrchestrateFirstWorkflow();
-  }, [workflows.length, autoOrchestrate, onAgentsProcessed]);
- 
+  }, [workflows, startAutoOrchestrate]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
+
   return {
     isAutoOrchestrating,
     autoOrchestrateError,
@@ -193,6 +379,10 @@ export function useAutoOrchestrate({
     finalizedResult,
     finalizedArtifactLinks,
     executionResults,
-    resetAutoOrchestrate
+    streamData,
+    progress,
+    resetAutoOrchestrate,
+    startAutoOrchestrate,
+    stopAutoOrchestrate
   };
 }

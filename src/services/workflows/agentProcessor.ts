@@ -41,10 +41,12 @@ export interface AgentProcessingResult {
 }
 
 export function processAgentsFromResponse(result: any): AgentProcessingResult {
-  const swarmSpec = result.auto_orchestrate_response?.swarm_result?.swarm_spec;
-  const executionPlan = result.auto_orchestrate_response?.swarm_result?.swarm_spec?.execution_plan;
-  const finalData = result.auto_orchestrate_response?.swarm_result?.final_data || {};
-  const executionResults = result.auto_orchestrate_response?.swarm_result?.execution_results?.results || {};
+  // Try multiple possible locations for the data
+  const autoOrchestrateResponse = result.auto_orchestrate_response || result;
+  const swarmSpec = autoOrchestrateResponse?.swarm_result?.swarm_spec;
+  const executionPlan = autoOrchestrateResponse?.swarm_result?.swarm_spec?.execution_plan;
+  const finalData = autoOrchestrateResponse?.swarm_result?.final_data || autoOrchestrateResponse?.final_data || {};
+  const executionResults = autoOrchestrateResponse?.swarm_result?.execution_results?.results || autoOrchestrateResponse?.execution_results?.results || {};
   const finalizedResultRaw = (result as any)?.finalizedResult;
   // Try multiple possible locations and naming conventions for finalizedArtifactLinks
   let finalizedArtifactLinks = 
@@ -94,6 +96,11 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   
   console.log('🔍 agentProcessor Debug:', {
     hasResult: !!result,
+    hasAutoOrchestrateResponse: !!autoOrchestrateResponse,
+    hasSwarmSpec: !!swarmSpec,
+    hasExecutionPlan: !!executionPlan,
+    swarmSpecKeys: swarmSpec ? Object.keys(swarmSpec) : [],
+    executionPlanKeys: executionPlan ? Object.keys(executionPlan) : [],
     hasFinalizedArtifactLinks: !!result?.finalizedArtifactLinks,
     hasFinalizedArtifactLinksUnderscore: !!result?.finalized_artifact_links,
     finalizedArtifactLinksLength: finalizedArtifactLinks?.length,
@@ -145,7 +152,36 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
 
   const finalizedResultParsed = parseFinalizedResult(finalizedResultRaw);
   
+  // If we don't have structured agents, try to create a simple agent from the M Language spec
   if (!swarmSpec?.agents || !executionPlan?.data_flow) {
+    console.log('⚠️ No structured agents found, trying to create from M Language spec...');
+    
+    // Try to extract agent info from the M Language spec string
+    const mLanguageSpec = autoOrchestrateResponse?.m_language_spec || '';
+    if (mLanguageSpec && typeof mLanguageSpec === 'string') {
+      const agentMatch = mLanguageSpec.match(/agent\s+(\w+)\s*\{[^}]*role:\s*"([^"]*)"[^}]*capabilities:\s*"([^"]*)"[^}]*\}/);
+      if (agentMatch) {
+        const [, agentName, role, capabilities] = agentMatch;
+        const agentsRecord: Record<string, ProcessedAgent> = {
+          [agentName]: {
+            name: agentName,
+            role: role,
+            capabilities: capabilities.split(',').map(c => c.trim()),
+            inputs: ['user_command'],
+            outputs: ['analysis_result'],
+            logs: [],
+            inputValues: { user_command: autoOrchestrateResponse?.workflow_prompt || 'No prompt available' }
+          }
+        };
+        
+        const connections: AgentConnection[] = [];
+        
+        console.log('✅ Created fallback agent from M Language spec:', agentsRecord);
+        return { agents: agentsRecord, connections, finalData, finalizedResult: finalizedResultParsed, finalizedArtifactLinks, executionResults };
+      }
+    }
+    
+    console.log('❌ Could not create agents from available data');
     return { agents: {}, connections: [], finalData, finalizedResult: finalizedResultParsed, finalizedArtifactLinks, executionResults };
   }
 

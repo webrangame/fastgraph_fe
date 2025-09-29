@@ -15,6 +15,16 @@ export const autoOrchestrateApi = createApi({
       }),
       invalidatesTags: ['AutoOrchestrate'],
     }),
+    autoOrchestrateStream: builder.mutation({
+      query: ({ command }) => ({
+        url: `https://fatgraph-prod-twu675cviq-uc.a.run.app/autoOrchestrateStreamSSE?command=${encodeURIComponent(command)}`,
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      }),
+      invalidatesTags: ['AutoOrchestrate'],
+    }),
     saveWorkflow: builder.mutation({
       query: ({ workflow, agents }) => ({
         url: '/api/v1/workflow/save',
@@ -75,6 +85,7 @@ export const autoOrchestrateApi = createApi({
 
 export const {
   useAutoOrchestrateMutation,
+  useAutoOrchestrateStreamMutation,
   useSaveWorkflowMutation,
   useInstallDataMutation,
   useGetDataCreatedByQuery,

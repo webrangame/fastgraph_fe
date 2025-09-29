@@ -42,7 +42,7 @@ const authSlice = createSlice({
       })
       .addMatcher(authApi.endpoints.login.matchRejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message || 'Login failed';
+        state.error = action.error?.message || 'Login failed';
       })
       // Register mutation
       .addMatcher(authApi.endpoints.register.matchPending, (state) => {
@@ -58,7 +58,7 @@ const authSlice = createSlice({
       })
       .addMatcher(authApi.endpoints.register.matchRejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message || 'Registration failed';
+        state.error = action.error?.message || 'Registration failed';
       })
       // Refresh token mutation
       .addMatcher(authApi.endpoints.refreshToken.matchPending, (state) => {
@@ -73,7 +73,7 @@ const authSlice = createSlice({
       })
       .addMatcher(authApi.endpoints.refreshToken.matchRejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message || 'Token refresh failed';
+        state.error = action.error?.message || 'Token refresh failed';
         state.accessToken = null;
         state.refreshToken = null;
         state.user = null;
@@ -90,7 +90,7 @@ const authSlice = createSlice({
       })
       .addMatcher(authApi.endpoints.getUserProfile.matchRejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message || 'Failed to fetch user data';
+        state.error = action.error?.message || 'Failed to fetch user data';
       })
       // Logout mutation
       .addMatcher(authApi.endpoints.logout.matchPending, (state) => {
@@ -106,7 +106,7 @@ const authSlice = createSlice({
       })
       .addMatcher(authApi.endpoints.logout.matchRejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message || 'Logout failed';
+        state.error = action.error?.message || 'Logout failed';
         state.user = null;
         state.accessToken = null;
         state.refreshToken = null;
