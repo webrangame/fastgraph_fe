@@ -857,10 +857,10 @@ function WorkflowCanvasInner({
                 </div>
                 
                 {agent.capabilities && agent.capabilities.length > 0 && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 pt-3 border-t theme-border">
                     <div className="flex items-center space-x-2">
                       <span className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></span>
-                      <span className="theme-text-secondary font-medium text-sm">Capabilities</span>
+                      <span className="theme-text-secondary font-bold text-xs">Capabilities</span>
                     </div>
                     
                     <ExpandableCapabilities
