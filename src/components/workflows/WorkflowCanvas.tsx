@@ -7,6 +7,7 @@ import { LogSidebar } from "./LogSidebar";
 import { EndNodeSidebar } from "./EndNodeSidebar";
 import { FeedbackPopup } from "./FeedbackPopup";
 import { toast } from 'react-hot-toast';
+import { ExpandableCapabilities } from "./ExpandableCapabilities";
 import {
   ReactFlow,
   applyNodeChanges,
@@ -856,23 +857,19 @@ function WorkflowCanvasInner({
                 </div>
                 
                 {agent.capabilities && agent.capabilities.length > 0 && (
-                  <div className="space-y-2">
-                    <span className="theme-text-secondary font-medium block">Capabilities:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {agent.capabilities.slice(0, 3).map((cap, idx) => (
-                        <span 
-                          key={idx}
-                          className="theme-input-bg theme-text-primary border theme-border px-2 py-1 rounded-md text-[10px] font-medium"
-                        >
-                          {cap}
-                        </span>
-                      ))}
-                      {agent.capabilities.length > 3 && (
-                        <span className="theme-text-muted text-[10px] self-center">
-                          +{agent.capabilities.length - 3} more
-                        </span>
-                      )}
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></span>
+                      <span className="theme-text-secondary font-medium text-sm">Capabilities</span>
                     </div>
+                    
+                    <ExpandableCapabilities
+                      capabilities={agent.capabilities}
+                      maxVisible={3}
+                      showCategoryGroups={false}
+                      size="sm"
+                      className="max-w-xs"
+                    />
                   </div>
                 )}
                 

@@ -123,6 +123,221 @@ export interface WorkflowSaveData {
   }>;
 }
 
+// Hybrid capability display system
+export interface HybridCapability {
+  id: string;
+  name: string;
+  icon: string;
+  category: 'cognitive' | 'creative' | 'technical' | 'communication';
+  color: string;
+  description: string;
+  examples?: string[];
+}
+
+export const CAPABILITY_DEFINITIONS: Record<string, Omit<HybridCapability, 'id'>> = {
+  // Cognitive capabilities
+  'research': {
+    name: 'Research',
+    icon: '🔍',
+    category: 'cognitive',
+    color: '#3B82F6',
+    description: 'Gather, analyze, and synthesize information from various sources',
+    examples: ['Web scraping', 'Fact-checking', 'Source validation', 'Data mining']
+  },
+  'analysis': {
+    name: 'Analysis',
+    icon: '📊',
+    category: 'cognitive',
+    color: '#3B82F6',
+    description: 'Break down complex problems and identify patterns',
+    examples: ['Data analysis', 'Trend identification', 'Statistical modeling', 'Report generation']
+  },
+  'planning': {
+    name: 'Planning',
+    icon: '🗓️',
+    category: 'cognitive',
+    color: '#3B82F6',
+    description: 'Create structured approaches and strategic roadmaps',
+    examples: ['Project planning', 'Task scheduling', 'Resource allocation', 'Timeline creation']
+  },
+  'reasoning': {
+    name: 'Reasoning',
+    icon: '🧠',
+    category: 'cognitive',
+    color: '#3B82F6',
+    description: 'Apply logical thinking and problem-solving methodologies',
+    examples: ['Logical deduction', 'Critical thinking', 'Decision making', 'Problem solving']
+  },
+  'problem-solving': {
+    name: 'Problem Solving',
+    icon: '🧩',
+    category: 'cognitive',
+    color: '#3B82F6',
+    description: 'Identify issues and develop effective solutions',
+    examples: ['Root cause analysis', 'Solution design', 'Troubleshooting', 'Optimization']
+  },
+
+  // Creative capabilities
+  'writing': {
+    name: 'Writing',
+    icon: '✍️',
+    category: 'creative',
+    color: '#8B5CF6',
+    description: 'Create compelling written content across various formats',
+    examples: ['Blog posts', 'Technical docs', 'Creative writing', 'Copywriting']
+  },
+  'design': {
+    name: 'Design',
+    icon: '🎨',
+    category: 'creative',
+    color: '#8B5CF6',
+    description: 'Create visual concepts and user experiences',
+    examples: ['UI/UX design', 'Graphic design', 'Layout creation', 'Visual branding']
+  },
+  'ideation': {
+    name: 'Ideation',
+    icon: '💡',
+    category: 'creative',
+    color: '#8B5CF6',
+    description: 'Generate innovative ideas and creative solutions',
+    examples: ['Brainstorming', 'Concept development', 'Innovation', 'Creative thinking']
+  },
+  'storytelling': {
+    name: 'Storytelling',
+    icon: '📚',
+    category: 'creative',
+    color: '#8B5CF6',
+    description: 'Craft engaging narratives and compelling stories',
+    examples: ['Narrative creation', 'Content storytelling', 'Brand stories', 'User stories']
+  },
+  'content-creation': {
+    name: 'Content Creation',
+    icon: '📝',
+    category: 'creative',
+    color: '#8B5CF6',
+    description: 'Produce various types of digital and written content',
+    examples: ['Articles', 'Social media', 'Marketing content', 'Educational materials']
+  },
+
+  // Technical capabilities
+  'api-calls': {
+    name: 'API Integration',
+    icon: '🔌',
+    category: 'technical',
+    color: '#10B981',
+    description: 'Connect and interact with external services and APIs',
+    examples: ['REST APIs', 'GraphQL', 'Webhooks', 'Third-party integrations']
+  },
+  'data-processing': {
+    name: 'Data Processing',
+    icon: '⚙️',
+    category: 'technical',
+    color: '#10B981',
+    description: 'Transform, clean, and manipulate data efficiently',
+    examples: ['Data transformation', 'ETL processes', 'Data cleaning', 'Format conversion']
+  },
+  'automation': {
+    name: 'Automation',
+    icon: '🤖',
+    category: 'technical',
+    color: '#10B981',
+    description: 'Automate repetitive tasks and workflows',
+    examples: ['Workflow automation', 'Task scheduling', 'Process optimization', 'Bot creation']
+  },
+  'coding': {
+    name: 'Coding',
+    icon: '💻',
+    category: 'technical',
+    color: '#10B981',
+    description: 'Write, review, and optimize code across languages',
+    examples: ['Programming', 'Code review', 'Debugging', 'Algorithm design']
+  },
+  'integration': {
+    name: 'Integration',
+    icon: '🔗',
+    category: 'technical',
+    color: '#10B981',
+    description: 'Connect different systems and services seamlessly',
+    examples: ['System integration', 'Data synchronization', 'Service orchestration', 'Middleware']
+  },
+
+  // Communication capabilities
+  'translation': {
+    name: 'Translation',
+    icon: '🌐',
+    category: 'communication',
+    color: '#F59E0B',
+    description: 'Convert content between different languages accurately',
+    examples: ['Language translation', 'Localization', 'Cultural adaptation', 'Multilingual content']
+  },
+  'summarization': {
+    name: 'Summarization',
+    icon: '📋',
+    category: 'communication',
+    color: '#F59E0B',
+    description: 'Condense complex information into clear, concise summaries',
+    examples: ['Document summaries', 'Meeting notes', 'Executive summaries', 'Key insights']
+  },
+  'presentation': {
+    name: 'Presentation',
+    icon: '📊',
+    category: 'communication',
+    color: '#F59E0B',
+    description: 'Create and deliver compelling presentations',
+    examples: ['Slide creation', 'Data visualization', 'Public speaking', 'Visual storytelling']
+  },
+  'documentation': {
+    name: 'Documentation',
+    icon: '📄',
+    category: 'communication',
+    color: '#F59E0B',
+    description: 'Create comprehensive and clear documentation',
+    examples: ['Technical docs', 'User guides', 'API documentation', 'Process documentation']
+  },
+  'feedback': {
+    name: 'Feedback',
+    icon: '💬',
+    category: 'communication',
+    color: '#F59E0B',
+    description: 'Provide constructive feedback and recommendations',
+    examples: ['Code reviews', 'Content feedback', 'Performance reviews', 'Improvement suggestions']
+  }
+};
+
+
+export const CATEGORY_COLORS = {
+  cognitive: '#3B82F6',
+  creative: '#8B5CF6', 
+  technical: '#10B981',
+  communication: '#F59E0B'
+} as const;
+
+export function createHybridCapabilities(capabilities: string[]): HybridCapability[] {
+  return capabilities.map((cap, index) => {
+    const normalizedCap = cap.toLowerCase().replace(/\s+/g, '-');
+    const definition = CAPABILITY_DEFINITIONS[normalizedCap];
+    
+    if (definition) {
+      return {
+        id: `cap-${index}`,
+        ...definition
+      };
+    }
+    
+    // Fallback for unknown capabilities
+    return {
+      id: `cap-${index}`,
+      name: cap,
+      icon: '⚡',
+      category: 'technical' as const,
+      color: CATEGORY_COLORS.technical,
+      description: `${cap} capability`,
+      examples: [`${cap} related tasks`]
+    };
+  });
+}
+
+
 export function transformAutoOrchestrateToWorkflow(
   response: AutoOrchestrateResponse,
   userId?: string
