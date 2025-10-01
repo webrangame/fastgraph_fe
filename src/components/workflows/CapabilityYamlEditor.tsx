@@ -258,7 +258,7 @@ export function CapabilityYamlEditor({
             </div>
             <div>
               <h2 className="text-lg font-bold theme-text-primary flex items-center">
-                {capability ? `${capability.icon} ${capability.name}` : 'Capability'} Configuration
+                {capability ? `${capability.name}` : 'Capability'} Configuration
                 <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded font-mono">
                   .yaml
                 </span>
@@ -431,16 +431,16 @@ export function CapabilityYamlEditor({
         </div>
 
         {/* VS Code-like Status Bar */}
-        <div className="flex items-center justify-between px-4 py-2 border-t theme-border bg-blue-600 text-white text-xs">
+        <div className="flex items-center justify-between px-4 py-2 border-t theme-border bg-gray-50 dark:bg-gray-900 text-xs">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-white rounded-full"></div>
-              <span>FastGraph</span>
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="theme-text-primary">FastGraph</span>
             </div>
-            <span>Ln {cursorPosition.line}, Col {cursorPosition.column}</span>
-            <span>YAML</span>
+            <span className="theme-text-secondary">Ln {cursorPosition.line}, Col {cursorPosition.column}</span>
+            <span className="theme-text-secondary">YAML</span>
             {validationErrors.length > 0 && (
-              <span className="bg-red-500 px-2 py-0.5 rounded">
+              <span className="bg-red-500 text-white px-2 py-0.5 rounded">
                 {validationErrors.length} errors
               </span>
             )}
@@ -449,14 +449,14 @@ export function CapabilityYamlEditor({
           <div className="flex items-center space-x-4">
             <button
               onClick={handleCopy}
-              className="hover:bg-blue-700 px-2 py-1 rounded transition-colors duration-200"
+              className="theme-text-secondary hover:theme-text-primary px-2 py-1 rounded transition-colors duration-200"
             >
               {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
             </button>
             
             <button
               onClick={onClose}
-              className="hover:bg-blue-700 px-3 py-1 rounded transition-colors duration-200"
+              className="theme-text-secondary hover:theme-text-primary px-3 py-1 rounded transition-colors duration-200"
             >
               Cancel
             </button>
@@ -464,7 +464,7 @@ export function CapabilityYamlEditor({
             <button
               onClick={handleSave}
               disabled={isSaving || validationErrors.length > 0}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-500 px-4 py-1 rounded transition-colors duration-200 flex items-center space-x-1"
+              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-500 text-white px-4 py-1 rounded transition-colors duration-200 flex items-center space-x-1"
             >
               {isSaving ? (
                 <>
