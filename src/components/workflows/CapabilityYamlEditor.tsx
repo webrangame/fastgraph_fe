@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, RefreshCw, Eye, Code, Sparkles, Download, Upload, Copy, Check } from 'lucide-react';
 import { createHybridCapabilities, HybridCapability } from '@/lib/workflow-utils';
 
@@ -9,8 +9,8 @@ interface CapabilityYamlEditorProps {
   onClose: () => void;
   agentName: string;
   agentId: string;
-  capability?: HybridCapability; // For single capability editing
-  initialCapabilities?: string[]; // For bulk editing (legacy)
+  capability?: HybridCapability;
+  initialCapabilities?: string[];
 }
 
 // Generate individual capability YAML
@@ -110,6 +110,26 @@ development:
   test_mode: false`;
 };
 
+// VS Code-like YAML syntax highlighting with theme-aware colors
+const highlightYaml = (code: string): string => {
+  return code
+    // Comments
+    .replace(/(#.*$)/gm, '<span style="color: #6A9955; font-style: italic;">$1</span>')
+    // Keys
+    .replace(/^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/gm, '$1<span style="color: #4FC1FF;">$2</span><span style="color: var(--text-primary);">:</span>')
+    // String values
+    .replace(/:\s*"([^"]*)"/g, ': <span style="color: #CE9178;">"$1"</span>')
+    .replace(/:\s*'([^']*)'/g, ': <span style="color: #CE9178;">\'$1\'</span>')
+    // Boolean values
+    .replace(/:\s*(true|false)\b/g, ': <span style="color: #569CD6;">$1</span>')
+    // Numbers
+    .replace(/:\s*(\d+\.?\d*)\b/g, ': <span style="color: #B5CEA8;">$1</span>')
+    // Array items
+    .replace(/^(\s*)-\s*/gm, '$1<span style="color: var(--text-primary);">- </span>')
+    // Null values
+    .replace(/:\s*(null|~)\b/g, ': <span style="color: #569CD6;">$1</span>');
+};
+
 export function CapabilityYamlEditor({ 
   isOpen, 
   onClose, 
@@ -124,6 +144,10 @@ export function CapabilityYamlEditor({
   const [hasChanges, setHasChanges] = useState(false);
   const [copied, setCopied] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+  
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const highlightRef = useRef<HTMLPreElement>(null);
 
   // Initialize YAML content
   useEffect(() => {
@@ -131,10 +155,8 @@ export function CapabilityYamlEditor({
       let yamlContent = '';
       
       if (capability) {
-        // Single capability editing
         yamlContent = generateCapabilityYaml(capability, agentName);
       } else {
-        // Legacy: bulk editing (fallback)
         const hybridCaps = createHybridCapabilities(initialCapabilities);
         if (hybridCaps.length > 0) {
           yamlContent = generateCapabilityYaml(hybridCaps[0], agentName);
@@ -146,16 +168,32 @@ export function CapabilityYamlEditor({
     }
   }, [isOpen, agentName, capability, initialCapabilities]);
 
+  // Update syntax highlighting when content changes
+  useEffect(() => {
+    if (highlightRef.current) {
+      highlightRef.current.innerHTML = highlightYaml(yamlContent);
+    }
+  }, [yamlContent]);
+
+  // Track cursor position
+  const handleCursorChange = () => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      const text = textarea.value.substring(0, textarea.selectionStart);
+      const lines = text.split('\n');
+      const line = lines.length;
+      const column = lines[lines.length - 1].length + 1;
+      setCursorPosition({ line, column });
+    }
+  };
+
   // Basic YAML validation for individual capabilities
   const validateYaml = (content: string) => {
     const errors: string[] = [];
     
-    // Check for basic YAML structure
     if (!content.includes('capability:')) errors.push('Missing capability configuration');
     if (!content.includes('name:')) errors.push('Missing capability name');
     if (!content.includes('category:')) errors.push('Missing category');
-    
-    // Check for required sections
     if (!content.includes('configuration:')) errors.push('Missing configuration section');
     if (!content.includes('parameters:')) errors.push('Missing parameters section');
     
@@ -172,16 +210,13 @@ export function CapabilityYamlEditor({
   const handleSave = async () => {
     setIsSaving(true);
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // In production: await saveCapabilityConfig(agentId, capability?.id, yamlContent);
     console.log('Saving individual capability YAML:', capability?.name, yamlContent);
     
     setIsSaving(false);
     setHasChanges(false);
     
-    // Show success feedback
     setTimeout(() => {
       onClose();
     }, 500);
@@ -194,13 +229,12 @@ export function CapabilityYamlEditor({
   };
 
   const parseYamlToPreview = (yaml: string) => {
-    // Simple YAML parsing for preview (in production use proper YAML parser)
     const capabilities: string[] = [];
     const lines = yaml.split('\n');
     let inCapabilities = false;
     
     lines.forEach(line => {
-      if (line.includes('capabilities:')) inCapabilities = true;
+      if (line.includes('capability:')) inCapabilities = true;
       if (inCapabilities && line.includes('name:')) {
         const match = line.match(/name:\s*"?([^"]+)"?/);
         if (match) capabilities.push(match[1]);
@@ -214,43 +248,46 @@ export function CapabilityYamlEditor({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10001] flex items-center justify-center p-4">
-      <div className="theme-card-bg rounded-2xl shadow-2xl border theme-border w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
+      <div className="theme-card-bg rounded-2xl shadow-2xl border theme-border w-full max-w-7xl h-[95vh] flex flex-col overflow-hidden">
         
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b theme-border bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+        {/* VS Code-like Header */}
+        <div className="flex items-center justify-between p-4 border-b theme-border bg-gray-50 dark:bg-gray-900">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
               <Code className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold theme-text-primary">
-                {capability ? `${capability.icon} ${capability.name}` : 'Capability'} Editor
+              <h2 className="text-lg font-bold theme-text-primary flex items-center">
+                {capability ? `${capability.icon} ${capability.name}` : 'Capability'} Configuration
+                <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded font-mono">
+                  .yaml
+                </span>
               </h2>
               <p className="text-sm theme-text-secondary">
-                Configure {capability ? capability.name : 'capability'} for {agentName}
+                {agentName} • {capability ? capability.category : 'capability'} configuration
               </p>
             </div>
           </div>
           
           <div className="flex items-center space-x-2">
             {/* Mode Toggle */}
-            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <div className="flex items-center bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
               <button
                 onClick={() => setIsPreviewMode(false)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
                   !isPreviewMode 
-                    ? 'bg-white dark:bg-gray-700 theme-text-primary shadow-sm' 
+                    ? 'bg-white dark:bg-gray-600 theme-text-primary shadow-sm' 
                     : 'theme-text-secondary hover:theme-text-primary'
                 }`}
               >
                 <Code className="w-4 h-4 mr-1.5 inline" />
-                Edit
+                Editor
               </button>
               <button
                 onClick={() => setIsPreviewMode(true)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
                   isPreviewMode 
-                    ? 'bg-white dark:bg-gray-700 theme-text-primary shadow-sm' 
+                    ? 'bg-white dark:bg-gray-600 theme-text-primary shadow-sm' 
                     : 'theme-text-secondary hover:theme-text-primary'
                 }`}
               >
@@ -268,145 +305,176 @@ export function CapabilityYamlEditor({
           </div>
         </div>
 
-        {/* Content */}
+        {/* VS Code-like Content */}
         <div className="flex-1 flex overflow-hidden">
           
           {/* Editor Panel */}
           <div className={`${isPreviewMode ? 'w-1/2' : 'w-full'} flex flex-col border-r theme-border`}>
             
-            {/* Editor Toolbar */}
-            <div className="flex items-center justify-between p-3 border-b theme-border bg-gray-50 dark:bg-gray-900/50">
-              <div className="flex items-center space-x-2">
-                <Sparkles className="w-4 h-4 theme-text-muted" />
-                <span className="text-sm font-medium theme-text-secondary">
-                  {capability ? `${capability.name} Configuration` : 'YAML Configuration'}
+            {/* Editor Toolbar - VS Code style */}
+            <div className="flex items-center justify-between px-4 py-2 border-b theme-border bg-gray-100 dark:bg-gray-800">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm theme-text-secondary font-mono">
+                  {capability ? `${capability.name.toLowerCase().replace(/\s+/g, '-')}.yaml` : 'capability.yaml'}
                 </span>
-                {validationErrors.length > 0 && (
-                  <span className="px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 text-xs rounded-full">
-                    {validationErrors.length} errors
-                  </span>
+                {hasChanges && (
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
                 )}
               </div>
               
-              <div className="flex items-center space-x-1">
-                <button
-                  onClick={handleCopy}
-                  className="p-1.5 theme-text-secondary hover:theme-text-primary theme-hover-bg rounded transition-all duration-200"
-                  title="Copy to clipboard"
-                >
-                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                </button>
-                <button className="p-1.5 theme-text-secondary hover:theme-text-primary theme-hover-bg rounded transition-all duration-200" title="Import YAML">
-                  <Upload className="w-4 h-4" />
-                </button>
-                <button className="p-1.5 theme-text-secondary hover:theme-text-primary theme-hover-bg rounded transition-all duration-200" title="Export YAML">
-                  <Download className="w-4 h-4" />
-                </button>
+              <div className="flex items-center space-x-2 text-xs theme-text-muted">
+                <span>Ln {cursorPosition.line}, Col {cursorPosition.column}</span>
+                <span>•</span>
+                <span>YAML</span>
+                <span>•</span>
+                <span>UTF-8</span>
+                {validationErrors.length > 0 && (
+                  <>
+                    <span>•</span>
+                    <span className="text-red-500">{validationErrors.length} errors</span>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* YAML Editor */}
-            <div className="flex-1 relative">
-              <textarea
-                value={yamlContent}
-                onChange={(e) => handleContentChange(e.target.value)}
-                className="w-full h-full p-4 font-mono text-sm theme-bg theme-text-primary resize-none border-none outline-none"
-                style={{ 
-                  lineHeight: '1.6',
-                  tabSize: 2
-                }}
-                placeholder="Enter YAML configuration..."
-                spellCheck={false}
-              />
+            {/* VS Code-like Editor */}
+            <div className="flex-1 flex overflow-hidden bg-gray-50 dark:bg-gray-900">
               
-              {/* Line numbers overlay could go here */}
-            </div>
-
-            {/* Validation Errors */}
-            {validationErrors.length > 0 && (
-              <div className="p-3 border-t theme-border bg-red-50 dark:bg-red-900/20">
-                <div className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Validation Errors:</div>
-                <ul className="text-xs text-red-600 dark:text-red-400 space-y-1">
-                  {validationErrors.map((error, idx) => (
-                    <li key={idx}>• {error}</li>
-                  ))}
-                </ul>
+              {/* Line Numbers */}
+              <div className="bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 px-2 py-4 min-w-[60px]">
+              <div className="space-y-0">
+                {Array.from({ length: yamlContent.split('\n').length }, (_, index) => (
+                  <div 
+                    key={index}
+                    className="text-right pr-2 theme-text-muted select-none leading-6"
+                    style={{ fontSize: '13px', fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace' }}
+                  >
+                    {index + 1}
+                  </div>
+                ))}
               </div>
-            )}
+              </div>
+
+              {/* Editor Content */}
+              <div className="flex-1 relative overflow-hidden">
+                {/* Syntax Highlighted Background */}
+                <pre
+                  ref={highlightRef}
+                  className="absolute inset-0 p-4 font-mono text-sm leading-6 theme-text-primary pointer-events-none overflow-auto whitespace-pre-wrap break-words"
+                  style={{ 
+                    fontSize: '13px', 
+                    fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                    lineHeight: '1.5'
+                  }}
+                  aria-hidden="true"
+                />
+                
+                {/* Actual Textarea */}
+                <textarea
+                  ref={textareaRef}
+                  value={yamlContent}
+                  onChange={(e) => handleContentChange(e.target.value)}
+                  onKeyUp={handleCursorChange}
+                  onClick={handleCursorChange}
+                  className="absolute inset-0 p-4 font-mono text-sm leading-6 bg-transparent text-transparent caret-gray-800 dark:caret-gray-200 resize-none border-none outline-none overflow-auto whitespace-pre-wrap break-words"
+                  style={{ 
+                    fontSize: '13px', 
+                    fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                    lineHeight: '1.5'
+                  }}
+                  placeholder="Enter YAML configuration..."
+                  spellCheck={false}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Preview Panel */}
           {isPreviewMode && (
-            <div className="w-1/2 flex flex-col">
-              <div className="p-3 border-b theme-border bg-gray-50 dark:bg-gray-900/50">
+            <div className="w-1/2 flex flex-col theme-bg">
+              <div className="p-3 border-b theme-border bg-gray-50 dark:bg-gray-800">
                 <div className="flex items-center space-x-2">
                   <Eye className="w-4 h-4 theme-text-muted" />
-                  <span className="text-sm font-medium theme-text-secondary">Live Preview</span>
+                  <span className="text-sm font-medium theme-text-secondary">Configuration Preview</span>
                 </div>
               </div>
               
               <div className="flex-1 p-4 overflow-y-auto">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-sm font-semibold theme-text-primary mb-2">Parsed Capabilities:</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {parseYamlToPreview(yamlContent).map((cap, idx) => (
-                        <span 
-                          key={idx}
-                          className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full"
-                        >
-                          {cap}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
                     <h3 className="text-sm font-semibold theme-text-primary mb-2">Configuration Summary:</h3>
-                    <div className="text-xs theme-text-secondary space-y-1">
+                    <div className="text-xs theme-text-secondary space-y-1 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                       <div>• Capability: {capability?.name || 'Unknown'}</div>
                       <div>• Category: {capability?.category || 'Unknown'}</div>
                       <div>• Agent: {agentName}</div>
                       <div>• Status: {validationErrors.length === 0 ? '✅ Valid' : '❌ Invalid'}</div>
+                      <div>• Lines: {yamlContent.split('\n').length}</div>
                     </div>
                   </div>
+                  
+                  {validationErrors.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold theme-text-primary mb-2">Errors:</h3>
+                      <div className="space-y-1">
+                        {validationErrors.map((error, idx) => (
+                          <div key={idx} className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded">
+                            • {error}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t theme-border bg-gray-50 dark:bg-gray-900/50">
-          <div className="flex items-center space-x-4 text-xs theme-text-muted">
-            <span>Lines: {yamlContent.split('\n').length}</span>
-            <span>Characters: {yamlContent.length}</span>
-            {hasChanges && <span className="text-orange-500">• Unsaved changes</span>}
+        {/* VS Code-like Status Bar */}
+        <div className="flex items-center justify-between px-4 py-2 border-t theme-border bg-blue-600 text-white text-xs">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+              <span>FastGraph</span>
+            </div>
+            <span>Ln {cursorPosition.line}, Col {cursorPosition.column}</span>
+            <span>YAML</span>
+            {validationErrors.length > 0 && (
+              <span className="bg-red-500 px-2 py-0.5 rounded">
+                {validationErrors.length} errors
+              </span>
+            )}
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={handleCopy}
+              className="hover:bg-blue-700 px-2 py-1 rounded transition-colors duration-200"
+            >
+              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+            </button>
+            
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm theme-text-secondary hover:theme-text-primary theme-hover-bg rounded-lg transition-all duration-200"
+              className="hover:bg-blue-700 px-3 py-1 rounded transition-colors duration-200"
             >
               Cancel
             </button>
+            
             <button
               onClick={handleSave}
               disabled={isSaving || validationErrors.length > 0}
-              className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-medium rounded-lg 
-                         hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed
-                         transition-all duration-200 flex items-center space-x-2"
+              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-500 px-4 py-1 rounded transition-colors duration-200 flex items-center space-x-1"
             >
               {isSaving ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <RefreshCw className="w-3 h-3 animate-spin" />
                   <span>Saving...</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4" />
-                  <span>Save Changes</span>
+                  <Save className="w-3 h-3" />
+                  <span>Save</span>
                 </>
               )}
             </button>
@@ -416,4 +484,3 @@ export function CapabilityYamlEditor({
     </div>
   );
 }
-
