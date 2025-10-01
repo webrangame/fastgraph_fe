@@ -99,7 +99,6 @@ export function ExpandableCapabilities({
                       key={capability.id}
                       capability={capability}
                       size={size}
-                      showTooltip={true}
                       onEdit={onEditCapability}
                     />
                   ))}
@@ -133,7 +132,6 @@ export function ExpandableCapabilities({
             key={capability.id}
             capability={capability}
             size={size}
-            showTooltip={true}
             onEdit={onEditCapability}
           />
         ))}
