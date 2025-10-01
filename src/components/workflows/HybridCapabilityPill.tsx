@@ -8,13 +8,15 @@ interface HybridCapabilityPillProps {
   size?: 'sm' | 'md' | 'lg';
   showTooltip?: boolean;
   className?: string;
+  onEdit?: (capability: HybridCapability) => void;
 }
 
 export function HybridCapabilityPill({ 
   capability, 
   size = 'md',
   showTooltip = true,
-  className = ''
+  className = '',
+  onEdit
 }: HybridCapabilityPillProps) {
   const [showTooltipState, setShowTooltipState] = useState(false);
 
@@ -47,6 +49,13 @@ export function HybridCapabilityPill({
         }}
         onMouseEnter={() => showTooltip && setShowTooltipState(true)}
         onMouseLeave={() => setShowTooltipState(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onEdit) {
+            onEdit(capability);
+          }
+        }}
+        title={onEdit ? `Click to edit ${capability.name} configuration` : undefined}
       >
         {/* Icon */}
         <span className={iconSizes[size]}>{capability.icon}</span>

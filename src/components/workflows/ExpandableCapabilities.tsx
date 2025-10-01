@@ -11,6 +11,7 @@ interface ExpandableCapabilitiesProps {
   showCategoryGroups?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  onEditCapability?: (capability: HybridCapability) => void;
 }
 
 export function ExpandableCapabilities({ 
@@ -18,7 +19,8 @@ export function ExpandableCapabilities({
   maxVisible = 4,
   showCategoryGroups = false,
   size = 'md',
-  className = ''
+  className = '',
+  onEditCapability
 }: ExpandableCapabilitiesProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -98,6 +100,7 @@ export function ExpandableCapabilities({
                       capability={capability}
                       size={size}
                       showTooltip={true}
+                      onEdit={onEditCapability}
                     />
                   ))}
                 </div>
@@ -131,6 +134,7 @@ export function ExpandableCapabilities({
             capability={capability}
             size={size}
             showTooltip={true}
+            onEdit={onEditCapability}
           />
         ))}
       </div>
