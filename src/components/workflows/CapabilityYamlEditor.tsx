@@ -259,11 +259,11 @@ export function CapabilityYamlEditor({
             <div>
               <h2 className="text-lg font-bold theme-text-primary flex items-center">
                 {capability ? `${capability.name}` : 'Capability'} Configuration
-                <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded font-mono">
+                <span className="ml-2 text-blue-700 dark:text-blue-300 text-xs font-mono">
                   .yaml
                 </span>
               </h2>
-              <p className="text-sm theme-text-secondary">
+              <p className="text-xs theme-text-secondary">
                 {agentName} • {capability ? capability.category : 'capability'} configuration
               </p>
             </div>
@@ -314,7 +314,6 @@ export function CapabilityYamlEditor({
             {/* Editor Toolbar - VS Code style */}
             <div className="flex items-center justify-between px-4 py-2 border-b theme-border theme-input-bg">
               <div className="flex items-center space-x-4">
-
                 <span className="text-sm theme-text-secondary font-mono">
                   {capability ? `${capability.name.toLowerCase().replace(/\s+/g, '-')}.yaml` : 'capability.yaml'}
                 </span>
