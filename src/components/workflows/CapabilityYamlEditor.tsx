@@ -251,7 +251,7 @@ export function CapabilityYamlEditor({
       <div className="theme-card-bg rounded-2xl shadow-2xl border theme-border w-full max-w-7xl h-[95vh] flex flex-col overflow-hidden">
         
         {/* VS Code-like Header */}
-        <div className="flex items-center justify-between p-4 border-b theme-border bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center justify-between p-4 border-b theme-border theme-header-bg">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
               <Code className="w-5 h-5 text-white" />
@@ -271,12 +271,12 @@ export function CapabilityYamlEditor({
           
           <div className="flex items-center space-x-2">
             {/* Mode Toggle */}
-            <div className="flex items-center bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+            <div className="flex items-center theme-input-bg rounded-lg p-1">
               <button
                 onClick={() => setIsPreviewMode(false)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
                   !isPreviewMode 
-                    ? 'bg-white dark:bg-gray-600 theme-text-primary shadow-sm' 
+                    ? 'theme-bg theme-text-primary shadow-sm' 
                     : 'theme-text-secondary hover:theme-text-primary'
                 }`}
               >
@@ -287,7 +287,7 @@ export function CapabilityYamlEditor({
                 onClick={() => setIsPreviewMode(true)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
                   isPreviewMode 
-                    ? 'bg-white dark:bg-gray-600 theme-text-primary shadow-sm' 
+                    ? 'theme-bg theme-text-primary shadow-sm' 
                     : 'theme-text-secondary hover:theme-text-primary'
                 }`}
               >
@@ -312,13 +312,14 @@ export function CapabilityYamlEditor({
           <div className={`${isPreviewMode ? 'w-1/2' : 'w-full'} flex flex-col border-r theme-border`}>
             
             {/* Editor Toolbar - VS Code style */}
-            <div className="flex items-center justify-between px-4 py-2 border-b theme-border bg-gray-100 dark:bg-gray-800">
+            <div className="flex items-center justify-between px-4 py-2 border-b theme-border theme-input-bg">
               <div className="flex items-center space-x-4">
+
                 <span className="text-sm theme-text-secondary font-mono">
                   {capability ? `${capability.name.toLowerCase().replace(/\s+/g, '-')}.yaml` : 'capability.yaml'}
                 </span>
                 {hasChanges && (
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                  <div className="w-2 h-2 theme-bg rounded-full"></div>
                 )}
               </div>
               
@@ -338,10 +339,10 @@ export function CapabilityYamlEditor({
             </div>
 
             {/* VS Code-like Editor */}
-            <div className="flex-1 flex overflow-hidden bg-gray-50 dark:bg-gray-900">
+            <div className="flex-1 flex overflow-hidden theme-bg">
               
               {/* Line Numbers */}
-              <div className="bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 px-2 py-4 min-w-[60px]">
+              <div className="theme-input-bg border-r theme-border px-2 py-4 min-w-[60px]">
               <div className="space-y-0">
                 {Array.from({ length: yamlContent.split('\n').length }, (_, index) => (
                   <div 
@@ -376,7 +377,7 @@ export function CapabilityYamlEditor({
                   onChange={(e) => handleContentChange(e.target.value)}
                   onKeyUp={handleCursorChange}
                   onClick={handleCursorChange}
-                  className="absolute inset-0 p-4 font-mono text-sm leading-6 bg-transparent text-transparent caret-gray-800 dark:caret-gray-200 resize-none border-none outline-none overflow-auto whitespace-pre-wrap break-words"
+                  className="absolute inset-0 p-4 font-mono text-sm leading-6 bg-transparent text-transparent caret-blue-500 resize-none border-none outline-none overflow-auto whitespace-pre-wrap break-words"
                   style={{ 
                     fontSize: '13px', 
                     fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
@@ -392,7 +393,7 @@ export function CapabilityYamlEditor({
           {/* Preview Panel */}
           {isPreviewMode && (
             <div className="w-1/2 flex flex-col theme-bg">
-              <div className="p-3 border-b theme-border bg-gray-50 dark:bg-gray-800">
+              <div className="p-3 border-b theme-border theme-input-bg">
                 <div className="flex items-center space-x-2">
                   <Eye className="w-4 h-4 theme-text-muted" />
                   <span className="text-sm font-medium theme-text-secondary">Configuration Preview</span>
@@ -403,7 +404,7 @@ export function CapabilityYamlEditor({
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-sm font-semibold theme-text-primary mb-2">Configuration Summary:</h3>
-                    <div className="text-xs theme-text-secondary space-y-1 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                    <div className="text-xs theme-text-secondary space-y-1 theme-input-bg p-3 rounded-lg">
                       <div>• Capability: {capability?.name || 'Unknown'}</div>
                       <div>• Category: {capability?.category || 'Unknown'}</div>
                       <div>• Agent: {agentName}</div>
@@ -431,7 +432,7 @@ export function CapabilityYamlEditor({
         </div>
 
         {/* VS Code-like Status Bar */}
-        <div className="flex items-center justify-between px-4 py-2 border-t theme-border bg-gray-50 dark:bg-gray-900 text-xs">
+        <div className="flex items-center justify-between px-4 py-2 border-t theme-border theme-header-bg text-xs">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
