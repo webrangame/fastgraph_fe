@@ -190,6 +190,20 @@ export function CapabilityYamlEditor({
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       handleSave();
     });
+
+    // Force proper initialization and syntax highlighting
+    setTimeout(() => {
+      editor.layout();
+      const model = editor.getModel();
+      if (model) {
+        // Force re-tokenization by setting language and updating content
+        monaco.editor.setModelLanguage(model, 'yaml');
+        const currentValue = model.getValue();
+        model.setValue(currentValue);
+      }
+      // Force a paint/render cycle
+      editor.updateOptions({});
+    }, 50);
   };
 
   const handleSave = () => {
@@ -339,14 +353,24 @@ export function CapabilityYamlEditor({
             </div>
 
             {/* Editor */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden relative">
               <Editor
+                key={isOpen ? 'editor-open' : 'editor-closed'}
                 height="100%"
                 defaultLanguage="yaml"
+                language="yaml"
                 value={yamlContent}
                 onChange={handleEditorChange}
                 onMount={handleEditorMount}
                 theme={theme}
+                loading={
+                  <div className="flex items-center justify-center h-full theme-bg">
+                    <div className="flex flex-col items-center space-y-3">
+                      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-sm theme-text-secondary">Initializing Monaco Editor...</span>
+                    </div>
+                  </div>
+                }
                 options={{
                   minimap: { enabled: true },
                   fontSize: 13,
