@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Code, Copy, Check, Save, RotateCcw, Download } from 'lucide-react';
 import { createHybridCapabilities, HybridCapability } from '@/lib/workflow-utils';
 import Editor from '@monaco-editor/react';
@@ -141,26 +141,27 @@ export function CapabilityYamlEditor({
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // Initialize YAML content
+  // Compute initial YAML based on props (used for editor defaultValue)
+  const computedInitialYaml = useMemo(() => {
+    if (capability) {
+      return generateCapabilityYaml(capability, agentName);
+    }
+    const hybridCaps = createHybridCapabilities(initialCapabilities);
+    if (hybridCaps.length > 0) {
+      return generateCapabilityYaml(hybridCaps[0], agentName);
+    }
+    return '';
+  }, [agentName, capability, initialCapabilities]);
+
+  // Initialize YAML content when opening
   useEffect(() => {
     if (isOpen) {
-      let content = '';
-      
-      if (capability) {
-        content = generateCapabilityYaml(capability, agentName);
-      } else {
-        const hybridCaps = createHybridCapabilities(initialCapabilities);
-        if (hybridCaps.length > 0) {
-          content = generateCapabilityYaml(hybridCaps[0], agentName);
-        }
-      }
-      
-      setYamlContent(content);
-      setInitialContent(content);
+      setYamlContent(computedInitialYaml);
+      setInitialContent(computedInitialYaml);
       setIsDirty(false);
-      validateYaml(content);
+      validateYaml(computedInitialYaml);
     }
-  }, [isOpen, agentName, capability, initialCapabilities]);
+  }, [isOpen, computedInitialYaml]);
 
   // Basic YAML validation
   const validateYaml = (content: string) => {
@@ -196,10 +197,8 @@ export function CapabilityYamlEditor({
       editor.layout();
       const model = editor.getModel();
       if (model) {
-        // Force re-tokenization by setting language and updating content
+        // Force re-tokenization by setting language
         monaco.editor.setModelLanguage(model, 'yaml');
-        const currentValue = model.getValue();
-        model.setValue(currentValue);
       }
       // Force a paint/render cycle
       editor.updateOptions({});
@@ -220,6 +219,12 @@ export function CapabilityYamlEditor({
     setYamlContent(initialContent);
     setIsDirty(false);
     validateYaml(initialContent);
+    if (editorRef.current) {
+      const model = editorRef.current.getModel();
+      if (model) {
+        model.setValue(initialContent);
+      }
+    }
   };
 
   const handleCopy = async () => {
@@ -359,7 +364,7 @@ export function CapabilityYamlEditor({
                 height="100%"
                 defaultLanguage="yaml"
                 language="yaml"
-                value={yamlContent}
+                defaultValue={computedInitialYaml}
                 onChange={handleEditorChange}
                 onMount={handleEditorMount}
                 theme={theme}
