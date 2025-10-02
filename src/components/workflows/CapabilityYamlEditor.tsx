@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, Eye, Code, Copy, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Code, Copy, Check, Save, RotateCcw, Download } from 'lucide-react';
 import { createHybridCapabilities, HybridCapability } from '@/lib/workflow-utils';
+import Editor from '@monaco-editor/react';
+import type { editor } from 'monaco-editor';
 
 interface CapabilityYamlEditorProps {
   isOpen: boolean;
@@ -11,6 +13,7 @@ interface CapabilityYamlEditorProps {
   agentId: string;
   capability?: HybridCapability;
   initialCapabilities?: string[];
+  onSave?: (yamlContent: string) => void;
 }
 
 // Generate individual capability YAML
@@ -109,67 +112,57 @@ development:
   test_mode: false`;
 };
 
-// (Editing removed) Read-only preview only
-
-// VS Code-like YAML syntax highlighting (read-only)
-const escapeHtml = (code: string): string =>
-  code
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
-const highlightYaml = (code: string): string => {
-  const escaped = escapeHtml(code);
-  return escaped
-    // Comments
-    .replace(/(#.*$)/gm, '<span style="color: #6A9955; font-style: italic;">$1</span>')
-    // Keys (start of line until colon)
-    .replace(/^(\s*)([a-zA-Z_][a-zA-Z0-9_-]*)\s*:/gm, '$1<span style="color: #4FC1FF;">$2</span><span style="color: var(--text-primary);">:</span>')
-    // Quoted strings
-    .replace(/:\s*&quot;([^&]*)&quot;/g, ': <span style="color: #CE9178;">&quot;$1&quot;</span>')
-    .replace(/:\s*'([^']*)'/g, ': <span style="color: #CE9178;">&#39;$1&#39;</span>')
-    // Booleans
-    .replace(/:\s*(true|false)\b/g, ': <span style="color: #569CD6;">$1</span>')
-    // Nulls
-    .replace(/:\s*(null|~)\b/g, ': <span style="color: #569CD6;">$1</span>')
-    // Numbers
-    .replace(/:\s*(-?\d+\.\d+|-?\d+)\b/g, ': <span style="color: #B5CEA8;">$1</span>')
-    // Array dash
-    .replace(/^(\s*)-\s/mg, '$1<span style="color: var(--text-primary);">- </span>');
-};
-
 export function CapabilityYamlEditor({ 
   isOpen, 
   onClose, 
   agentName, 
   agentId,
   capability,
-  initialCapabilities = []
+  initialCapabilities = [],
+  onSave
 }: CapabilityYamlEditorProps) {
   const [yamlContent, setYamlContent] = useState('');
+  const [initialContent, setInitialContent] = useState('');
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [theme, setTheme] = useState<'vs-dark' | 'light'>('vs-dark');
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+
+  // Detect system theme
+  useEffect(() => {
+    const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(darkMode ? 'vs-dark' : 'light');
+    
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => setTheme(e.matches ? 'vs-dark' : 'light');
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
 
   // Initialize YAML content
   useEffect(() => {
     if (isOpen) {
-      let yamlContent = '';
+      let content = '';
       
       if (capability) {
-        yamlContent = generateCapabilityYaml(capability, agentName);
+        content = generateCapabilityYaml(capability, agentName);
       } else {
         const hybridCaps = createHybridCapabilities(initialCapabilities);
         if (hybridCaps.length > 0) {
-          yamlContent = generateCapabilityYaml(hybridCaps[0], agentName);
+          content = generateCapabilityYaml(hybridCaps[0], agentName);
         }
       }
       
-      setYamlContent(yamlContent);
-      validateYaml(yamlContent);
+      setYamlContent(content);
+      setInitialContent(content);
+      setIsDirty(false);
+      validateYaml(content);
     }
   }, [isOpen, agentName, capability, initialCapabilities]);
 
-  // Basic YAML validation for individual capabilities
+  // Basic YAML validation
   const validateYaml = (content: string) => {
     const errors: string[] = [];
     
@@ -183,13 +176,55 @@ export function CapabilityYamlEditor({
     return errors.length === 0;
   };
 
+  const handleEditorChange = (value: string | undefined) => {
+    const newValue = value || '';
+    setYamlContent(newValue);
+    setIsDirty(newValue !== initialContent);
+    validateYaml(newValue);
+  };
+
+  const handleEditorMount = (editor: editor.IStandaloneCodeEditor, monaco: any) => {
+    editorRef.current = editor;
+    
+    // Add keyboard shortcuts
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      handleSave();
+    });
+  };
+
+  const handleSave = () => {
+    if (validateYaml(yamlContent)) {
+      onSave?.(yamlContent);
+      setInitialContent(yamlContent);
+      setIsDirty(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
+  };
+
+  const handleReset = () => {
+    setYamlContent(initialContent);
+    setIsDirty(false);
+    validateYaml(initialContent);
+  };
+
   const handleCopy = async () => {
     await navigator.clipboard.writeText(yamlContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const highlightedYaml = useMemo(() => highlightYaml(yamlContent), [yamlContent]);
+  const handleDownload = () => {
+    const blob = new Blob([yamlContent], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${capability?.name || 'capability'}-config.yaml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   if (!isOpen) return null;
 
@@ -204,11 +239,16 @@ export function CapabilityYamlEditor({
               <Code className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold theme-text-primary flex items-center">
+              <h2 className="text-lg font-bold theme-text-primary flex items-center gap-2">
                 {capability ? `${capability.name}` : 'Capability'} Configuration
-                <span className="ml-2 text-blue-700 dark:text-blue-300 text-xs font-mono">
+                <span className="text-blue-700 dark:text-blue-300 text-xs font-mono">
                   .yaml
                 </span>
+                {isDirty && (
+                  <span className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded">
+                    Modified
+                  </span>
+                )}
               </h2>
               <p className="text-xs theme-text-secondary">
                 {agentName} • {capability ? capability.category : 'capability'} configuration
@@ -218,6 +258,13 @@ export function CapabilityYamlEditor({
           
           <div className="flex items-center space-x-2">
             <button
+              onClick={handleDownload}
+              className="p-2 theme-text-secondary hover:theme-text-primary theme-hover-bg rounded-lg transition-all duration-200"
+              title="Download YAML"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+            <button
               onClick={onClose}
               className="p-2 theme-text-secondary hover:theme-text-primary theme-hover-bg rounded-lg transition-all duration-200"
             >
@@ -226,44 +273,122 @@ export function CapabilityYamlEditor({
           </div>
         </div>
 
-        {/* Read-only Preview Content */}
+        {/* Monaco Editor */}
         <div className="flex-1 flex overflow-hidden">
-          <div className="w-full flex flex-col theme-bg">
-            <div className="flex-1 p-4 overflow-y-auto">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-semibold theme-text-primary mb-2">YAML</h3>
-                  <div className="theme-preview-bg p-3 rounded-lg overflow-auto">
-                    <pre
-                      className="font-mono text-xs theme-text-primary whitespace-pre-wrap break-words"
-                      dangerouslySetInnerHTML={{ __html: highlightedYaml }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold theme-text-primary mb-2">Configuration Summary</h3>
-                  <div className="text-xs theme-text-secondary space-y-1 theme-input-bg p-3 rounded-lg">
-                    <div>• Capability: {capability?.name || 'Unknown'}</div>
-                    <div>• Category: {capability?.category || 'Unknown'}</div>
-                    <div>• Agent: {agentName}</div>
-                    <div>• Status: {validationErrors.length === 0 ? '✅ Valid' : '❌ Invalid'}</div>
-                    <div>• Lines: {yamlContent.split('\n').length}</div>
-                  </div>
+          <div className="w-full flex flex-col">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between px-4 py-2 border-b theme-border theme-bg">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleSave}
+                  disabled={!isDirty || validationErrors.length > 0}
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isDirty && validationErrors.length === 0
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                  }`}
+                  title="Save (Ctrl+S)"
+                >
+                  {saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  <span>{saved ? 'Saved' : 'Save'}</span>
+                </button>
+                
+                <button
+                  onClick={handleReset}
+                  disabled={!isDirty}
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 ${
+                    isDirty
+                      ? 'theme-text-primary theme-hover-bg'
+                      : 'theme-text-secondary cursor-not-allowed opacity-50'
+                  }`}
+                  title="Reset to original"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>Reset</span>
+                </button>
+
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm theme-text-primary theme-hover-bg transition-all duration-200"
+                  title="Copy to clipboard"
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  <span>{copied ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+
+              <div className="flex items-center space-x-4 text-xs theme-text-secondary">
+                <div className="flex items-center space-x-2">
+                  <span>Lines: {yamlContent.split('\n').length}</span>
+                  <span>•</span>
+                  <span>Characters: {yamlContent.length}</span>
                 </div>
                 {validationErrors.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold theme-text-primary mb-2">Errors</h3>
-                    <div className="space-y-1">
-                      {validationErrors.map((error, idx) => (
-                        <div key={idx} className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded">
-                          • {error}
-                        </div>
-                      ))}
-                    </div>
+                  <div className="flex items-center space-x-1 text-red-600 dark:text-red-400">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <span>{validationErrors.length} error{validationErrors.length > 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {validationErrors.length === 0 && (
+                  <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>Valid</span>
                   </div>
                 )}
               </div>
             </div>
+
+            {/* Editor */}
+            <div className="flex-1 overflow-hidden">
+              <Editor
+                height="100%"
+                defaultLanguage="yaml"
+                value={yamlContent}
+                onChange={handleEditorChange}
+                onMount={handleEditorMount}
+                theme={theme}
+                options={{
+                  minimap: { enabled: true },
+                  fontSize: 13,
+                  lineNumbers: 'on',
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  tabSize: 2,
+                  wordWrap: 'on',
+                  wrappingStrategy: 'advanced',
+                  folding: true,
+                  foldingStrategy: 'indentation',
+                  showFoldingControls: 'always',
+                  renderLineHighlight: 'all',
+                  cursorBlinking: 'smooth',
+                  smoothScrolling: true,
+                  contextmenu: true,
+                  quickSuggestions: true,
+                  suggestOnTriggerCharacters: true,
+                  acceptSuggestionOnEnter: 'on',
+                  formatOnPaste: true,
+                  formatOnType: true,
+                  padding: { top: 16, bottom: 16 },
+                }}
+              />
+            </div>
+
+            {/* Validation Errors Panel */}
+            {validationErrors.length > 0 && (
+              <div className="border-t theme-border theme-bg p-3 max-h-32 overflow-y-auto">
+                <div className="space-y-1">
+                  {validationErrors.map((error, idx) => (
+                    <div 
+                      key={idx} 
+                      className="flex items-start space-x-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded"
+                    >
+                      <span className="font-bold">❌</span>
+                      <span>{error}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -272,30 +397,16 @@ export function CapabilityYamlEditor({
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="theme-text-primary">FastGraph</span>
+              <span className="theme-text-primary font-medium">FastGraph YAML Editor</span>
             </div>
-            <span className="theme-text-secondary">YAML</span>
-            {validationErrors.length > 0 && (
-              <span className="bg-red-500 text-white px-2 py-0.5 rounded">
-                {validationErrors.length} errors
-              </span>
-            )}
+            <span className="theme-text-secondary">Monaco Editor</span>
+            <span className="theme-text-secondary">•</span>
+            <span className="theme-text-secondary">{capability?.category || 'Capability'}</span>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={handleCopy}
-              className="theme-text-secondary hover:theme-text-primary px-2 py-1 rounded transition-colors duration-200"
-            >
-              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-            </button>
-            
-            <button
-              onClick={onClose}
-              className="theme-text-secondary hover:theme-text-primary px-3 py-1 rounded transition-colors duration-200"
-            >
-              Close
-            </button>
+          <div className="flex items-center space-x-2 theme-text-secondary">
+            <kbd className="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+S</kbd>
+            <span>to save</span>
           </div>
         </div>
       </div>
