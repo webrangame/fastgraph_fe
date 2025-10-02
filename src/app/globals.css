@@ -102,11 +102,11 @@ body {
 
 /* Read-only preview background */
 .theme-preview-bg {
-  background-color: #eff6ff !important; /* Tailwind blue-50 */
+  background-color: #fafafa !important; /* very light gray */
 }
 
 .dark .theme-preview-bg {
-  background-color: rgba(30, 58, 138, 0.3) !important; /* approx blue-900/30 */
+  background-color: rgba(107, 114, 128, 0.12) !important; /* very subtle gray */
 }
 
 /* Enhanced input styling */

@@ -20,7 +20,6 @@ const generateCapabilityYaml = (capability: HybridCapability, agentName: string)
   return `# ${capability.name} Capability Configuration
 # Agent: ${agentName}
 # Category: ${capability.category}
-# Last Updated: ${new Date().toISOString()}
 
 capability:
   id: "${capability.id}"
@@ -230,12 +229,6 @@ export function CapabilityYamlEditor({
         {/* Read-only Preview Content */}
         <div className="flex-1 flex overflow-hidden">
           <div className="w-full flex flex-col theme-bg">
-            <div className="p-3 border-b theme-border theme-input-bg">
-              <div className="flex items-center space-x-2">
-                <Eye className="w-4 h-4 theme-text-muted" />
-                <span className="text-sm font-medium theme-text-secondary">Configuration Preview</span>
-              </div>
-            </div>
             <div className="flex-1 p-4 overflow-y-auto">
               <div className="space-y-4">
                 <div>
