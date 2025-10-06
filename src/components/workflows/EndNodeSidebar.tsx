@@ -477,7 +477,9 @@ export function EndNodeSidebar({
         finalizedArtifactLinks: finalizedArtifactLinks,
         normalizedData: normalized,
         finalDataType: typeof finalData,
-        finalDataKeys: finalData && typeof finalData === 'object' ? Object.keys(finalData) : 'not-object'
+        finalDataKeys: finalData && typeof finalData === 'object' ? Object.keys(finalData) : 'not-object',
+        // Deep search for any artifact-related data
+        deepFinalData: JSON.stringify(finalData, null, 2).substring(0, 2000) + '...'
       });
       
       if (Array.isArray(finalizedArtifactLinks) && finalizedArtifactLinks.length > 0) {

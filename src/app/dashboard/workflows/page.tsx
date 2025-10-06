@@ -122,6 +122,7 @@ export default function WorkflowsPage() {
     console.log('Current agents:', agents ? Object.keys(agents) : 'null');
     console.log('Current connections:', connections ? connections.length : 'null');
     console.log('Current workflows in Redux:', workflows.length);
+    console.log('Available API workflow data:', apiWorkflowData?.length || 0);
     
     // FORCE COMPLETE STATE RESET
     console.log('🧹 CLEARING ALL STATE...');
@@ -146,22 +147,35 @@ export default function WorkflowsPage() {
     if (apiWorkflowData && Array.isArray(apiWorkflowData)) {
       const selectedApiItem = apiWorkflowData.find((item: any) => item.dataId === workflowId);
       
+      console.log('🔍 Selected API item:', {
+        found: !!selectedApiItem,
+        dataId: selectedApiItem?.dataId,
+        dataName: selectedApiItem?.dataName,
+        hasAutoOrchestrateResult: !!selectedApiItem?.dataContent?.autoOrchestrateResult,
+        hasRawData: !!selectedApiItem?.dataContent?.rawData,
+        dataContentKeys: selectedApiItem?.dataContent ? Object.keys(selectedApiItem.dataContent) : 'no dataContent'
+      });
+      
       if (selectedApiItem && selectedApiItem.dataContent?.autoOrchestrateResult) {
         const workflowData = selectedApiItem.dataContent.autoOrchestrateResult;
+        const rawData = selectedApiItem.dataContent.rawData;
 
-        // Build agents and connections from cached autoOrchestrate result
-        console.log('🔍 Existing Workflow - workflowData structure:', {
-          workflowDataKeys: Object.keys(workflowData),
-          hasFinalizedArtifactLinks: !!workflowData?.finalizedArtifactLinks,
-          finalizedArtifactLinksLength: workflowData?.finalizedArtifactLinks?.length,
-          workflowData: workflowData
+        // Build agents and connections from raw data (not the processed autoOrchestrateResult)
+        console.log('🔍 Existing Workflow - rawData structure:', {
+          rawDataKeys: rawData ? Object.keys(rawData) : 'no rawData',
+          hasAutoOrchestrateResponse: !!rawData?.auto_orchestrate_response,
+          autoOrchestrateResponseKeys: rawData?.auto_orchestrate_response ? Object.keys(rawData.auto_orchestrate_response) : 'none',
+          rawData: rawData
         });
         
-        const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, finalizedArtifactLinks: processedFinalizedArtifactLinks, executionResults: processedExecutionResults } = processAgentsFromResponse(workflowData);
+        const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, finalizedArtifactLinks: processedFinalizedArtifactLinks, executionResults: processedExecutionResults } = processAgentsFromResponse(rawData);
         
         console.log('🔍 Existing Workflow - processed result:', {
           processedFinalizedArtifactLinksLength: processedFinalizedArtifactLinks?.length,
-          processedFinalizedArtifactLinks: processedFinalizedArtifactLinks
+          processedFinalizedArtifactLinks: processedFinalizedArtifactLinks,
+          processedAgentsCount: Object.keys(processedAgents).length,
+          processedConnectionsCount: processedConnections.length,
+          processedFinalDataKeys: processedFinalData ? Object.keys(processedFinalData) : 'no finalData'
         });
         
         // Create the workflow object with reconstructed nodes/connections so hooks detect existing structure
