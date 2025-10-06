@@ -66,12 +66,31 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
     }
     
     // Check common field names
-    const artifactFields = ['finalizedArtifactLinks', 'finalized_artifact_links', 'artifacts', 'media_links'];
+    const artifactFields = ['finalizedArtifactLinks', 'finalized_artifact_links', 'artifacts', 'media_links', 'artifactLinks'];
     for (const field of artifactFields) {
       if (Array.isArray(obj[field])) {
-        return obj[field].filter(item => item?.url || typeof item === 'string').map(item => item?.url || item);
+        return obj[field].filter((item: any) => item?.url || typeof item === 'string').map((item: any) => item?.url || item);
       }
     }
+    
+    // Check for URL patterns in strings
+    const urlPattern = /https?:\/\/[^\s]+\.(png|jpg|jpeg|gif|mp4|mp3|wav|pdf|doc|docx|txt|json)/gi;
+    const foundUrls: string[] = [];
+    
+    const findUrlsInValue = (value: any): void => {
+      if (typeof value === 'string') {
+        const matches = value.match(urlPattern);
+        if (matches) {
+          foundUrls.push(...matches);
+        }
+      } else if (Array.isArray(value)) {
+        value.forEach(findUrlsInValue);
+      } else if (value && typeof value === 'object') {
+        Object.values(value).forEach(findUrlsInValue);
+      }
+    };
+    
+    findUrlsInValue(obj);
     
     // Recursively search nested objects
     let found: string[] = [];
@@ -84,7 +103,7 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
       }
     }
     
-    return found;
+    return [...found, ...foundUrls];
   };
   
   const foundArtifacts = searchForArtifacts(result);
@@ -107,7 +126,9 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
     finalizedArtifactLinksData: finalizedArtifactLinks,
     foundArtifactsFromSearch: foundArtifacts,
     fullResultKeys: result ? Object.keys(result) : [],
-    autoOrchestrateResponseKeys: result?.auto_orchestrate_response ? Object.keys(result.auto_orchestrate_response) : []
+    autoOrchestrateResponseKeys: result?.auto_orchestrate_response ? Object.keys(result.auto_orchestrate_response) : [],
+    // Deep search for artifacts in the result
+    deepSearchResult: JSON.stringify(result, null, 2).substring(0, 1000) + '...'
   });
 
   // Attempt to parse finalizedResult if it's provided as a stringified Python-like dict

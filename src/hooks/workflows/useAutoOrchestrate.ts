@@ -158,7 +158,13 @@ export function useAutoOrchestrate({
           if (line.startsWith('data: ')) {
             try {
               const jsonData = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
-              console.log('📨 Stream data received:', jsonData);
+              console.log('📨 Stream data received:', {
+                event: jsonData.event,
+                step: jsonData.step,
+                hasAutoOrchestrateResponse: !!jsonData.auto_orchestrate_response,
+                autoOrchestrateResponseKeys: jsonData.auto_orchestrate_response ? Object.keys(jsonData.auto_orchestrate_response) : 'none',
+                fullData: jsonData
+              });
               
               // Update progress based on event type
               if (jsonData.event === 'step_start') {
@@ -175,7 +181,14 @@ export function useAutoOrchestrate({
                 });
               } else if (jsonData.event === 'workflow_complete') {
                 finalData = jsonData;
-                console.log('✅ Workflow completed, final data:', finalData);
+                console.log('✅ Workflow completed, final data:', {
+                  event: finalData.event,
+                  hasAutoOrchestrateResponse: !!finalData.auto_orchestrate_response,
+                  autoOrchestrateResponseKeys: finalData.auto_orchestrate_response ? Object.keys(finalData.auto_orchestrate_response) : 'none',
+                  hasSwarmResult: !!finalData.auto_orchestrate_response?.swarm_result,
+                  swarmResultKeys: finalData.auto_orchestrate_response?.swarm_result ? Object.keys(finalData.auto_orchestrate_response.swarm_result) : 'none',
+                  fullData: finalData
+                });
               }
               
               // Update stream data for UI
@@ -234,14 +247,38 @@ export function useAutoOrchestrate({
                   autoOrchestrateResponseKeys: finalData?.auto_orchestrate_response ? Object.keys(finalData.auto_orchestrate_response) : 'no auto_orchestrate_response'
                 });
 
-          // Prepare data content with fallback
-          let dataContent = finalData.auto_orchestrate_response || finalData;
+          // Prepare data content with fallback - structure it to match UI expectations
+          //noe build
+          let dataContent: any = {
+            autoOrchestrateResult: {
+              nodes: processedConnections.length > 0 ? Object.keys(processedAgents).map(agentId => ({
+                id: `agent-${agentId}`,
+                type: 'agent',
+                position: { x: 0, y: 0 },
+                data: processedAgents[agentId]
+              })) : [],
+              connections: processedConnections
+            },
+            rawData: finalData.auto_orchestrate_response || finalData
+          };
+          
+          console.log('🔍 DataContent Debug:', {
+            finalDataKeys: finalData ? Object.keys(finalData) : 'no finalData',
+            autoOrchestrateResponseKeys: finalData?.auto_orchestrate_response ? Object.keys(finalData.auto_orchestrate_response) : 'no auto_orchestrate_response',
+            dataContentKeys: dataContent ? Object.keys(dataContent) : 'no dataContent',
+            dataContentType: typeof dataContent,
+            dataContentStringified: JSON.stringify(dataContent, null, 2)
+          });
           
           // If data is too large or invalid, create a summary
           const dataStr = JSON.stringify(dataContent);
           if (dataStr.length > 5 * 1024 * 1024) { // 5MB limit
             console.warn('⚠️ Data too large, creating summary...');
             dataContent = {
+              autoOrchestrateResult: {
+                nodes: [],
+                connections: []
+              },
               summary: 'Auto orchestrate result (data too large for storage)',
               command: command,
               agentsCount: Object.keys(processedAgents).length,
@@ -254,13 +291,14 @@ export function useAutoOrchestrate({
           // Calculate number of agents - use processedAgents if available, otherwise try to extract from data
           let numberOfAgents = Object.keys(processedAgents).length;
           if (numberOfAgents === 0) {
-            // Try to extract agent count from the data content
-            const swarmSpec = dataContent?.swarm_result?.swarm_spec;
+            // Try to extract agent count from the raw data
+            const rawData = dataContent?.rawData;
+            const swarmSpec = rawData?.swarm_result?.swarm_spec;
             if (swarmSpec?.agents) {
               numberOfAgents = Object.keys(swarmSpec.agents).length;
-            } else if (dataContent?.m_language_spec) {
+            } else if (rawData?.m_language_spec) {
               // Count agents in the M Language spec string
-              const agentMatches = dataContent.m_language_spec.match(/agent\s+\w+/g);
+              const agentMatches = rawData.m_language_spec.match(/agent\s+\w+/g);
               numberOfAgents = agentMatches ? agentMatches.length : 1; // Default to 1 if we can't count
             } else {
               numberOfAgents = 1; // Default fallback
@@ -270,8 +308,8 @@ export function useAutoOrchestrate({
           console.log('📊 Agent count calculation:', {
             processedAgentsCount: Object.keys(processedAgents).length,
             calculatedNumberOfAgents: numberOfAgents,
-            swarmSpecAgents: dataContent?.swarm_result?.swarm_spec?.agents ? Object.keys(dataContent.swarm_result.swarm_spec.agents) : 'none',
-            hasMLanguageSpec: !!dataContent?.m_language_spec
+            swarmSpecAgents: dataContent?.rawData?.swarm_result?.swarm_spec?.agents ? Object.keys(dataContent.rawData.swarm_result.swarm_spec.agents) : 'none',
+            hasMLanguageSpec: !!dataContent?.rawData?.m_language_spec
           });
 
           const saveResult = await installData({

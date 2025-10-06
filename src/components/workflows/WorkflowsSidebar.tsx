@@ -77,8 +77,25 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
     skip: !userId || userId === '1' // Skip if no userId or default value
   });
 
+  // Debug logging
+  console.log('🔍 WorkflowsSidebar Debug:', {
+    userId,
+    apiDataLength: apiData?.length || 0,
+    apiData: apiData,
+    hasAutoOrchestrateResult: apiData?.map((item: any) => ({
+      dataId: item.dataId,
+      dataName: item.dataName,
+      hasAutoOrchestrateResult: !!item.dataContent?.autoOrchestrateResult,
+      dataContentKeys: item.dataContent ? Object.keys(item.dataContent) : 'no dataContent',
+      dataContent: item.dataContent
+    }))
+  });
+
   // Delete workflow mutation
   const [deleteData] = useDeleteDataMutation();
+
+
+  console.log(apiData , "apiData")
 
   // Transform API data to workflows
   const workflows = useMemo(() => {
@@ -153,6 +170,8 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
       workflow.description.toLowerCase().includes(query)
     );
   }, [searchQuery, workflows]);
+
+
 
   const getStatusIcon = (status: Workflow['status']) => {
     switch (status) {
