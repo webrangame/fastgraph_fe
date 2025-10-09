@@ -95,7 +95,7 @@ const LoginPage = () => {
       console.log('✅ Forgot password response:', response);
       
       // Extract success message from backend response
-      let successMessage = 'Password reset link sent to your email!';
+      let successMessage = 'New password sent to your email!';
       if (response?.message) {
         successMessage = response.message;
       } else if (response?.data?.message) {
@@ -116,7 +116,7 @@ const LoginPage = () => {
       console.error('❌ Forgot password failed:', err);
       
       // Extract error message from backend response
-      let errorMessage = 'Failed to send reset email. Please try again.';
+      let errorMessage = 'Failed to send new password. Please try again.';
       
       if (err?.data?.message) {
         errorMessage = err.data.message;
@@ -586,7 +586,7 @@ const LoginPage = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800/95 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">Reset Password</h3>
+              <h3 className="text-xl font-bold text-white">Forgot Password</h3>
               <button
                 onClick={() => {
                   setShowForgotPassword(false);
@@ -603,7 +603,7 @@ const LoginPage = () => {
             </div>
             
             <p className="text-gray-300 text-sm mb-6">
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we'll send you a new password to log in with.
             </p>
             
             {/* Backend Response Message Display */}
@@ -682,7 +682,7 @@ const LoginPage = () => {
                   }`}
                   disabled={isForgotPasswordLoading}
                 >
-                  {isForgotPasswordLoading ? 'Sending...' : 'Send Reset Link'}
+                  {isForgotPasswordLoading ? 'Sending...' : 'Send New Password'}
                 </button>
               </div>
             </form>
