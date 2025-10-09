@@ -373,31 +373,32 @@ export function useAutoOrchestrate({
     }
   }, [user, installData, logAudit, onAgentsProcessed, resetAutoOrchestrate, isAutoOrchestrating]);
 
-  useEffect(() => {
-    const autoOrchestrateFirstWorkflow = async () => {
-      // Reset auto-orchestrate state for new prompts
-      if (hasAutoOrchestrated.current) {
-        console.log('Auto orchestrate already completed, skipping...');
-        return;
-      }
+  // Removed automatic workflow execution - workflows should only run when explicitly requested
+  // useEffect(() => {
+  //   const autoOrchestrateFirstWorkflow = async () => {
+  //     // Reset auto-orchestrate state for new prompts
+  //     if (hasAutoOrchestrated.current) {
+  //       console.log('Auto orchestrate already completed, skipping...');
+  //       return;
+  //     }
 
-      if (workflows.length === 0) {
-        console.log('No workflows available for auto orchestrate');
-        return;
-      }
+  //     if (workflows.length === 0) {
+  //       console.log('No workflows available for auto orchestrate');
+  //       return;
+  //     }
 
-      const firstWorkflow = workflows[0];
-      const firstWorkflowDescription = firstWorkflow?.description;
+  //     const firstWorkflow = workflows[0];
+  //     const firstWorkflowDescription = firstWorkflow?.description;
       
-      if (firstWorkflowDescription) {
-        console.log('Auto orchestrating with command:', firstWorkflowDescription);
-        hasAutoOrchestrated.current = true;
-        await startAutoOrchestrate(firstWorkflowDescription);
-      }
-    };
+  //     if (firstWorkflowDescription) {
+  //       console.log('Auto orchestrating with command:', firstWorkflowDescription);
+  //       hasAutoOrchestrated.current = true;
+  //       await startAutoOrchestrate(firstWorkflowDescription);
+  //     }
+  //   };
 
-    autoOrchestrateFirstWorkflow();
-  }, [workflows, startAutoOrchestrate]);
+  //   autoOrchestrateFirstWorkflow();
+  // }, [workflows, startAutoOrchestrate]);
 
   // Cleanup on unmount
   useEffect(() => {
