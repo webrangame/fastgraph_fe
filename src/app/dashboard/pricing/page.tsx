@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Check, Star, Sparkles, Shield, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { StripeCheckout } from '@/components/payment/StripeCheckout';
 import './pricing.css';
 
 interface PlanFeature {
@@ -132,6 +134,60 @@ const faqs = [
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+
+  // Handle URL parameters for payment success/cancel
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const canceled = searchParams.get('canceled');
+    const sessionId = searchParams.get('session_id');
+
+    if (success && sessionId) {
+      setPaymentSuccess('Payment successful! Your subscription is now active.');
+      setPaymentError(null);
+    } else if (canceled) {
+      setPaymentError('Payment was canceled. You can try again anytime.');
+      setPaymentSuccess(null);
+    }
+  }, [searchParams]);
+
+  const handlePaymentSuccess = (planName: string) => {
+    setPaymentSuccess(`Successfully subscribed to ${planName} plan!`);
+    setPaymentError(null);
+  };
+
+  const handlePaymentError = (error: string) => {
+    setPaymentError(error);
+    setPaymentSuccess(null);
+  };
+
+  const renderPlanButton = (plan: PricingPlan) => {
+    if (plan.name === 'Free') {
+      return (
+        <Button
+          variant="secondary"
+          className="pricing-button w-full justify-center"
+        >
+          {plan.cta}
+        </Button>
+      );
+    }
+
+    return (
+      <StripeCheckout
+        planName={plan.name.toLowerCase()}
+        isAnnual={isAnnual}
+        price={isAnnual ? plan.annualPrice : plan.monthlyPrice}
+        onSuccess={() => handlePaymentSuccess(plan.name)}
+        onError={handlePaymentError}
+        className="pricing-button w-full justify-center"
+      >
+        {plan.cta}
+      </StripeCheckout>
+    );
+  };
 
   return (
     <div className="min-h-screen theme-bg">
@@ -144,6 +200,24 @@ export default function PricingPage() {
           <p className="text-lg md:text-xl theme-text-secondary mb-8 max-w-3xl mx-auto">
             Scale your multi-agent workflows from simple automation to enterprise-grade orchestration
           </p>
+
+          {/* Payment Status Messages */}
+          {paymentSuccess && (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center space-x-2 text-green-800 dark:text-green-200">
+                <Check className="w-5 h-5" />
+                <span className="font-medium">{paymentSuccess}</span>
+              </div>
+            </div>
+          )}
+
+          {paymentError && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-center space-x-2 text-red-800 dark:text-red-200">
+                <span className="font-medium">{paymentError}</span>
+              </div>
+            </div>
+          )}
 
           {/* Pricing Toggle */}
           <div className="toggle-container inline-flex items-center theme-input-bg theme-border border rounded-full p-1 mb-12">
@@ -247,12 +321,7 @@ export default function PricingPage() {
                     ))}
                   </div>
 
-                  <Button
-                    variant={plan.name === 'Free' ? 'secondary' : 'primary'}
-                    className="pricing-button w-full justify-center"
-                  >
-                    {plan.cta}
-                  </Button>
+                  {renderPlanButton(plan)}
                 </div>
               </div>
             ))}
