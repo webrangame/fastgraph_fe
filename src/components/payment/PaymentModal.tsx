@@ -61,14 +61,8 @@ function CheckoutForm({ planName, isAnnual, price, onSuccess, onError }: Checkou
         throw new Error(sessionError);
       }
 
-      // Redirect to Stripe Checkout
-      const { error: stripeError } = await stripe.redirectToCheckout({
-        sessionId,
-      });
-
-      if (stripeError) {
-        throw new Error(stripeError.message);
-      }
+      // Redirect to Stripe Checkout URL
+      window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       setError(errorMessage);

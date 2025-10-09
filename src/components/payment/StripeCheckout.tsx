@@ -56,13 +56,8 @@ export function StripeCheckout({
         throw new Error('Stripe failed to load');
       }
 
-      const { error: stripeError } = await stripe.redirectToCheckout({
-        sessionId,
-      });
-
-      if (stripeError) {
-        throw new Error(stripeError.message);
-      }
+      // Redirect to Stripe Checkout URL
+      window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
 
       onSuccess?.();
     } catch (error) {

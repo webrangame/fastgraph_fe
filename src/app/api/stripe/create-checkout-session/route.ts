@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { STRIPE_CONFIG, getPlanConfig } from '@/lib/stripe';
 
 const stripe = new Stripe(STRIPE_CONFIG.secretKey, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2025-09-30.clover',
 });
 
 export async function POST(request: NextRequest) {
