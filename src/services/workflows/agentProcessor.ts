@@ -127,6 +127,9 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
     foundArtifactsFromSearch: foundArtifacts,
     fullResultKeys: result ? Object.keys(result) : [],
     autoOrchestrateResponseKeys: result?.auto_orchestrate_response ? Object.keys(result.auto_orchestrate_response) : [],
+    // Final data debugging
+    finalDataKeys: finalData ? Object.keys(finalData) : [],
+    finalData: finalData,
     // Deep search for artifacts in the result
     deepSearchResult: JSON.stringify(result, null, 2).substring(0, 1000) + '...'
   });
@@ -258,11 +261,23 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
     const exec = (executionResults as any)[agentName];
     const collectedLogs: Array<{ id: string; timestamp?: number | string; message: string; type?: 'info' | 'warning' | 'error' | 'success'; status?: 'pending' | 'completed' | 'failed'; }> = [];
 
+    console.log(`🔍 Agent ${agentName} Processing:`, {
+      hasExec: !!exec,
+      execKeys: exec ? Object.keys(exec) : [],
+      hasLlmInference: !!exec?.llm_inference,
+      llmInferenceKeys: exec?.llm_inference ? Object.keys(exec.llm_inference) : [],
+      inputPrompt: exec?.llm_inference?.input_prompt,
+      inputPromp: exec?.llm_inference?.input_promp,
+      inputValues: agent.inputValues,
+      inputValuesKeys: agent.inputValues ? Object.keys(agent.inputValues) : []
+    });
+
     if (exec) {
       // Attach LLM input prompt if available
       const inputPrompt = exec?.llm_inference?.input_prompt ?? exec?.llm_inference?.input_promp;
       if (typeof inputPrompt === 'string' && inputPrompt.length > 0) {
         agent.agentInput = inputPrompt;
+        console.log(`✅ Set agentInput for ${agentName}:`, inputPrompt.substring(0, 100) + '...');
       }
 
       // Top-level execution_logs (array of strings)

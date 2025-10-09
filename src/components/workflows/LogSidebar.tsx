@@ -372,6 +372,17 @@ export function LogSidebar({
         {activeTab === 'input' ? (
           /* Agent Input Tab Content */
           <div className="p-4 theme-bg">
+            {(() => {
+              console.log('🔍 LogSidebar Input Tab Debug:', {
+                agentData,
+                hasInputValues: agentData?.inputValues && Object.keys(agentData.inputValues).length > 0,
+                inputValuesKeys: agentData?.inputValues ? Object.keys(agentData.inputValues) : [],
+                inputValues: agentData?.inputValues,
+                hasAgentInput: !!agentData?.agentInput,
+                agentInput: agentData?.agentInput
+              });
+              return null;
+            })()}
             {agentData && ((agentData.inputValues && Object.keys(agentData.inputValues).length > 0) || agentData.agentInput) ? (
               <div className="space-y-4">
                 {/* Input Values */}
