@@ -90,6 +90,8 @@ export function useAutoOrchestrate({
   }, []);
 
   const startAutoOrchestrate = useCallback(async (command: string) => {
+    console.log('🚀 startAutoOrchestrate called with command:', command);
+    
     if (!command) {
       console.error('No command provided for auto orchestrate');
       return;

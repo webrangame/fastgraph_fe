@@ -356,13 +356,16 @@ export default function WorkflowsPage() {
       });
 
       toast.success('Workflow regenerated with new prompt! Auto-orchestration starting...');
+      
+      // Start auto-orchestration with the new prompt
+      await startAutoOrchestrate(prompt);
     } catch (error) {
       console.error('Failed to regenerate workflow:', error);
       toast.error('Failed to regenerate workflow. Please try again.');
     } finally {
       setIsRegenerating(false);
     }
-  }, [actualCurrentWorkflow, dispatch, installData, logDataAction, logWorkflowAction, resetAutoOrchestrate, addToUndoStack]);
+  }, [actualCurrentWorkflow, dispatch, installData, logDataAction, logWorkflowAction, resetAutoOrchestrate, addToUndoStack, startAutoOrchestrate]);
 
   const { handlePromptSubmit, isProcessing } = usePromptHandler({
     currentWorkflow: actualCurrentWorkflow,
@@ -534,7 +537,9 @@ export default function WorkflowsPage() {
         data: { workflowId: workflowData.id, workflowData }
       });
 
-      // 🤖 Auto-orchestration will start via useAutoOrchestrate effect
+      // Start auto-orchestration with the workflow description
+      await startAutoOrchestrate(data.description);
+      
       toast.success(isRegenerating ? 'Workflow regenerated! Auto-orchestration starting...' : 'Workflow created! Auto-orchestration starting...');
     } catch (error) {
       console.error('Failed to create/regenerate workflow:', error);
