@@ -208,6 +208,16 @@ export function useAutoOrchestrate({
       }
 
       console.log('📨 Final API response data:', finalData);
+      console.log('🔍 Raw data structure analysis:', {
+        hasAutoOrchestrateResponse: !!finalData?.auto_orchestrate_response,
+        autoOrchestrateResponseKeys: finalData?.auto_orchestrate_response ? Object.keys(finalData.auto_orchestrate_response) : [],
+        hasSwarmResult: !!finalData?.auto_orchestrate_response?.swarm_result,
+        swarmResultKeys: finalData?.auto_orchestrate_response?.swarm_result ? Object.keys(finalData.auto_orchestrate_response.swarm_result) : [],
+        hasExecutionResults: !!finalData?.auto_orchestrate_response?.swarm_result?.execution_results,
+        executionResultsKeys: finalData?.auto_orchestrate_response?.swarm_result?.execution_results ? Object.keys(finalData.auto_orchestrate_response.swarm_result.execution_results) : [],
+        hasFinalData: !!finalData?.auto_orchestrate_response?.swarm_result?.final_data,
+        finalDataKeys: finalData?.auto_orchestrate_response?.swarm_result?.final_data ? Object.keys(finalData.auto_orchestrate_response.swarm_result.final_data) : []
+      });
 
       // Process the result
       const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, finalizedArtifactLinks: processedFinalizedArtifactLinks, executionResults: processedExecutionResults } = 
@@ -218,7 +228,16 @@ export function useAutoOrchestrate({
         processedAgentsKeys: Object.keys(processedAgents),
         processedConnectionsCount: processedConnections.length,
         processedFinalizedArtifactLinksLength: processedFinalizedArtifactLinks?.length,
-        processedFinalizedArtifactLinks: processedFinalizedArtifactLinks
+        processedFinalizedArtifactLinks: processedFinalizedArtifactLinks,
+        // Debug each agent's data
+        agentsData: Object.entries(processedAgents).map(([name, agent]) => ({
+          name,
+          hasInputValues: !!agent.inputValues && Object.keys(agent.inputValues).length > 0,
+          inputValuesKeys: agent.inputValues ? Object.keys(agent.inputValues) : [],
+          inputValues: agent.inputValues,
+          hasAgentInput: !!agent.agentInput,
+          agentInput: agent.agentInput ? agent.agentInput.substring(0, 100) + '...' : null
+        }))
       });
      
       setAgents(processedAgents);
