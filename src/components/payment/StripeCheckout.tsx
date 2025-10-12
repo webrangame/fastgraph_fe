@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { CreditCard, Loader2 } from 'lucide-react';
 
 interface StripeCheckoutProps {
   planName: string;
@@ -21,45 +23,62 @@ export function StripeCheckout({
   className = '',
   children 
 }: StripeCheckoutProps) {
-  const buttonRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    // Load Stripe Buy Button script
-    const script = document.createElement('script');
-    script.src = 'https://js.stripe.com/v3/buy-button.js';
-    script.async = true;
-    document.head.appendChild(script);
+  const handleCheckout = async () => {
+    setIsLoading(true);
 
-    // Create the Stripe Buy Button element
-    const createStripeButton = () => {
-      if (buttonRef.current) {
-        buttonRef.current.innerHTML = `
-          <stripe-buy-button
-            buy-button-id="buy_btn_1SHNnG55WOHFHUyZpLGsN1tP"
-            publishable-key="pk_test_51SHNbP55WOHFHUyZbt1WkvQn6H8ujukPVi0OjSKtRXilJnBSFvsIauSQJgOznmHynBpjPNXu4FEP1eIJfKdXOj9w00OZSRc99F"
-          >
-            ${children || `${planName} Plan`}
-          </stripe-buy-button>
-        `;
+    try {
+      // Create checkout session with package information
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planName,
+          isAnnual,
+          price,
+          userId: '1', // TODO: Get from auth context
+        }),
+      });
+
+      const { sessionId, error: sessionError } = await response.json();
+
+      if (sessionError) {
+        throw new Error(sessionError);
       }
-    };
 
-    // Wait for script to load then create button
-    script.onload = createStripeButton;
+      // Redirect to Stripe Checkout with package information
+      window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
 
-    return () => {
-      // Cleanup script on unmount
-      const existingScript = document.querySelector('script[src="https://js.stripe.com/v3/buy-button.js"]');
-      if (existingScript) {
-        document.head.removeChild(existingScript);
-      }
-    };
-  }, [planName, children]);
+      onSuccess?.();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      console.error('Checkout error:', errorMessage);
+      onError?.(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div 
-      ref={buttonRef}
+    <Button
+      onClick={handleCheckout}
+      disabled={isLoading}
       className={className}
-    />
+    >
+      {isLoading ? (
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Processing...</span>
+        </div>
+      ) : (
+        <div className="flex items-center space-x-2">
+          <CreditCard className="w-4 h-4" />
+          <span>{children || `${planName} Plan`}</span>
+        </div>
+      )}
+    </Button>
   );
 }
