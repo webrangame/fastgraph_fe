@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Bot, Plus, User, Zap, Play } from 'lucide-react';
+import { Plus, Play } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
@@ -17,7 +17,6 @@ interface NewAgentPopupProps {
 
 export interface AgentFormData {
   agentName: string;
-  agentType: string;
   description: string;
 }
 
@@ -36,7 +35,6 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
   } = useForm<AgentFormData>({
     defaultValues: {
       agentName: '',
-      agentType: 'assistant',
       description: ''
     }
   });
@@ -118,26 +116,6 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
     onClose();
   };
 
-  const agentTypes = [
-    {
-      id: 'assistant',
-      name: 'Assistant',
-      icon: User,
-      description: 'General purpose assistant agent'
-    },
-    {
-      id: 'specialist',
-      name: 'Specialist',
-      icon: Zap,
-      description: 'Specialized agent for specific tasks'
-    },
-    {
-      id: 'automation',
-      name: 'Automation',
-      icon: Bot,
-      description: 'Automated workflow agent'
-    }
-  ];
 
   return (
     <Modal
@@ -196,54 +174,6 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
               </span>
             )}
           </div>
-        </div>
-
-        {/* Agent Type */}
-        <div>
-          <label className="block text-sm font-medium theme-text-primary mb-2">
-            Agent Type *
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {agentTypes.map((type) => {
-              const IconComponent = type.icon;
-              return (
-                <div
-                  key={type.id}
-                  className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:scale-105 ${
-                    formData.agentType === type.id
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'theme-border theme-card-bg hover:border-blue-300'
-                  }`}
-                  onClick={() => setValue('agentType', type.id)}
-                >
-                  <input
-                    type="radio"
-                    {...register('agentType', { required: 'Agent type is required' })}
-                    value={type.id}
-                    className="sr-only"
-                  />
-                  <div className="flex flex-col items-center text-center">
-                    <IconComponent className="w-8 h-8 mb-2 theme-text-primary" />
-                    <h3 className="text-sm font-medium theme-text-primary">{type.name}</h3>
-                    <p className="text-xs theme-text-muted mt-1">{type.description}</p>
-                  </div>
-                  {formData.agentType === type.id && (
-                    <div className="absolute -top-1 -right-1">
-                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {errors.agentType && (
-            <div className="mt-2 text-sm text-red-500 flex items-center animate-in slide-in-from-left-2 duration-200">
-              <Icon name="AlertCircle" className="w-4 h-4 mr-1" />
-              {errors.agentType.message}
-            </div>
-          )}
         </div>
 
         {/* Description */}
