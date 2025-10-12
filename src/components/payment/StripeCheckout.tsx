@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
 import { Button } from '@/components/ui/Button';
 import { CreditCard, Loader2 } from 'lucide-react';
 
@@ -30,34 +29,11 @@ export function StripeCheckout({
     setIsLoading(true);
 
     try {
-      // Create checkout session
-      const response = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          planName,
-          isAnnual,
-          userId: '1', // TODO: Get from auth context
-        }),
-      });
-
-      const { sessionId, error: sessionError } = await response.json();
-
-      if (sessionError) {
-        throw new Error(sessionError);
-      }
-
-      // Initialize Stripe and redirect to checkout
-      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+      // Use the provided Stripe test link
+      const stripeTestUrl = 'https://buy.stripe.com/test_fZu7sEgCV4cK9qif96bMQ00';
       
-      if (!stripe) {
-        throw new Error('Stripe failed to load');
-      }
-
-      // Redirect to Stripe Checkout URL
-      window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
+      // Redirect directly to the Stripe test checkout
+      window.location.href = stripeTestUrl;
 
       onSuccess?.();
     } catch (error) {
