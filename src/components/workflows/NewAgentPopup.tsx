@@ -47,10 +47,11 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
     try {
       console.log('🤖 Creating agent with data:', data);
       
-      // Call the API
-      const response = await fetch('/api/v1/agent/create', {
+      // Call the external API directly
+      const response = await fetch('https://fatgraph-prod-twu675cviq-uc.a.run.app/agent', {
         method: 'POST',
         headers: {
+          'accept': 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -61,11 +62,17 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
         })
       });
 
-      const result = await response.json();
+      console.log('📡 API Response status:', response.status);
+      console.log('📡 API Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create agent');
+        const errorText = await response.text();
+        console.error('❌ API Error:', errorText);
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
       }
+
+      const result = await response.json();
+      console.log('✅ API Response:', result);
 
       toast.success('Agent created successfully!');
       
@@ -90,10 +97,11 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
       const data = formData;
       console.log('🤖 Triggering agent with data:', data);
       
-      // Call the API with execute_now: true
-      const response = await fetch('/api/v1/agent/create', {
+      // Call the external API directly with execute_now: true
+      const response = await fetch('https://fatgraph-prod-twu675cviq-uc.a.run.app/agent', {
         method: 'POST',
         headers: {
+          'accept': 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -104,11 +112,17 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
         })
       });
 
-      const result = await response.json();
+      console.log('📡 Trigger API Response status:', response.status);
+      console.log('📡 Trigger API Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to trigger agent');
+        const errorText = await response.text();
+        console.error('❌ Trigger API Error:', errorText);
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
       }
+
+      const result = await response.json();
+      console.log('✅ Trigger API Response:', result);
 
       toast.success('Agent triggered successfully!');
       
