@@ -80,6 +80,18 @@ export const autoOrchestrateApi = createApi({
       }),
       invalidatesTags: ['Data'],
     }),
+    createAgent: builder.mutation({
+      query: ({ workflow_id, name, role, execute_now = false }) => ({
+        url: 'https://fatgraph-prod-twu675cviq-uc.a.run.app/agent',
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: { workflow_id, name, role, execute_now },
+      }),
+      invalidatesTags: ['AutoOrchestrate'],
+    }),
   }),
 });
 
@@ -90,4 +102,5 @@ export const {
   useInstallDataMutation,
   useGetDataCreatedByQuery,
   useDeleteDataMutation,
+  useCreateAgentMutation,
 } = autoOrchestrateApi;

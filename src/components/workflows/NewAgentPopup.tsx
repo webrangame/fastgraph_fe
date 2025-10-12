@@ -6,6 +6,7 @@ import { Bot, Plus, User, Zap, Play } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
+import { useCreateAgentMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
 import toast from 'react-hot-toast';
 
 interface NewAgentPopupProps {
@@ -23,6 +24,7 @@ export interface AgentFormData {
 export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [createAgent] = useCreateAgentMutation();
 
   const {
     register,
@@ -47,32 +49,15 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
     try {
       console.log('🤖 Creating agent with data:', data);
       
-      // Call the external API directly
-      const response = await fetch('https://fatgraph-prod-twu675cviq-uc.a.run.app/agent', {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          workflow_id: 'default-workflow', // You can make this dynamic
-          name: data.agentName,
-          role: data.description,
-          execute_now: false
-        })
-      });
+      // Use RTK Query mutation
+      const result = await createAgent({
+        workflow_id: 'default-workflow', // You can make this dynamic
+        name: data.agentName,
+        role: data.description,
+        execute_now: false
+      }).unwrap();
 
-      console.log('📡 API Response status:', response.status);
-      console.log('📡 API Response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API Error:', errorText);
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log('✅ API Response:', result);
+      console.log('✅ Agent created successfully:', result);
 
       toast.success('Agent created successfully!');
       
@@ -97,32 +82,15 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
       const data = formData;
       console.log('🤖 Triggering agent with data:', data);
       
-      // Call the external API directly with execute_now: true
-      const response = await fetch('https://fatgraph-prod-twu675cviq-uc.a.run.app/agent', {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          workflow_id: 'default-workflow', // You can make this dynamic
-          name: data.agentName,
-          role: data.description,
-          execute_now: true
-        })
-      });
+      // Use RTK Query mutation with execute_now: true
+      const result = await createAgent({
+        workflow_id: 'default-workflow', // You can make this dynamic
+        name: data.agentName,
+        role: data.description,
+        execute_now: true
+      }).unwrap();
 
-      console.log('📡 Trigger API Response status:', response.status);
-      console.log('📡 Trigger API Response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Trigger API Error:', errorText);
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log('✅ Trigger API Response:', result);
+      console.log('✅ Agent triggered successfully:', result);
 
       toast.success('Agent triggered successfully!');
       
