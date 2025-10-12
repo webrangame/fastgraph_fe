@@ -278,6 +278,7 @@ export default function DashboardPage() {
         isOpen={isAgentModalOpen}
         onClose={() => setIsAgentModalOpen(false)}
         onSubmit={handleAgentSubmit}
+        currentWorkflowId="default-workflow"
       />
     </div>
   );
