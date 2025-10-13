@@ -1,13 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { Button } from '@/components/ui/Button';
 import { CreditCard, Loader2 } from 'lucide-react';
+import { selectCurrentUser } from '@/redux/slice/authSlice';
 
 export default function TestPricingStripe() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const user = useSelector(selectCurrentUser);
 
   const handleProTrial = async () => {
     setIsLoading(true);
@@ -15,6 +18,11 @@ export default function TestPricingStripe() {
     setSuccess(null);
 
     try {
+      // Check if user is logged in
+      if (!user?.email) {
+        throw new Error('User must be logged in to proceed with payment');
+      }
+
       // Test the same API call that the pricing page makes
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
@@ -25,7 +33,7 @@ export default function TestPricingStripe() {
           planName: 'pro',
           isAnnual: false,
           price: 49,
-          userId: '1',
+          userId: user.email, // Use logged-in user's email
         }),
       });
 
@@ -112,7 +120,7 @@ export default function TestPricingStripe() {
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• Plan: Pro</li>
               <li>• Price: $49/month</li>
-              <li>• User ID: 1</li>
+              <li>• User Email: {user?.email || 'Not logged in'}</li>
               <li>• API Endpoint: /api/stripe/create-checkout-session</li>
             </ul>
           </div>
