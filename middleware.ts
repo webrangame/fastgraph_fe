@@ -42,7 +42,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+  const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/test-stripe-direct', '/test-pricing-stripe', '/dashboard/payment-success'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   // API routes that don't need middleware protection

@@ -1,71 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { STRIPE_CONFIG, getPlanConfig } from '@/lib/stripe';
+import { getPlanDetails } from '@/lib/planDetails';
 
-// Helper function to get detailed plan information
-const getPlanDetails = (planName: string, isAnnual: boolean) => {
-  const plans = {
-    pro: {
-      description: "Scale your agent operations with advanced features",
-      credits: "25,000/month",
-      agents: "25 Active Agents maximum",
-      features: [
-        "25 Active Agents maximum",
-        "1M Tokens/month processing", 
-        "8GB Memory per agent",
-        "Advanced workflow orchestration",
-        "Multi-level agent hierarchies",
-        "Offline Agent Support",
-        "Advanced Security & API",
-        "Priority Feature Updates",
-        "Advanced monitoring & analytics",
-        "Custom MCP server integrations",
-        "Email support"
-      ]
-    },
-    premium: {
-      description: "Enterprise-grade agent management for unlimited scale",
-      credits: "100,000/month", 
-      agents: "Unlimited Active Agents",
-      features: [
-        "Unlimited Active Agents",
-        "5M Tokens/month processing",
-        "32GB Memory per agent", 
-        "Enterprise workflow management",
-        "Advanced agent swarm coordination",
-        "Offline Agent Support",
-        "Advanced Security & API",
-        "Early Access to New Features",
-        "24-hour Priority Support",
-        "Custom model integrations",
-        "Advanced compliance features",
-        "Dedicated account manager",
-        "Custom SLA agreements"
-      ]
-    }
-  };
-
-  return plans[planName as keyof typeof plans] || {
-    description: "Agent workflow plan",
-    credits: "1,000/month",
-    agents: "3 Active Agents maximum", 
-    features: ["Basic workflow creation", "Agent node connections", "Community support"]
-  };
-};
-
-const stripe = new Stripe(STRIPE_CONFIG.secretKey, {
-  apiVersion: '2025-09-30.clover',
-});
+const stripe = new Stripe(STRIPE_CONFIG.secretKey);
 
 export async function POST(request: NextRequest) {
   try {
     const { planName, isAnnual, userId } = await request.json();
+
+    console.log('🔍 Stripe API Debug:', { planName, isAnnual, userId, userIdType: typeof userId });
 
     if (!planName || !userId) {
       return NextResponse.json(
         { error: 'Missing required fields: planName and userId' },
         { status: 400 }
       );
+    }
+
+    // Ensure userId is a valid email format
+    let customerEmail = userId;
+    if (!userId.includes('@')) {
+      customerEmail = `${userId}@example.com`;
+      console.log('📧 Converting userId to email:', { original: userId, converted: customerEmail });
     }
 
     // Get plan configuration
@@ -80,68 +37,102 @@ export async function POST(request: NextRequest) {
     // Get detailed plan information
     const planDetails = getPlanDetails(planName, isAnnual);
     
-    // Create checkout session with detailed package information
+    // Create a subscription checkout session for monthly billing
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
-            currency: planConfig.currency,
-            product_data: {
-              name: `${planName.charAt(0).toUpperCase() + planName.slice(1)} Plan`,
-              description: planDetails.description,
-              images: [], // You can add plan images here
-              metadata: {
-                features: JSON.stringify(planDetails.features),
-                credits: planDetails.credits,
-                agents: planDetails.agents,
-              },
+            currency: 'usd',
+            product: planDetails.stripeProductId || 'prod_TEAZ6kajZfAx3N', // Use plan-specific product ID or fallback
+            recurring: {
+              interval: 'month', // Monthly billing
             },
             unit_amount: planConfig.amount,
-            recurring: {
-              interval: planConfig.interval as 'month' | 'year',
-            },
           },
           quantity: 1,
         },
       ],
-      mode: 'subscription',
-      success_url: `${STRIPE_CONFIG.successUrl}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: STRIPE_CONFIG.cancelUrl,
-      customer_email: userId, // You might want to get this from user data
+      mode: 'subscription', // Subscription mode for monthly billing
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/pricing?canceled=true`,
+      customer_email: customerEmail,
+      billing_address_collection: 'required',
+      payment_method_types: ['card'],
+      subscription_data: {
+        metadata: {
+          planName,
+          isAnnual: isAnnual.toString(),
+          userId,
+        },
+      },
       metadata: {
         planName,
         isAnnual: isAnnual.toString(),
         userId,
       },
-      // Add custom fields to show package details
-      custom_fields: [
-        {
-          key: 'package_info',
-          label: {
-            type: 'custom',
-            custom: 'Package Details',
-          },
-          type: 'text',
-          optional: true,
-        },
-      ],
-      // Add subscription data
-      subscription_data: {
-        metadata: {
-          planName,
-          isAnnual: isAnnual.toString(),
-          features: JSON.stringify(planDetails.features),
-        },
-      },
     });
 
-    return NextResponse.json({ sessionId: session.id });
+    return NextResponse.json({ 
+      checkoutUrl: session.url,
+      sessionId: session.id,
+      type: 'subscription_checkout'
+    });
   } catch (error) {
-    console.error('Error creating checkout session:', error);
-    return NextResponse.json(
-      { error: 'Failed to create checkout session' },
-      { status: 500 }
-    );
+    console.error('Error creating payment link, trying fallback checkout session:', error);
+    
+    try {
+      // Get request data again for fallback
+      const { planName: fallbackPlanName, isAnnual: fallbackIsAnnual, userId: fallbackUserId } = await request.json();
+      const fallbackPlanConfig = getPlanConfig(fallbackPlanName, fallbackIsAnnual);
+      
+      if (!fallbackPlanConfig) {
+        throw new Error('Invalid plan configuration for fallback');
+      }
+      
+      // Ensure userId is a valid email format for fallback
+      let fallbackCustomerEmail = fallbackUserId;
+      if (!fallbackUserId.includes('@')) {
+        fallbackCustomerEmail = `${fallbackUserId}@example.com`;
+      }
+      
+      // Fallback: Create a regular checkout session
+      const session = await stripe.checkout.sessions.create({
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `${fallbackPlanName.charAt(0).toUpperCase() + fallbackPlanName.slice(1)} Plan`,
+                description: `Test ${fallbackPlanName} plan - $${(fallbackPlanConfig.amount / 100).toFixed(2)}`,
+              },
+              unit_amount: fallbackPlanConfig.amount,
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/pricing?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/pricing?canceled=true`,
+        payment_method_types: ['card'],
+        customer_email: fallbackCustomerEmail,
+      });
+
+      return NextResponse.json({ 
+        sessionId: session.id,
+        checkoutUrl: session.url,
+        type: 'checkout_session'
+      });
+    } catch (fallbackError) {
+      console.error('Fallback checkout session also failed:', fallbackError);
+      
+      return NextResponse.json(
+        { 
+          error: 'Failed to create payment session',
+          details: error instanceof Error ? error.message : 'Unknown error',
+          fallbackError: fallbackError instanceof Error ? fallbackError.message : 'Unknown fallback error'
+        },
+        { status: 500 }
+      );
+    }
   }
 }

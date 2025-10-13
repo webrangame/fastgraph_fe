@@ -43,14 +43,28 @@ export function StripeCheckout({
         }),
       });
 
-      const { sessionId, error: sessionError } = await response.json();
+      const data = await response.json();
 
-      if (sessionError) {
-        throw new Error(sessionError);
+      if (data.error) {
+        throw new Error(data.error);
       }
 
-      // Redirect to Stripe Checkout with package information
-      window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
+      // Handle different response types from our API
+      if (data.paymentLinkUrl) {
+        // Use Stripe Snapbox payment link
+        console.log('Using payment link:', data.paymentLinkUrl);
+        window.location.href = data.paymentLinkUrl;
+      } else if (data.checkoutUrl) {
+        // Use checkout session URL
+        console.log('Using checkout session:', data.checkoutUrl);
+        window.location.href = data.checkoutUrl;
+      } else if (data.sessionId) {
+        // Fallback to regular checkout
+        console.log('Using fallback checkout session:', data.sessionId);
+        window.location.href = `https://checkout.stripe.com/pay/${data.sessionId}`;
+      } else {
+        throw new Error('No valid payment URL received from server');
+      }
 
       onSuccess?.();
     } catch (error) {
