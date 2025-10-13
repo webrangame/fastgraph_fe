@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2025-09-30.clover',
 });
 
 export async function GET(request: NextRequest) {
@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
       paymentMethodId: '', // Will be extracted from subscription
       subscriptionId: subscription?.id || null,
       subscriptionStatus: subscription?.status || 'unknown',
-      currentPeriodStart: subscription?.current_period_start || null,
-      currentPeriodEnd: subscription?.current_period_end || null,
+      currentPeriodStart: (subscription as any)?.current_period_start || null,
+      currentPeriodEnd: (subscription as any)?.current_period_end || null,
     };
 
     // Get payment method ID from subscription
