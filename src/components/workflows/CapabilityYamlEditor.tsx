@@ -421,7 +421,6 @@ export function CapabilityYamlEditor({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-between px-4 py-2 border-t theme-border theme-header-bg text-xs">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1">
