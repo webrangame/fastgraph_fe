@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useSelector } from 'react-redux';
 import { Check, Star, Sparkles, Shield, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { StripeCheckout } from '@/components/payment/StripeCheckout';
+import { UnsubscribeButton } from '@/components/payment/UnsubscribeButton';
 import { getAllPlans, PricingPlan } from '@/lib/planDetails';
+import { selectCurrentUser } from '@/redux/slice/authSlice';
 import './pricing.css';
 
 const plans: PricingPlan[] = getAllPlans();
@@ -56,7 +59,10 @@ export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
+  const [currentSubscription, setCurrentSubscription] = useState<any>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const searchParams = useSearchParams();
+  const user = useSelector(selectCurrentUser);
 
   // Handle URL parameters for payment success/cancel
   useEffect(() => {
@@ -83,7 +89,58 @@ export default function PricingPage() {
     setPaymentSuccess(null);
   };
 
+  // Fetch current subscription for logged-in users
+  useEffect(() => {
+    if (user?.email) {
+      fetchCurrentSubscription();
+    }
+  }, [user?.email]);
+
+  const fetchCurrentSubscription = async () => {
+    setSubscriptionLoading(true);
+    try {
+      // For now, we'll simulate a subscription check
+      // In a real app, this would call your backend API to get user's subscription
+      console.log('🔍 Checking subscription for user:', user?.email);
+      
+      // Simulate API call - replace with actual API call
+      // const response = await fetch(`/api/user/subscription?email=${user.email}`);
+      // const subscription = await response.json();
+      
+      // For testing purposes, let's assume the user has a subscription
+      // You can replace this with actual API call
+      if (user?.email === 'itranga@gmail.com') {
+        setCurrentSubscription({
+          id: 'sub_test_123456789',
+          status: 'active',
+          planName: 'pro',
+          customerEmail: user.email,
+          currentPeriodEnd: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // 30 days from now
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
+
+  const handleUnsubscribeSuccess = () => {
+    setCurrentSubscription(null);
+    setPaymentSuccess('Your subscription has been cancelled successfully.');
+    setPaymentError(null);
+  };
+
+  const handleUnsubscribeError = (error: string) => {
+    setPaymentError(`Failed to cancel subscription: ${error}`);
+    setPaymentSuccess(null);
+  };
+
   const renderPlanButton = (plan: PricingPlan) => {
+    // Check if this is the user's current plan
+    const isCurrentPlan = currentSubscription && 
+      currentSubscription.planName.toLowerCase() === plan.name.toLowerCase();
+
     if (plan.name === 'Free') {
       return (
         <Button
@@ -95,6 +152,20 @@ export default function PricingPage() {
       );
     }
 
+    // If this is the current plan, show unsubscribe button
+    if (isCurrentPlan) {
+      return (
+        <UnsubscribeButton
+          subscriptionId={currentSubscription.id}
+          customerEmail={currentSubscription.customerEmail}
+          planName={plan.name}
+          onSuccess={handleUnsubscribeSuccess}
+          onError={handleUnsubscribeError}
+        />
+      );
+    }
+
+    // Otherwise show the normal subscribe button
     return (
       <StripeCheckout
         planName={plan.name.toLowerCase()}
@@ -136,6 +207,38 @@ export default function PricingPage() {
               <div className="flex items-center space-x-2 text-red-800 dark:text-red-200">
                 <span className="font-medium">{paymentError}</span>
               </div>
+            </div>
+          )}
+
+          {/* Current Subscription Status */}
+          {user?.email && (
+            <div className="mb-6">
+              {subscriptionLoading ? (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="flex items-center space-x-2 text-blue-800 dark:text-blue-200">
+                    <span className="font-medium">Checking your subscription status...</span>
+                  </div>
+                </div>
+              ) : currentSubscription ? (
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-center space-x-2 text-green-800 dark:text-green-200">
+                    <Check className="w-5 h-5" />
+                    <span className="font-medium">
+                      You're currently subscribed to the {currentSubscription.planName} plan
+                    </span>
+                  </div>
+                  <div className="text-sm text-green-600 dark:text-green-400 mt-1">
+                    Status: {currentSubscription.status} • 
+                    Next billing: {new Date(currentSubscription.currentPeriodEnd * 1000).toLocaleDateString()}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-lg">
+                  <div className="flex items-center space-x-2 text-gray-800 dark:text-gray-200">
+                    <span className="font-medium">No active subscription found</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
