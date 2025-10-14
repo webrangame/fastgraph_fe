@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
 
     // Extract payment details
     const subscription = session.subscription as Stripe.Subscription;
+    const customer = session.customer as Stripe.Customer;
     const paymentDetails = {
       planName: session.metadata?.planName || 'Unknown',
       amount: session.amount_total || 0,
@@ -41,6 +42,8 @@ export async function GET(request: NextRequest) {
       subscriptionStatus: subscription?.status || 'unknown',
       currentPeriodStart: (subscription as any)?.current_period_start || null,
       currentPeriodEnd: (subscription as any)?.current_period_end || null,
+      stripeProductId: session.metadata?.stripeProductId || 'prod_TDpKVW74iP9lSX',
+      stripeCustomerId: customer?.id || null,
     };
 
     // Get payment method ID from subscription

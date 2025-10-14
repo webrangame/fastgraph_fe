@@ -4,20 +4,45 @@ import { auditStore } from '@/lib/auditStore';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, action, details, resource, resourceId } = body;
+    console.log('📝 POST /api/v1/audit/log - Received data:', body);
     
-    console.log('📝 POST /api/v1/audit/log - action:', action);
-    console.log('📊 Audit data:', { userId, action, details, resource, resourceId });
+    // Extract fields with fallbacks for different naming conventions
+    const {
+      createdBy, // from useAuditLog hook
+      userId,    // alternative field name
+      action,
+      resource,
+      description,
+      details,
+      task,
+      endpoint,
+      method,
+      statusCode,
+      metadata,
+      userAgent
+    } = body;
+    
+    // Use createdBy if available, otherwise userId
+    const finalUserId = createdBy || userId;
+    
+    console.log('📊 Processed audit data:', { 
+      userId: finalUserId, 
+      action, 
+      resource, 
+      description 
+    });
     
     // Validate required fields
-    if (!userId) {
+    if (!finalUserId) {
+      console.error('❌ Missing userId/createdBy field');
       return NextResponse.json(
-        { error: 'userId is required' },
+        { error: 'userId/createdBy is required' },
         { status: 400 }
       );
     }
     
     if (!action) {
+      console.error('❌ Missing action field');
       return NextResponse.json(
         { error: 'action is required' },
         { status: 400 }
@@ -26,16 +51,25 @@ export async function POST(request: NextRequest) {
     
     // Create audit log entry using the audit store
     const auditLog = auditStore.addLog({
-      userId,
+      userId: finalUserId,
       action,
-      details: details || {},
+      details: {
+        description,
+        details,
+        task,
+        endpoint,
+        method,
+        statusCode,
+        metadata,
+        ...(details || {})
+      },
       resource: resource || 'unknown',
-      resourceId: resourceId || null,
+      resourceId: metadata?.workflowId || metadata?.agentId || metadata?.dataId || null,
       ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown'
+      userAgent: userAgent || request.headers.get('user-agent') || 'unknown'
     });
     
-    console.log('✅ Audit log created:', auditLog.id);
+    console.log('✅ Audit log created successfully:', auditLog.id);
     
     return NextResponse.json(
       { 
@@ -53,7 +87,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error creating audit log:', error);
     return NextResponse.json(
-      { error: 'Failed to create audit log' },
+      { 
+        error: 'Failed to create audit log',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
