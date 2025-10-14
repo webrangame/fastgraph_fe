@@ -41,10 +41,12 @@ export interface AgentProcessingResult {
 }
 
 export function processAgentsFromResponse(result: any): AgentProcessingResult {
-  const swarmSpec = result.auto_orchestrate_response?.swarm_result?.swarm_spec;
-  const executionPlan = result.auto_orchestrate_response?.swarm_result?.swarm_spec?.execution_plan;
-  const finalData = result.auto_orchestrate_response?.swarm_result?.final_data || {};
-  const executionResults = result.auto_orchestrate_response?.swarm_result?.execution_results?.results || {};
+  // Try multiple possible locations for the data
+  const autoOrchestrateResponse = result.auto_orchestrate_response || result;
+  const swarmSpec = autoOrchestrateResponse?.swarm_result?.swarm_spec;
+  const executionPlan = autoOrchestrateResponse?.swarm_result?.swarm_spec?.execution_plan;
+  const finalData = autoOrchestrateResponse?.swarm_result?.final_data || autoOrchestrateResponse?.final_data || {};
+  const executionResults = autoOrchestrateResponse?.swarm_result?.execution_results?.results || autoOrchestrateResponse?.execution_results?.results || {};
   const finalizedResultRaw = (result as any)?.finalizedResult;
   // Try multiple possible locations and naming conventions for finalizedArtifactLinks
   let finalizedArtifactLinks = 
@@ -64,12 +66,31 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
     }
     
     // Check common field names
-    const artifactFields = ['finalizedArtifactLinks', 'finalized_artifact_links', 'artifacts', 'media_links'];
+    const artifactFields = ['finalizedArtifactLinks', 'finalized_artifact_links', 'artifacts', 'media_links', 'artifactLinks'];
     for (const field of artifactFields) {
       if (Array.isArray(obj[field])) {
-        return obj[field].filter(item => item?.url || typeof item === 'string').map(item => item?.url || item);
+        return obj[field].filter((item: any) => item?.url || typeof item === 'string').map((item: any) => item?.url || item);
       }
     }
+    
+    // Check for URL patterns in strings
+    const urlPattern = /https?:\/\/[^\s]+\.(png|jpg|jpeg|gif|mp4|mp3|wav|pdf|doc|docx|txt|json)/gi;
+    const foundUrls: string[] = [];
+    
+    const findUrlsInValue = (value: any): void => {
+      if (typeof value === 'string') {
+        const matches = value.match(urlPattern);
+        if (matches) {
+          foundUrls.push(...matches);
+        }
+      } else if (Array.isArray(value)) {
+        value.forEach(findUrlsInValue);
+      } else if (value && typeof value === 'object') {
+        Object.values(value).forEach(findUrlsInValue);
+      }
+    };
+    
+    findUrlsInValue(obj);
     
     // Recursively search nested objects
     let found: string[] = [];
@@ -82,7 +103,7 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
       }
     }
     
-    return found;
+    return [...found, ...foundUrls];
   };
   
   const foundArtifacts = searchForArtifacts(result);
@@ -94,13 +115,23 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
   
   console.log('🔍 agentProcessor Debug:', {
     hasResult: !!result,
+    hasAutoOrchestrateResponse: !!autoOrchestrateResponse,
+    hasSwarmSpec: !!swarmSpec,
+    hasExecutionPlan: !!executionPlan,
+    swarmSpecKeys: swarmSpec ? Object.keys(swarmSpec) : [],
+    executionPlanKeys: executionPlan ? Object.keys(executionPlan) : [],
     hasFinalizedArtifactLinks: !!result?.finalizedArtifactLinks,
     hasFinalizedArtifactLinksUnderscore: !!result?.finalized_artifact_links,
     finalizedArtifactLinksLength: finalizedArtifactLinks?.length,
     finalizedArtifactLinksData: finalizedArtifactLinks,
     foundArtifactsFromSearch: foundArtifacts,
     fullResultKeys: result ? Object.keys(result) : [],
-    autoOrchestrateResponseKeys: result?.auto_orchestrate_response ? Object.keys(result.auto_orchestrate_response) : []
+    autoOrchestrateResponseKeys: result?.auto_orchestrate_response ? Object.keys(result.auto_orchestrate_response) : [],
+    // Final data debugging
+    finalDataKeys: finalData ? Object.keys(finalData) : [],
+    finalData: finalData,
+    // Deep search for artifacts in the result
+    deepSearchResult: JSON.stringify(result, null, 2).substring(0, 1000) + '...'
   });
 
   // Attempt to parse finalizedResult if it's provided as a stringified Python-like dict
@@ -145,7 +176,36 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
 
   const finalizedResultParsed = parseFinalizedResult(finalizedResultRaw);
   
+  // If we don't have structured agents, try to create a simple agent from the M Language spec
   if (!swarmSpec?.agents || !executionPlan?.data_flow) {
+    console.log('⚠️ No structured agents found, trying to create from M Language spec...');
+    
+    // Try to extract agent info from the M Language spec string
+    const mLanguageSpec = autoOrchestrateResponse?.m_language_spec || '';
+    if (mLanguageSpec && typeof mLanguageSpec === 'string') {
+      const agentMatch = mLanguageSpec.match(/agent\s+(\w+)\s*\{[^}]*role:\s*"([^"]*)"[^}]*capabilities:\s*"([^"]*)"[^}]*\}/);
+      if (agentMatch) {
+        const [, agentName, role, capabilities] = agentMatch;
+        const agentsRecord: Record<string, ProcessedAgent> = {
+          [agentName]: {
+            name: agentName,
+            role: role,
+            capabilities: capabilities.split(',').map(c => c.trim()),
+            inputs: ['user_command'],
+            outputs: ['analysis_result'],
+            logs: [],
+            inputValues: { user_command: autoOrchestrateResponse?.workflow_prompt || 'No prompt available' }
+          }
+        };
+        
+        const connections: AgentConnection[] = [];
+        
+        console.log('✅ Created fallback agent from M Language spec:', agentsRecord);
+        return { agents: agentsRecord, connections, finalData, finalizedResult: finalizedResultParsed, finalizedArtifactLinks, executionResults };
+      }
+    }
+    
+    console.log('❌ Could not create agents from available data');
     return { agents: {}, connections: [], finalData, finalizedResult: finalizedResultParsed, finalizedArtifactLinks, executionResults };
   }
 
@@ -177,7 +237,37 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
           inputValues[inputKey] = (finalData as any)[inputKey];
         }
       });
+      
+      // If no input values found in finalData, try to find them in other locations
+      if (Object.keys(inputValues).length === 0) {
+        // Try to find input values in the execution results for this agent
+        const agentExec = (executionResults as any)[name];
+        if (agentExec && agentExec.inputs) {
+          Object.assign(inputValues, agentExec.inputs);
+        }
+        
+        // Try to find input values in the agent's data directly
+        if (agentExec && agentExec.data && typeof agentExec.data === 'object') {
+          Object.assign(inputValues, agentExec.data);
+        }
+        
+        // Try to find input values in the workflow prompt or command
+        if (autoOrchestrateResponse?.workflow_prompt) {
+          inputValues['workflow_prompt'] = autoOrchestrateResponse.workflow_prompt;
+        }
+        if (autoOrchestrateResponse?.command) {
+          inputValues['command'] = autoOrchestrateResponse.command;
+        }
+      }
+      
       agentsRecord[name].inputValues = inputValues;
+      
+      console.log(`🔍 Agent ${name} Input Values Debug:`, {
+        inputs: data.inputs,
+        finalDataKeys: finalData ? Object.keys(finalData) : [],
+        inputValues,
+        hasInputValues: Object.keys(inputValues).length > 0
+      });
     } else {
       // If agent not in swarm_spec, create minimal entry
       agentsRecord[name] = {
@@ -201,11 +291,47 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
     const exec = (executionResults as any)[agentName];
     const collectedLogs: Array<{ id: string; timestamp?: number | string; message: string; type?: 'info' | 'warning' | 'error' | 'success'; status?: 'pending' | 'completed' | 'failed'; }> = [];
 
+    console.log(`🔍 Agent ${agentName} Processing:`, {
+      hasExec: !!exec,
+      execKeys: exec ? Object.keys(exec) : [],
+      hasLlmInference: !!exec?.llm_inference,
+      llmInferenceKeys: exec?.llm_inference ? Object.keys(exec.llm_inference) : [],
+      inputPrompt: exec?.llm_inference?.input_prompt,
+      inputPromp: exec?.llm_inference?.input_promp,
+      inputValues: agent.inputValues,
+      inputValuesKeys: agent.inputValues ? Object.keys(agent.inputValues) : [],
+      // Debug the full execution result structure
+      execStructure: exec ? JSON.stringify(exec, null, 2).substring(0, 500) + '...' : 'No exec'
+    });
+
     if (exec) {
       // Attach LLM input prompt if available
-      const inputPrompt = exec?.llm_inference?.input_prompt ?? exec?.llm_inference?.input_promp;
+      let inputPrompt = exec?.llm_inference?.input_prompt ?? exec?.llm_inference?.input_promp;
+      
+      // If no input prompt found in llm_inference, try other locations
+      if (!inputPrompt || typeof inputPrompt !== 'string' || inputPrompt.length === 0) {
+        // Try to find input prompt in other locations
+        inputPrompt = exec?.input_prompt ?? 
+                     exec?.prompt ?? 
+                     exec?.input ?? 
+                     exec?.message ??
+                     exec?.query;
+      }
+      
+      // If still no input prompt, try to use the workflow command as fallback
+      if (!inputPrompt || typeof inputPrompt !== 'string' || inputPrompt.length === 0) {
+        if (autoOrchestrateResponse?.workflow_prompt) {
+          inputPrompt = autoOrchestrateResponse.workflow_prompt;
+        } else if (autoOrchestrateResponse?.command) {
+          inputPrompt = autoOrchestrateResponse.command;
+        }
+      }
+      
       if (typeof inputPrompt === 'string' && inputPrompt.length > 0) {
         agent.agentInput = inputPrompt;
+        console.log(`✅ Set agentInput for ${agentName}:`, inputPrompt.substring(0, 100) + '...');
+      } else {
+        console.log(`⚠️ No agentInput found for ${agentName}`);
       }
 
       // Top-level execution_logs (array of strings)
@@ -243,6 +369,17 @@ export function processAgentsFromResponse(result: any): AgentProcessingResult {
 
     if (collectedLogs.length > 0) {
       agent.logs = collectedLogs;
+    }
+    
+    // If no agentInput was found and no execution results, try to use workflow command as fallback
+    if (!agent.agentInput && !exec) {
+      if (autoOrchestrateResponse?.workflow_prompt) {
+        agent.agentInput = autoOrchestrateResponse.workflow_prompt;
+        console.log(`✅ Set fallback agentInput for ${agentName} from workflow_prompt`);
+      } else if (autoOrchestrateResponse?.command) {
+        agent.agentInput = autoOrchestrateResponse.command;
+        console.log(`✅ Set fallback agentInput for ${agentName} from command`);
+      }
     }
   });
   

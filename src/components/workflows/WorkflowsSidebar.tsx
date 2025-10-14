@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { FileText, Play, Pause, Clock, CheckCircle, ChevronLeft, ChevronRight, Search, X, Loader2, Trash2 } from 'lucide-react';
 import type { Workflow } from '@/types/workflow';
 import { useGetDataCreatedByQuery, useDeleteDataMutation } from '../../../redux/api/autoOrchestrate/autoOrchestrateApi';
+import toast from 'react-hot-toast';
 
 interface WorkflowsSidebarProps {
   isMobile?: boolean;
@@ -76,8 +77,25 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
     skip: !userId || userId === '1' // Skip if no userId or default value
   });
 
+  // Debug logging
+  console.log('🔍 WorkflowsSidebar Debug:', {
+    userId,
+    apiDataLength: apiData?.length || 0,
+    apiData: apiData,
+    hasAutoOrchestrateResult: apiData?.map((item: any) => ({
+      dataId: item.dataId,
+      dataName: item.dataName,
+      hasAutoOrchestrateResult: !!item.dataContent?.autoOrchestrateResult,
+      dataContentKeys: item.dataContent ? Object.keys(item.dataContent) : 'no dataContent',
+      dataContent: item.dataContent
+    }))
+  });
+
   // Delete workflow mutation
   const [deleteData] = useDeleteDataMutation();
+
+
+  console.log(apiData , "apiData")
 
   // Transform API data to workflows
   const workflows = useMemo(() => {
@@ -104,17 +122,39 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
       return;
     }
 
+    // Show loading toast
+    const loadingToast = toast.loading('Deleting workflow...');
+
     try {
       setDeletingWorkflow(workflowId);
-      await deleteData(workflowId).unwrap();
+      const result = await deleteData(workflowId).unwrap();
+      
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+      
+      // Show success toast
+      toast.success('Workflow deleted successfully!', {
+        duration: 3000,
+        icon: '🗑️',
+      });
       
       // If the deleted workflow was currently selected, clear the selection
       if (currentWorkflowId === workflowId && onWorkflowSelect) {
         onWorkflowSelect('');
       }
+      
+      console.log('✅ Workflow deleted successfully:', result);
     } catch (error) {
       console.error('Failed to delete workflow:', error);
-      alert('Failed to delete workflow. Please try again.');
+      
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+      
+      // Show error toast
+      toast.error('Failed to delete workflow. Please try again.', {
+        duration: 4000,
+        icon: '❌',
+      });
     } finally {
       setDeletingWorkflow(null);
     }
@@ -130,6 +170,8 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
       workflow.description.toLowerCase().includes(query)
     );
   }, [searchQuery, workflows]);
+
+
 
   const getStatusIcon = (status: Workflow['status']) => {
     switch (status) {

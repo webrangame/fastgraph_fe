@@ -5,6 +5,7 @@ import { WorkflowsSidebar } from '@/components/workflows/WorkflowsSidebar';
 import { PromptInput } from '@/components/workflows/PromptInput';
 import { MobileAgentDrawer } from '@/components/workflows/mobile/MobileAgentDrawer';
 import { WorkflowHeader } from '@/components/workflows/WorkflowHeader';
+import { StreamingProgress } from '@/components/workflows/StreamingProgress';
 import { useWorkflowManager } from '@/hooks/workflows/useWorkflowManager';
 import { usePromptHandler } from '@/hooks/workflows/usePromptHandler';
 import { useAutoOrchestrate } from '@/hooks/workflows/useAutoOrchestrate';
@@ -55,13 +56,27 @@ export default function WorkflowsPage() {
   const [evolveAgent, { isLoading: isEvolving }] = useEvolveAgentMutation();
   
   // Memoize the callback to prevent infinite re-renders
-  const handleAgentsProcessed = useCallback((processedAgents: Record<string, any>, processedConnections: any[], processedFinalData?: any) => {
+  const handleAgentsProcessed = useCallback((processedAgents: Record<string, any>, processedConnections: any[], processedFinalData?: any, processedFinalizedArtifactLinks?: any[]) => {
     setAgents(processedAgents);
     setConnections(processedConnections);
     setFinalData(processedFinalData);
+    if (processedFinalizedArtifactLinks) {
+      setFinalizedArtifactLinks(processedFinalizedArtifactLinks);
+    }
   }, []);
   
-  const { isAutoOrchestrating, finalizedResult: orchestratedFinalizedResult, finalizedArtifactLinks: orchestratedFinalizedArtifactLinks, executionResults, resetAutoOrchestrate } = useAutoOrchestrate({
+  const { 
+    isAutoOrchestrating, 
+    autoOrchestrateError,
+    finalizedResult: orchestratedFinalizedResult, 
+    finalizedArtifactLinks: orchestratedFinalizedArtifactLinks, 
+    executionResults, 
+    streamData,
+    progress,
+    resetAutoOrchestrate,
+    startAutoOrchestrate,
+    stopAutoOrchestrate
+  } = useAutoOrchestrate({
     workflows,
     onAgentsProcessed: handleAgentsProcessed
   });
@@ -69,7 +84,11 @@ export default function WorkflowsPage() {
   console.log('🔍 Dashboard Debug:', {
     localFinalizedArtifactLinksLength: finalizedArtifactLinks?.length,
     orchestratedFinalizedArtifactLinksLength: orchestratedFinalizedArtifactLinks?.length,
-    finalPassedToCanvas: (finalizedArtifactLinks || orchestratedFinalizedArtifactLinks)?.length
+    finalPassedToCanvas: (finalizedArtifactLinks || orchestratedFinalizedArtifactLinks)?.length,
+    localFinalizedArtifactLinks: finalizedArtifactLinks,
+    orchestratedFinalizedArtifactLinks: orchestratedFinalizedArtifactLinks,
+    agentsCount: agents ? Object.keys(agents).length : 0,
+    connectionsCount: connections ? connections.length : 0
   });
 
   const {
@@ -103,6 +122,7 @@ export default function WorkflowsPage() {
     console.log('Current agents:', agents ? Object.keys(agents) : 'null');
     console.log('Current connections:', connections ? connections.length : 'null');
     console.log('Current workflows in Redux:', workflows.length);
+    console.log('Available API workflow data:', apiWorkflowData?.length || 0);
     
     // FORCE COMPLETE STATE RESET
     console.log('🧹 CLEARING ALL STATE...');
@@ -127,22 +147,35 @@ export default function WorkflowsPage() {
     if (apiWorkflowData && Array.isArray(apiWorkflowData)) {
       const selectedApiItem = apiWorkflowData.find((item: any) => item.dataId === workflowId);
       
+      console.log('🔍 Selected API item:', {
+        found: !!selectedApiItem,
+        dataId: selectedApiItem?.dataId,
+        dataName: selectedApiItem?.dataName,
+        hasAutoOrchestrateResult: !!selectedApiItem?.dataContent?.autoOrchestrateResult,
+        hasRawData: !!selectedApiItem?.dataContent?.rawData,
+        dataContentKeys: selectedApiItem?.dataContent ? Object.keys(selectedApiItem.dataContent) : 'no dataContent'
+      });
+      
       if (selectedApiItem && selectedApiItem.dataContent?.autoOrchestrateResult) {
         const workflowData = selectedApiItem.dataContent.autoOrchestrateResult;
+        const rawData = selectedApiItem.dataContent.rawData;
 
-        // Build agents and connections from cached autoOrchestrate result
-        console.log('🔍 Existing Workflow - workflowData structure:', {
-          workflowDataKeys: Object.keys(workflowData),
-          hasFinalizedArtifactLinks: !!workflowData?.finalizedArtifactLinks,
-          finalizedArtifactLinksLength: workflowData?.finalizedArtifactLinks?.length,
-          workflowData: workflowData
+        // Build agents and connections from raw data (not the processed autoOrchestrateResult)
+        console.log('🔍 Existing Workflow - rawData structure:', {
+          rawDataKeys: rawData ? Object.keys(rawData) : 'no rawData',
+          hasAutoOrchestrateResponse: !!rawData?.auto_orchestrate_response,
+          autoOrchestrateResponseKeys: rawData?.auto_orchestrate_response ? Object.keys(rawData.auto_orchestrate_response) : 'none',
+          rawData: rawData
         });
         
-        const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, finalizedArtifactLinks: processedFinalizedArtifactLinks, executionResults: processedExecutionResults } = processAgentsFromResponse(workflowData);
+        const { agents: processedAgents, connections: processedConnections, finalData: processedFinalData, finalizedResult: processedFinalizedResult, finalizedArtifactLinks: processedFinalizedArtifactLinks, executionResults: processedExecutionResults } = processAgentsFromResponse(rawData);
         
         console.log('🔍 Existing Workflow - processed result:', {
           processedFinalizedArtifactLinksLength: processedFinalizedArtifactLinks?.length,
-          processedFinalizedArtifactLinks: processedFinalizedArtifactLinks
+          processedFinalizedArtifactLinks: processedFinalizedArtifactLinks,
+          processedAgentsCount: Object.keys(processedAgents).length,
+          processedConnectionsCount: processedConnections.length,
+          processedFinalDataKeys: processedFinalData ? Object.keys(processedFinalData) : 'no finalData'
         });
         
         // Create the workflow object with reconstructed nodes/connections so hooks detect existing structure
@@ -323,13 +356,16 @@ export default function WorkflowsPage() {
       });
 
       toast.success('Workflow regenerated with new prompt! Auto-orchestration starting...');
+      
+      // Start auto-orchestration with the new prompt
+      await startAutoOrchestrate(prompt);
     } catch (error) {
       console.error('Failed to regenerate workflow:', error);
       toast.error('Failed to regenerate workflow. Please try again.');
     } finally {
       setIsRegenerating(false);
     }
-  }, [actualCurrentWorkflow, dispatch, installData, logDataAction, logWorkflowAction, resetAutoOrchestrate, addToUndoStack]);
+  }, [actualCurrentWorkflow, dispatch, installData, logDataAction, logWorkflowAction, resetAutoOrchestrate, addToUndoStack, startAutoOrchestrate]);
 
   const { handlePromptSubmit, isProcessing } = usePromptHandler({
     currentWorkflow: actualCurrentWorkflow,
@@ -501,7 +537,9 @@ export default function WorkflowsPage() {
         data: { workflowId: workflowData.id, workflowData }
       });
 
-      // 🤖 Auto-orchestration will start via useAutoOrchestrate effect
+      // Start auto-orchestration with the workflow description
+      await startAutoOrchestrate(data.description);
+      
       toast.success(isRegenerating ? 'Workflow regenerated! Auto-orchestration starting...' : 'Workflow created! Auto-orchestration starting...');
     } catch (error) {
       console.error('Failed to create/regenerate workflow:', error);
@@ -606,6 +644,14 @@ export default function WorkflowsPage() {
         />
       )}
       
+      {/* Streaming Progress - Bottom Right */}
+      <StreamingProgress
+        isStreaming={isAutoOrchestrating}
+        progress={progress}
+        error={autoOrchestrateError}
+        onStop={stopAutoOrchestrate}
+      />
+
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Workflow Sidebar - Hidden on mobile */}

@@ -12,7 +12,7 @@ import { useAuditLog } from '@/hooks/useAuditLog';
 
 export function useWorkflowManager() {
   const [workflows, setWorkflows] = useState<Workflow[]>(initialWorkflows);
-  const [activeWorkflow, setActiveWorkflow] = useState<string | null>('1');
+  const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const { logWorkflowAction } = useAuditLog();

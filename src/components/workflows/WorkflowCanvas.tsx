@@ -1110,13 +1110,24 @@ function WorkflowCanvasInner({
           agentId={sidebarAgent}
           agentName={agents[sidebarAgent.replace('agent-', '')]?.name || 'Agent'}
           agentRole={agents[sidebarAgent.replace('agent-', '')]?.role || 'Agent'}
-          agentData={{
-            inputs: agents[sidebarAgent.replace('agent-', '')]?.inputs,
-            outputs: agents[sidebarAgent.replace('agent-', '')]?.outputs,
-            capabilities: agents[sidebarAgent.replace('agent-', '')]?.capabilities,
-            inputValues: agents[sidebarAgent.replace('agent-', '')]?.inputValues,
-            agentInput: (agents[sidebarAgent.replace('agent-', '')] as any)?.agentInput
-          }}
+          agentData={(() => {
+            const selectedAgent = agents[sidebarAgent.replace('agent-', '')];
+            const agentData = {
+              inputs: selectedAgent?.inputs,
+              outputs: selectedAgent?.outputs,
+              capabilities: selectedAgent?.capabilities,
+              inputValues: selectedAgent?.inputValues,
+              agentInput: (selectedAgent as any)?.agentInput
+            };
+            console.log('🔍 WorkflowCanvas LogSidebar Debug:', {
+              sidebarAgent,
+              selectedAgent,
+              agentData,
+              hasInputValues: agentData.inputValues && Object.keys(agentData.inputValues).length > 0,
+              hasAgentInput: !!agentData.agentInput
+            });
+            return agentData;
+          })()}
           logsOverride={(() => {
             const selectedKey = sidebarAgent.replace('agent-', '');
             const rawLogs = (agents[selectedKey]?.logs ?? []) as any[];

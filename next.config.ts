@@ -13,8 +13,20 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['@/components', '@/lib'],
   },
   images: {
-    domains: ['example.com'],
+    domains: ['example.com', 'storage.googleapis.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
+        port: '',
+        pathname: '/fastgraph-images-geodirectory-2025/**',
+      },
+    ],
   },
+  // Vercel optimizations
+  output: 'standalone',
+  poweredByHeader: false,
+  compress: true,
   webpack: (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     config: any,
