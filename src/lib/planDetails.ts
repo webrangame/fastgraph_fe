@@ -100,5 +100,6 @@ export const getPlanDetails = (planName: string, isAnnual: boolean): PricingPlan
 };
 
 export const getAllPlans = (): PricingPlan[] => {
-  return ['free', 'pro', 'premium'].map(planName => getPlanDetails(planName, false));
+  // Hide Free package for now - only show Pro and Premium
+  return ['pro', 'premium'].map(planName => getPlanDetails(planName, false));
 };
