@@ -28,10 +28,22 @@ export function useAuditLog() {
         userAgent: navigator.userAgent,
       };
 
-      await logAudit(fullAuditData).unwrap();
-      console.log('Audit log created successfully:', auditData.action);
+      console.log('🔍 useAuditLog: Attempting to log audit:', {
+        user,
+        createdBy: fullAuditData.createdBy,
+        action: auditData.action,
+        resource: auditData.resource
+      });
+
+      const result = await logAudit(fullAuditData).unwrap();
+      console.log('✅ Audit log created successfully:', auditData.action, result);
     } catch (error) {
-      console.error('Failed to create audit log:', error);
+      console.error('❌ Failed to create audit log:', {
+        error,
+        user,
+        auditData,
+        errorDetails: error instanceof Error ? error.message : 'Unknown error'
+      });
       // Don't throw error to avoid breaking the main operation
     }
   };

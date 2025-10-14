@@ -833,7 +833,7 @@ export function EndNodeSidebar({
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-1">
             <Zap className="w-3 h-3" />
-            <span>Workflow completed</span>
+            <span>Context size: 12k</span>
           </div>
         </div>
         <div className="flex items-center space-x-2">

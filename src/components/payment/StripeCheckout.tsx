@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { Button } from '@/components/ui/Button';
 import { CreditCard, Loader2 } from 'lucide-react';
+import { selectCurrentUser } from '@/redux/slice/authSlice';
 
 interface StripeCheckoutProps {
   planName: string;
@@ -24,11 +26,17 @@ export function StripeCheckout({
   children 
 }: StripeCheckoutProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const user = useSelector(selectCurrentUser);
 
   const handleCheckout = async () => {
     setIsLoading(true);
 
     try {
+      // Check if user is logged in
+      if (!user?.email) {
+        throw new Error('User must be logged in to proceed with payment');
+      }
+
       // Create checkout session with package information
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
@@ -39,7 +47,7 @@ export function StripeCheckout({
           planName,
           isAnnual,
           price,
-          userId: '1', // TODO: Get from auth context
+          userId: user.email, // Use logged-in user's email
         }),
       });
 
