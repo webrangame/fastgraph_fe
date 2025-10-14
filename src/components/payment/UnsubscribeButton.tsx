@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { AlertTriangle, X, CheckCircle } from 'lucide-react';
+import { useCancelPaymentPlanMutation } from '../../../lib/api/authApi';
 
 interface UnsubscribeButtonProps {
   subscriptionId: string;
   customerEmail: string;
   planName: string;
+  planId?: string; // Add planId for the external API call
   onSuccess?: () => void;
   onError?: (error: string) => void;
 }
@@ -16,20 +18,25 @@ export function UnsubscribeButton({
   subscriptionId, 
   customerEmail, 
   planName,
+  planId = '1', // Default to '1' if not provided
   onSuccess,
   onError 
 }: UnsubscribeButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [cancelType, setCancelType] = useState<'end_of_period' | 'immediate' | null>(null);
+  
+  // Use Redux mutation for external API call
+  const [cancelPaymentPlan, { isLoading: isCancellingPlan }] = useCancelPaymentPlanMutation();
 
   const handleUnsubscribe = async (type: 'end_of_period' | 'immediate') => {
     setIsLoading(true);
     setCancelType(type);
 
     try {
+      // First, cancel the Stripe subscription
       const endpoint = type === 'immediate' ? 'DELETE' : 'POST';
-      const response = await fetch('/api/stripe/unsubscribe', {
+      const stripeResponse = await fetch('/api/stripe/unsubscribe', {
         method: endpoint,
         headers: {
           'Content-Type': 'application/json',
@@ -40,13 +47,23 @@ export function UnsubscribeButton({
         }),
       });
 
-      const data = await response.json();
+      const stripeData = await stripeResponse.json();
 
-      if (data.error) {
-        throw new Error(data.error);
+      if (stripeData.error) {
+        throw new Error(stripeData.error);
       }
 
-      console.log('✅ Unsubscribe successful:', data);
+      console.log('✅ Stripe unsubscribe successful:', stripeData);
+
+      // Then, call the external API to cancel the payment plan
+      try {
+        const externalResult = await cancelPaymentPlan(planId).unwrap();
+        console.log('✅ External API cancel successful:', externalResult);
+      } catch (externalError) {
+        console.warn('⚠️ External API cancel failed, but Stripe cancel succeeded:', externalError);
+        // Don't throw error here since Stripe cancellation succeeded
+      }
+
       onSuccess?.();
       setShowConfirmModal(false);
     } catch (error) {
@@ -87,7 +104,7 @@ export function UnsubscribeButton({
             <div className="space-y-3 mb-6">
               <button
                 onClick={() => handleUnsubscribe('end_of_period')}
-                disabled={isLoading}
+                disabled={isLoading || isCancellingPlan}
                 className="w-full p-3 text-left border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <div className="font-medium text-gray-900 dark:text-white">
@@ -99,11 +116,14 @@ export function UnsubscribeButton({
                 {isLoading && cancelType === 'end_of_period' && (
                   <div className="text-sm text-blue-600 mt-1">Processing...</div>
                 )}
+                {isCancellingPlan && cancelType === 'end_of_period' && (
+                  <div className="text-sm text-blue-600 mt-1">Updating external systems...</div>
+                )}
               </button>
 
               <button
                 onClick={() => handleUnsubscribe('immediate')}
-                disabled={isLoading}
+                disabled={isLoading || isCancellingPlan}
                 className="w-full p-3 text-left border border-red-200 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
                 <div className="font-medium text-red-700 dark:text-red-400">
@@ -115,6 +135,9 @@ export function UnsubscribeButton({
                 {isLoading && cancelType === 'immediate' && (
                   <div className="text-sm text-blue-600 mt-1">Processing...</div>
                 )}
+                {isCancellingPlan && cancelType === 'immediate' && (
+                  <div className="text-sm text-blue-600 mt-1">Updating external systems...</div>
+                )}
               </button>
             </div>
 
@@ -122,7 +145,7 @@ export function UnsubscribeButton({
               <Button
                 variant="secondary"
                 onClick={() => setShowConfirmModal(false)}
-                disabled={isLoading}
+                disabled={isLoading || isCancellingPlan}
                 className="flex-1"
               >
                 Keep Subscription
