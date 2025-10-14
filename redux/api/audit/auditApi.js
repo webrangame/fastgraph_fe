@@ -1,9 +1,22 @@
-import { createApi } from '@reduxjs/toolkit/query/react';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithRefresh } from '../../../lib/api/baseQuery';
+import Cookies from 'js-cookie';
+
+// Local base query for audit logs (uses localhost instead of external API)
+const localBaseQuery = fetchBaseQuery({
+  baseUrl: 'http://localhost:3001', // Use the current dev server port
+  prepareHeaders: async (headers, { getState }) => {
+    const accessToken = getState().auth.accessToken || Cookies.get('access_token');
+    if (accessToken) {
+      headers.set('Authorization', `Bearer ${accessToken}`);
+    }
+    return headers;
+  },
+});
 
 export const auditApi = createApi({
   reducerPath: 'auditApi',
-  baseQuery: baseQueryWithRefresh,
+  baseQuery: localBaseQuery,
   tagTypes: ['AuditLog'],
   endpoints: (builder) => ({
     logAudit: builder.mutation({
