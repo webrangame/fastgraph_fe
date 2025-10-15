@@ -170,6 +170,8 @@ export default function PricingPage() {
       );
     }
 
+    //console
+
     // Otherwise show the normal subscribe button
     return (
       <StripeCheckout
