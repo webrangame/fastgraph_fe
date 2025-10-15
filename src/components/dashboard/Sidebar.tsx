@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { selectCurrentUser, logout } from '@/redux/slice/authSlice';
-import { useLogoutMutation } from '../../../lib/api/authApi';
+import { useLogoutMutation, useGetUserSubscriptionQuery } from '../../../lib/api/authApi';
 
 // Extracted navigation items for reuse
 export const navigationItems = [
@@ -66,6 +66,19 @@ export default function Sidebar({ isMobile = false, onNavigate }: SidebarProps) 
   const dispatch = useDispatch();
   const user = useSelector(selectCurrentUser);
   const [logoutMutation] = useLogoutMutation();
+  
+  // Fetch user subscription data
+  const { 
+    data: subscriptionData, 
+    isLoading: subscriptionLoading 
+  } = useGetUserSubscriptionQuery(user?.id || '1', {
+    skip: !user?.id
+  });
+
+  // Check if user has active subscription
+  const hasActiveSubscription = subscriptionData && 
+    subscriptionData.status === 'active' && 
+    !subscriptionData.cancelAtPeriodEnd;
   
   // Safely get theme context
   const themeContext = useTheme();
@@ -149,43 +162,57 @@ export default function Sidebar({ isMobile = false, onNavigate }: SidebarProps) 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
         <div className="space-y-2">
-          {navigationItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={handleNavClick}
-              className={`group flex items-center rounded-xl text-sm font-medium transition-all duration-200 ${
-                isCollapsed ? 'px-3 py-3 justify-center' : 'px-4 py-3'
-              } ${
-                isActive(item.href)
-                  ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-sm border border-blue-200'
-                  : 'theme-text-secondary theme-hover-bg hover:text-gray-900'
-              }`}
-              title={isCollapsed ? item.name : undefined}
-            >
-              <item.icon className={`w-5 h-5 transition-all duration-200 ${
-                isCollapsed ? 'mr-0' : 'mr-4'
-              } ${
-                isActive(item.href) 
-                  ? 'text-blue-600' 
-                  : 'theme-text-muted'
-              }`} />
-              
-              {!isCollapsed && (
-                <>
-                  <span className="font-semibold tracking-wide">{item.name}</span>
-                  
-                  {isActive(item.href) && (
-                    <div className="ml-auto w-2 h-2 bg-blue-600 rounded-full shadow-sm"></div>
-                  )}
-                </>
-              )}
-              
-              {isCollapsed && isActive(item.href) && (
-                <div className="absolute right-2 w-2 h-2 bg-blue-600 rounded-full shadow-sm"></div>
-              )}
-            </Link>
-          ))}
+          {navigationItems.map((item) => {
+            // Check if this link should be disabled for users without subscription
+            const isPricingOrLogout = item.href === '/dashboard/pricing' || item.name === 'Logout';
+            const isDisabled = !hasActiveSubscription && !isPricingOrLogout;
+            
+            return (
+              <Link
+                key={item.name}
+                href={isDisabled ? '#' : item.href}
+                onClick={isDisabled ? (e) => e.preventDefault() : handleNavClick}
+                className={`group flex items-center rounded-xl text-sm font-medium transition-all duration-200 ${
+                  isCollapsed ? 'px-3 py-3 justify-center' : 'px-4 py-3'
+                } ${
+                  isDisabled
+                    ? 'opacity-50 cursor-not-allowed theme-text-muted'
+                    : isActive(item.href)
+                      ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-sm border border-blue-200'
+                      : 'theme-text-secondary theme-hover-bg hover:text-gray-900'
+                }`}
+                title={isCollapsed ? (isDisabled ? `${item.name} (Subscription Required)` : item.name) : undefined}
+              >
+                <item.icon className={`w-5 h-5 transition-all duration-200 ${
+                  isCollapsed ? 'mr-0' : 'mr-4'
+                } ${
+                  isDisabled
+                    ? 'theme-text-muted'
+                    : isActive(item.href) 
+                      ? 'text-blue-600' 
+                      : 'theme-text-muted'
+                }`} />
+                
+                {!isCollapsed && (
+                  <>
+                    <span className="font-semibold tracking-wide">{item.name}</span>
+                    
+                    {isDisabled && (
+                      <span className="ml-auto text-xs theme-text-muted">🔒</span>
+                    )}
+                    
+                    {isActive(item.href) && !isDisabled && (
+                      <div className="ml-auto w-2 h-2 bg-blue-600 rounded-full shadow-sm"></div>
+                    )}
+                  </>
+                )}
+                
+                {isCollapsed && isActive(item.href) && !isDisabled && (
+                  <div className="absolute right-2 w-2 h-2 bg-blue-600 rounded-full shadow-sm"></div>
+                )}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Logout Button */}
