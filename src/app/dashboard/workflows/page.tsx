@@ -19,6 +19,8 @@ import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { processAgentsFromResponse } from '@/services/workflows/agentProcessor';
 import { useAuditLog } from '@/hooks/useAuditLog';
+import { generateCustomAgentMockData, generateCustomAgentId } from '@/lib/customAgentMockData';
+import { AgentFormData } from '@/components/workflows/NewAgentPopup';
 
 export default function WorkflowsPage() {
   const dispatch = useDispatch();
@@ -604,6 +606,58 @@ export default function WorkflowsPage() {
     }
   };
 
+  // Handle custom agent creation from NewAgentPopup
+  const handleCustomAgentCreate = useCallback((data: AgentFormData) => {
+    console.log('🎨 Creating custom agent:', data);
+    
+    // Generate mock data for the custom agent
+    const customAgentId = generateCustomAgentId();
+    const mockAgentData = generateCustomAgentMockData(data.agentName, data.description);
+    
+    console.log('Generated mock data:', mockAgentData);
+    
+    // Add the custom agent to the agents state
+    setAgents(prevAgents => {
+      const newAgents = {
+        ...prevAgents,
+        [customAgentId]: mockAgentData
+      };
+      
+      console.log('Updated agents:', Object.keys(newAgents));
+      return newAgents;
+    });
+    
+    // Show success toast with professional styling
+    toast.success(
+      <div>
+        <div className="font-bold">Custom Agent Created</div>
+        <div className="text-sm opacity-90">{data.agentName}</div>
+      </div>,
+      {
+        duration: 3000,
+        style: {
+          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+          color: '#fff',
+          border: '1px solid #3b82f6',
+          boxShadow: '0 10px 30px -10px rgba(59, 130, 246, 0.4)',
+        },
+        iconTheme: {
+          primary: '#3b82f6',
+          secondary: '#fff',
+        },
+      }
+    );
+    
+    // Add to undo stack
+    addToUndoStack({
+      type: 'customAgentCreate',
+      description: `Created custom agent: ${data.agentName}`,
+      data: { agentId: customAgentId, agentData: mockAgentData }
+    });
+    
+    console.log('✅ Custom agent added to canvas');
+  }, [addToUndoStack]);
+
   return (
     <div className="h-screen theme-bg flex flex-col transition-colors duration-300">
       
@@ -622,6 +676,7 @@ export default function WorkflowsPage() {
         onCloseWorkflow={handleCloseWorkflow}
         onCreateNew={createNewWorkflow}
         onCreateWithModal={handleWorkflowSubmit}
+        onCreateCustomAgent={handleCustomAgentCreate}
         onUndo={handleUndo}
         canUndo={canUndo}
         onExecute={executeWorkflow}

@@ -14,6 +14,7 @@ interface WorkflowTabsProps {
   onCloseWorkflow: (workflowId: string) => void;
   onCreateNew: () => void;
   onCreateWithModal?: (data: WorkflowFormData) => void;
+  onCreateCustomAgent?: (data: any) => void; // Handler for custom agent creation
   onUndo?: () => void;
   canUndo?: boolean;
   maxWorkflows: number;
@@ -26,6 +27,7 @@ export function WorkflowTabs({
   onCloseWorkflow,
   onCreateNew,
   onCreateWithModal,
+  onCreateCustomAgent,
   onUndo,
   canUndo = false,
   maxWorkflows
@@ -121,6 +123,12 @@ export function WorkflowTabs({
       <NewAgentPopup
         isOpen={isAgentPopupOpen}
         onClose={() => setIsAgentPopupOpen(false)}
+        onSubmit={(data) => {
+          if (onCreateCustomAgent) {
+            onCreateCustomAgent(data);
+          }
+          setIsAgentPopupOpen(false);
+        }}
       />
     </div>
   );

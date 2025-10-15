@@ -16,6 +16,7 @@ interface DesktopHeaderProps {
   onCloseWorkflow: (workflowId: string) => void;
   onCreateNew: () => void;
   onCreateWithModal?: (data: WorkflowFormData) => void;
+  onCreateCustomAgent?: (data: any) => void;
   onUndo?: () => void;
   canUndo?: boolean;
   onExecute: () => void;
@@ -37,6 +38,7 @@ export function DesktopHeader({
   onCloseWorkflow,
   onCreateNew,
   onCreateWithModal,
+  onCreateCustomAgent,
   onUndo,
   canUndo,
   onExecute,
@@ -96,6 +98,7 @@ export function DesktopHeader({
         onCloseWorkflow={onCloseWorkflow}
         onCreateNew={onCreateNew}
         onCreateWithModal={onCreateWithModal}
+        onCreateCustomAgent={onCreateCustomAgent}
         onUndo={onUndo}
         canUndo={canUndo}
         maxWorkflows={5}
