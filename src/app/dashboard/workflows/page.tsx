@@ -627,7 +627,7 @@ export default function WorkflowsPage() {
       return newAgents;
     });
     
-    // Show success toast with professional styling
+    // Show success toast with purple theme styling
     toast.success(
       <div>
         <div className="font-bold">Custom Agent Created</div>
@@ -638,11 +638,11 @@ export default function WorkflowsPage() {
         style: {
           background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
           color: '#fff',
-          border: '1px solid #3b82f6',
-          boxShadow: '0 10px 30px -10px rgba(59, 130, 246, 0.4)',
+          border: '1px solid #8b5cf6',
+          boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.4)',
         },
         iconTheme: {
-          primary: '#3b82f6',
+          primary: '#8b5cf6',
           secondary: '#fff',
         },
       }

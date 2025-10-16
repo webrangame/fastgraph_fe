@@ -260,7 +260,7 @@ function WorkflowCanvasInner({
               type: 'smoothstep',
               animated: true,
               style: {
-                stroke: '#3b82f6', // Blue for custom connections (professional)
+                stroke: '#8b5cf6', // Purple for custom connections
                 strokeWidth: 2.5,
                 strokeDasharray: '8,4', // Dashed line to show it's custom
               },
@@ -268,7 +268,7 @@ function WorkflowCanvasInner({
                 type: 'arrowclosed',
                 width: 16,
                 height: 16,
-                color: '#3b82f6',
+                color: '#8b5cf6',
               },
             });
           });
@@ -470,7 +470,7 @@ function WorkflowCanvasInner({
             type: 'smoothstep',
             animated: true,
             style: {
-              stroke: '#3b82f6',
+              stroke: '#8b5cf6',
               strokeWidth: 2.5,
               strokeDasharray: '8,4',
             },
@@ -478,7 +478,7 @@ function WorkflowCanvasInner({
               type: 'arrowclosed' as const,
               width: 16,
               height: 16,
-              color: '#3b82f6',
+              color: '#8b5cf6',
             },
           });
         });
