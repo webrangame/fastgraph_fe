@@ -66,7 +66,7 @@ export function CustomUserAgentNode({ data, selected, id }: CustomUserAgentNodeP
       {/* Badge */}
       <div className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-[6.5px] font-bold px-1.5 py-0.5 rounded shadow-md flex items-center gap-0.5">
         <Crown className="w-2 h-2" strokeWidth={2.5} />
-        <span>SUPER AGENT</span>
+        <span>BULK AGENT</span>
       </div>
       
       {/* Compact agent content */}
