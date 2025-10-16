@@ -2,9 +2,10 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithRefresh } from '../../../lib/api/baseQuery';
 import Cookies from 'js-cookie';
 
-// Local base query for audit logs (uses localhost instead of external API)
-const localBaseQuery = fetchBaseQuery({
-  baseUrl: 'http://localhost:3001', // Use the current dev server port
+// Use local backend for development, external API for production
+const isProduction = process.env.NODE_ENV === 'production';
+const auditBaseQuery = fetchBaseQuery({
+  baseUrl: isProduction ? 'https://jobaapi.hattonn.com/api/v1' : 'http://localhost:8080/api/v1',
   prepareHeaders: async (headers, { getState }) => {
     const accessToken = getState().auth.accessToken || Cookies.get('access_token');
     if (accessToken) {
@@ -16,12 +17,12 @@ const localBaseQuery = fetchBaseQuery({
 
 export const auditApi = createApi({
   reducerPath: 'auditApi',
-  baseQuery: localBaseQuery,
+  baseQuery: auditBaseQuery,
   tagTypes: ['AuditLog'],
   endpoints: (builder) => ({
     logAudit: builder.mutation({
       query: (auditData) => ({
-        url: '/api/v1/audit/log',
+        url: '/audit/logs',
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -33,7 +34,7 @@ export const auditApi = createApi({
     }),
     getAuditLogs: builder.query({
       query: (params = {}) => ({
-        url: '/api/v1/audit/logs',
+        url: '/audit/logs',
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -44,7 +45,7 @@ export const auditApi = createApi({
     }),
     getAuditLogsByUser: builder.query({
       query: (userId) => ({
-        url: `/api/v1/audit/user/${userId}`,
+        url: `/audit/user/${userId}`,
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -57,7 +58,7 @@ export const auditApi = createApi({
     }),
     getAuditLogsByResource: builder.query({
       query: (resource) => ({
-        url: `/api/v1/audit/logs/resource/${resource}`,
+        url: `/audit/logs/resource/${resource}`,
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -70,7 +71,7 @@ export const auditApi = createApi({
     }),
     getAuditLog: builder.query({
       query: (logId) => ({
-        url: `/api/v1/audit/log/${logId}`,
+        url: `/audit/log/${logId}`,
         method: 'GET',
         headers: {
           'accept': 'application/json',
