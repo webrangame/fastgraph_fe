@@ -2,10 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useSelector } from 'react-redux';
 import { Check, Star, Sparkles, Shield, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { StripeCheckout } from '@/components/payment/StripeCheckout';
+import { UnsubscribeButton } from '@/components/payment/UnsubscribeButton';
 import { getAllPlans, PricingPlan } from '@/lib/planDetails';
+import { selectCurrentUser } from '@/redux/slice/authSlice';
+import { useGetUserSubscriptionQuery } from '../../../../lib/api/authApi';
 import './pricing.css';
 
 const plans: PricingPlan[] = getAllPlans();
@@ -57,6 +61,41 @@ export default function PricingPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const user = useSelector(selectCurrentUser);
+  
+  // Use Redux query to fetch user subscription
+  const { 
+    data: subscriptionData, 
+    isLoading: subscriptionLoading, 
+    error: subscriptionError 
+  } = useGetUserSubscriptionQuery(user?.id || '1', {
+    skip: !user?.id // Skip if no user ID
+  });
+  
+  // Transform API data to match our expected format
+  const currentSubscription = subscriptionData ? {
+    id: subscriptionData.subscriptionId || subscriptionData.id,
+    status: subscriptionData.status || 'active',
+    planName: subscriptionData.planName?.toLowerCase().replace(/\s+plan$/i, '') || 'pro', // Remove " Plan" suffix and convert to lowercase
+    customerEmail: subscriptionData.email || user?.email,
+    currentPeriodEnd: subscriptionData.currentPeriodEnd ? 
+      Math.floor(new Date(subscriptionData.currentPeriodEnd).getTime() / 1000) : 
+      Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60),
+    stripeProductId: subscriptionData.stripeProductId,
+    stripeCustomerId: subscriptionData.stripeCustomerId,
+  } : null;
+
+  console.log(subscriptionData , "subscriptionData")
+  // Log subscription data for debugging
+  useEffect(() => {
+    if (subscriptionData) {
+      console.log('🔍 Subscription data received:', subscriptionData);
+      console.log('🔍 Transformed subscription:', currentSubscription);
+    }
+    if (subscriptionError) {
+      console.error('❌ Error fetching subscription:', subscriptionError);
+    }
+  }, [subscriptionData, subscriptionError, currentSubscription]);
 
   // Handle URL parameters for payment success/cancel
   useEffect(() => {
@@ -83,7 +122,29 @@ export default function PricingPage() {
     setPaymentSuccess(null);
   };
 
+  const handleUnsubscribeSuccess = () => {
+    setPaymentSuccess('Your subscription has been cancelled successfully.');
+    setPaymentError(null);
+  };
+
+  const handleUnsubscribeError = (error: string) => {
+    setPaymentError(`Failed to cancel subscription: ${error}`);
+    setPaymentSuccess(null);
+  };
+
   const renderPlanButton = (plan: PricingPlan) => {
+    // Check if this is the user's current plan
+    const isCurrentPlan = currentSubscription && 
+      currentSubscription.planName.toLowerCase() === plan.name.toLowerCase();
+    
+    // Debug logging
+    console.log('Plan comparison:', {
+      planName: plan.name,
+      currentPlanName: currentSubscription?.planName,
+      isCurrentPlan,
+      subscriptionData: subscriptionData?.planName
+    });
+
     if (plan.name === 'Free') {
       return (
         <Button
@@ -95,6 +156,23 @@ export default function PricingPage() {
       );
     }
 
+    // If this is the current plan, show unsubscribe button
+    if (isCurrentPlan) {
+      return (
+        <UnsubscribeButton
+          subscriptionId={subscriptionData?.subscriptionId || currentSubscription.id}
+          customerEmail={currentSubscription.customerEmail}
+          planName={plan.name}
+          planId={subscriptionData?.id}
+          onSuccess={handleUnsubscribeSuccess}
+          onError={handleUnsubscribeError}
+        />
+      );
+    }
+
+    //console
+
+    // Otherwise show the normal subscribe button
     return (
       <StripeCheckout
         planName={plan.name.toLowerCase()}
@@ -139,6 +217,38 @@ export default function PricingPage() {
             </div>
           )}
 
+          {/* Current Subscription Status */}
+          {user?.email && (
+            <div className="mb-6">
+              {subscriptionLoading ? (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="flex items-center space-x-2 text-blue-800 dark:text-blue-200">
+                    <span className="font-medium">Checking your subscription status...</span>
+                  </div>
+                </div>
+              ) : currentSubscription ? (
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-center space-x-2 text-green-800 dark:text-green-200">
+                    <Check className="w-5 h-5" />
+                    <span className="font-medium">
+                      You're currently subscribed to the {currentSubscription.planName} plan
+                    </span>
+                  </div>
+                  <div className="text-sm text-green-600 dark:text-green-400 mt-1">
+                    Status: {currentSubscription.status} • 
+                    Next billing: {new Date(currentSubscription.currentPeriodEnd * 1000).toLocaleDateString()}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-lg">
+                  <div className="flex items-center space-x-2 text-gray-800 dark:text-gray-200">
+                    <span className="font-medium">No active subscription found</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Pricing Toggle */}
           <div className="toggle-container inline-flex items-center theme-input-bg theme-border border rounded-full p-1 mb-12">
             <button
@@ -170,16 +280,31 @@ export default function PricingPage() {
         {/* Pricing Cards */}
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-12 md:gap-8 lg:gap-10 lg:grid-cols-3 pt-6">
-            {plans.map((plan, index) => (
-              <div
-                key={plan.name}
-                className={`pricing-card relative theme-card-bg rounded-2xl theme-shadow ${
-                  plan.popular 
-                    ? 'popular-card scale-105 border-4 border-blue-600 lg:scale-110' 
-                    : 'theme-border border'
-                }`}
-              >
-                {plan.popular && (
+            {plans.map((plan, index) => {
+              // Check if this is the user's current plan
+              const isCurrentPlan = currentSubscription && 
+                currentSubscription.planName.toLowerCase() === plan.name.toLowerCase();
+              
+              return (
+                <div
+                  key={plan.name}
+                  className={`pricing-card relative theme-card-bg rounded-2xl theme-shadow ${
+                    isCurrentPlan
+                      ? 'current-plan scale-105 border-4 border-green-600 lg:scale-110'
+                      : plan.popular 
+                        ? 'popular-card scale-105 border-4 border-blue-600 lg:scale-110' 
+                        : 'theme-border border'
+                  }`}
+                >
+                {isCurrentPlan && (
+                  <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 z-10">
+                    <div className="bg-green-600 text-white px-6 py-2 rounded-full text-sm font-bold flex items-center gap-1 whitespace-nowrap shadow-lg">
+                      <Check className="w-4 h-4" />
+                      Current Plan
+                    </div>
+                  </div>
+                )}
+                {plan.popular && !isCurrentPlan && (
                   <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 z-10">
                     <div className="bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-bold flex items-center gap-1 whitespace-nowrap shadow-lg">
                       <Star className="w-4 h-4" />
@@ -244,7 +369,8 @@ export default function PricingPage() {
                   {renderPlanButton(plan)}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

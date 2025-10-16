@@ -50,9 +50,9 @@ const RegisterPage = () => {
         password: data.password 
       }).unwrap();
       console.log('✅ Registration successful, redirecting...', result);
-      toast.success('Registration successful! Welcome to FastGraph!');
-      // Redirect to dashboard after successful registration
-      router.replace('/dashboard');
+      toast.success('Registration successful! Please check your email for verification.');
+      // Redirect to email verification success page
+      router.replace(`/register/success?email=${encodeURIComponent(data.email)}`);
     } catch (err: any) {
       console.error('❌ Registration failed:', err);
       
@@ -136,8 +136,8 @@ const RegisterPage = () => {
                 console.log('🔵 Trying access_token format...');
                 const result = await googleLogin({ access_token: response.credential }).unwrap();
                 console.log('✅ Google registration successful with access_token:', result);
-                toast.success('Google registration successful! Welcome to FastGraph!');
-                router.replace('/dashboard');
+                toast.success('Google registration successful! Please check your email for verification.');
+                router.replace(`/register/success?email=${encodeURIComponent(result.user?.email || '')}`);
                 return;
               } catch (accessTokenError) {
                 console.log('❌ access_token format failed:', accessTokenError);
@@ -147,8 +147,8 @@ const RegisterPage = () => {
                   console.log('🔵 Trying id_token format...');
                   const result = await googleLogin({ id_token: response.credential }).unwrap();
                   console.log('✅ Google registration successful with id_token:', result);
-                  toast.success('Google registration successful! Welcome to FastGraph!');
-                  router.replace('/dashboard');
+                  toast.success('Google registration successful! Please check your email for verification.');
+                  router.replace(`/register/success?email=${encodeURIComponent(result.user?.email || '')}`);
                   return;
                 } catch (idTokenError) {
                   console.log('❌ id_token format failed:', idTokenError);
@@ -158,8 +158,8 @@ const RegisterPage = () => {
                     console.log('🔵 Trying token format...');
                     const result = await googleLogin({ token: response.credential }).unwrap();
                     console.log('✅ Google registration successful with token:', result);
-                    toast.success('Google registration successful! Welcome to FastGraph!');
-                    router.replace('/dashboard');
+                    toast.success('Google registration successful! Please check your email for verification.');
+                    router.replace(`/register/success?email=${encodeURIComponent(result.user?.email || '')}`);
                     return;
                   } catch (tokenError) {
                     console.log('❌ token format failed:', tokenError);
@@ -169,8 +169,8 @@ const RegisterPage = () => {
                       console.log('🔵 Trying credential format...');
                       const result = await googleLogin({ credential: response.credential }).unwrap();
                       console.log('✅ Google registration successful with credential:', result);
-                      toast.success('Google registration successful! Welcome to FastGraph!');
-                      router.replace('/dashboard');
+                      toast.success('Google registration successful! Please check your email for verification.');
+                      router.replace(`/register/success?email=${encodeURIComponent(result.user?.email || '')}`);
                       return;
                     } catch (credentialError) {
                       console.log('❌ credential format failed:', credentialError);
@@ -180,8 +180,8 @@ const RegisterPage = () => {
                         console.log('🔵 Trying google_token format...');
                         const result = await googleLogin({ google_token: response.credential }).unwrap();
                         console.log('✅ Google registration successful with google_token:', result);
-                        toast.success('Google registration successful! Welcome to FastGraph!');
-                        router.replace('/dashboard');
+                        toast.success('Google registration successful! Please check your email for verification.');
+                        router.replace(`/register/success?email=${encodeURIComponent(result.user?.email || '')}`);
                         return;
                       } catch (googleTokenError) {
                         console.log('❌ google_token format failed:', googleTokenError);
@@ -191,8 +191,8 @@ const RegisterPage = () => {
                           console.log('🔵 Trying jwt format...');
                           const result = await googleLogin({ jwt: response.credential }).unwrap();
                           console.log('✅ Google registration successful with jwt:', result);
-                          toast.success('Google registration successful! Welcome to FastGraph!');
-                          router.replace('/dashboard');
+                          toast.success('Google registration successful! Please check your email for verification.');
+                          router.replace(`/register/success?email=${encodeURIComponent(result.user?.email || '')}`);
                           return;
                         } catch (jwtError) {
                           console.log('❌ jwt format failed:', jwtError);
@@ -202,8 +202,8 @@ const RegisterPage = () => {
                             console.log('🔵 Trying google_id_token format...');
                             const result = await googleLogin({ google_id_token: response.credential }).unwrap();
                             console.log('✅ Google registration successful with google_id_token:', result);
-                            toast.success('Google registration successful! Welcome to FastGraph!');
-                            router.replace('/dashboard');
+                            toast.success('Google registration successful! Please check your email for verification.');
+                            router.replace(`/register/success?email=${encodeURIComponent(result.user?.email || '')}`);
                             return;
                           } catch (googleIdTokenError) {
                             console.log('❌ google_id_token format failed:', googleIdTokenError);

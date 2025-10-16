@@ -206,7 +206,7 @@ async function storePaymentMethodInDatabase(paymentData: {
       planName: paymentData.planName,
       subscriptionId: paymentData.subscriptionId,
       subscriptionStatus: paymentData.subscriptionStatus,
-      monthlyAmount: `$${(paymentData.amount / 100).toFixed(2)} ${paymentData.currency.toUpperCase()}`,
+      planPrice: `$${(paymentData.amount / 100).toFixed(2)} ${paymentData.currency.toUpperCase()}`,
     });
 
   } catch (error) {

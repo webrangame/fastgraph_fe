@@ -87,10 +87,15 @@ export default function PaymentSuccessPage() {
       
       const billingCycleAnchor = currentPeriodStart;
 
+      // Determine plan duration based on the plan type
+      // For now, we're only creating monthly subscriptions, but this can be extended
+      const planDuration = 1; // Monthly plan duration in months
+      
       const apiPayload = {
         planName: `${paymentData.planName} Plan`,
         stripeProductId: stripeProductId,
-        monthlyAmount: paymentData.amount / 100, // Convert from cents to dollars
+        planPrice: paymentData.amount / 100, // Convert from cents to dollars - renamed from monthlyAmount
+        planDuration: planDuration, // Monthly plan duration in months
         currency: paymentData.currency.toUpperCase(),
         email: paymentData.customerEmail,
         paymentMethodId: paymentData.paymentMethodId,

@@ -39,6 +39,13 @@ export async function POST(request: NextRequest) {
     // Get detailed plan information
     const planDetails = getPlanDetails(planName, isAnnual);
     
+    // Get the base URL for redirects
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const successUrl = `${baseUrl}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${baseUrl}/dashboard/pricing?canceled=true`;
+    
+    console.log('🔗 Redirect URLs:', { baseUrl, successUrl, cancelUrl });
+
     // Create a subscription checkout session for monthly billing
     const session = await stripe.checkout.sessions.create({
       line_items: [
@@ -55,8 +62,8 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'subscription', // Subscription mode for monthly billing
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/pricing?canceled=true`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       customer_email: customerEmail,
       billing_address_collection: 'required',
       payment_method_types: ['card'],
@@ -97,6 +104,13 @@ export async function POST(request: NextRequest) {
         fallbackCustomerEmail = `${fallbackUserId}@example.com`;
       }
       
+      // Get the base URL for fallback redirects
+      const fallbackBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const fallbackSuccessUrl = `${fallbackBaseUrl}/dashboard/pricing?success=true&session_id={CHECKOUT_SESSION_ID}`;
+      const fallbackCancelUrl = `${fallbackBaseUrl}/dashboard/pricing?canceled=true`;
+      
+      console.log('🔗 Fallback Redirect URLs:', { fallbackBaseUrl, fallbackSuccessUrl, fallbackCancelUrl });
+
       // Fallback: Create a regular checkout session
       const session = await stripe.checkout.sessions.create({
         line_items: [
@@ -113,8 +127,8 @@ export async function POST(request: NextRequest) {
           },
         ],
         mode: 'payment',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/pricing?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/pricing?canceled=true`,
+        success_url: fallbackSuccessUrl,
+        cancel_url: fallbackCancelUrl,
         payment_method_types: ['card'],
         customer_email: fallbackCustomerEmail,
       });
