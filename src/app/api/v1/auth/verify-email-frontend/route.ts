@@ -25,7 +25,11 @@ export async function POST(request: NextRequest) {
 
     // Call the actual backend API to verify the email
     try {
-      const response = await fetch('http://localhost:8080/api/v1/auth/verify-email', {
+      const backendUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://jobaapi.hattonn.com/api/v1/auth/verify-email'
+        : 'http://localhost:8080/api/v1/auth/verify-email';
+      
+      const response = await fetch(backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
