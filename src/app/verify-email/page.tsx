@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useVerifyEmailMutation } from '../../../lib/api/authApi';
 
 const VerifyEmailPage = () => {
   const router = useRouter();
@@ -10,6 +11,8 @@ const VerifyEmailPage = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const [token, setToken] = useState<string>('');
+  
+  const [verifyEmailMutation, { isLoading, error }] = useVerifyEmailMutation();
 
   useEffect(() => {
     const tokenParam = searchParams.get('token');
@@ -34,22 +37,11 @@ const VerifyEmailPage = () => {
 
       console.log('🔵 Starting email verification for token:', verificationToken);
 
-      const response = await fetch('/api/v1/auth/verify-email-frontend', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: verificationToken
-        }),
-      });
+      const result = await verifyEmailMutation(verificationToken).unwrap();
+      
+      console.log('🔵 API response data:', result);
 
-      console.log('🔵 API response status:', response.status);
-
-      const data = await response.json();
-      console.log('🔵 API response data:', data);
-
-      if (response.ok && data.verified) {
+      if (result.verified) {
         setStatus('success');
         setMessage('Email verified successfully! Redirecting to login...');
         console.log('✅ Email verification successful');
@@ -60,13 +52,13 @@ const VerifyEmailPage = () => {
         }, 3000);
       } else {
         setStatus('error');
-        setMessage(data.message || 'Email verification failed. Please try again.');
-        console.log('❌ Email verification failed:', data.message);
+        setMessage(result.message || 'Email verification failed. Please try again.');
+        console.log('❌ Email verification failed:', result.message);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Email verification error:', error);
       setStatus('error');
-      setMessage('Network error. Please check your connection and try again.');
+      setMessage(error?.data?.message || error?.message || 'Network error. Please check your connection and try again.');
     }
   };
 
@@ -93,7 +85,7 @@ const VerifyEmailPage = () => {
       <div className="p-8 w-full max-w-md relative z-10 bg-gray-800/90 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-2xl">
         
         {/* Loading State */}
-        {status === 'loading' && (
+        {(status === 'loading' || isLoading) && (
           <div className="text-center">
             <div className="mx-auto w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mb-6">
               <svg className="w-10 h-10 text-blue-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
