@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
       if (response.ok) {
         console.log('✅ Email verified successfully via backend API:', data);
         return NextResponse.json({
-          message: 'Email verified successfully',
-          verified: true,
+          message: data.message || 'Email verified successfully',
+          verified: data.success || true, // Use backend's success field or default to true
           token: token
         });
       } else {
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
             message: data.message || 'Invalid or expired verification token',
             verified: false 
           },
-          { status: 400 }
+          { status: response.status } // Use the actual status from the backend
         );
       }
     } catch (apiError) {
