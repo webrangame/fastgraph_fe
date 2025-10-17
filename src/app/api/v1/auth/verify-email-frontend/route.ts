@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
       const data = await response.json();
 
-      if (response.ok && data.verified) {
+      if (response.ok) {
         console.log('✅ Email verified successfully via backend API:', data);
         return NextResponse.json({
           message: 'Email verified successfully',
