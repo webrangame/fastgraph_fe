@@ -10,8 +10,8 @@ export const STRIPE_CONFIG = {
   publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
   secretKey: process.env.STRIPE_SECRET_KEY || '',
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
-  successUrl: process.env.STRIPE_SUCCESS_URL || 'http://localhost:3000/dashboard/pricing?success=true',
-  cancelUrl: process.env.STRIPE_CANCEL_URL || 'http://localhost:3000/dashboard/pricing?canceled=true',
+  successUrl: process.env.STRIPE_SUCCESS_URL || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+  cancelUrl: process.env.STRIPE_CANCEL_URL || `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'}/dashboard/pricing?canceled=true`,
 };
 
 // Plan configurations for Stripe
