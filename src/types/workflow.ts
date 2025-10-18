@@ -22,6 +22,7 @@ export interface WorkflowNode {
     label?: string;
     role?: string;
     capabilities?: string[];
+    isCustom?: boolean; // Flag for custom user-created agents
   };
 }
 
@@ -99,5 +100,6 @@ export interface AutoOrchestrateAgent {
     status?: 'pending' | 'completed' | 'failed';
   }> | string[];
   inputValues?: Record<string, any>;
+  isCustom?: boolean; // Flag for custom user-created agents
   // Add other properties as needed based on the API response
 }
