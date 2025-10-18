@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, X, PenTool, Calculator, Zap, MessageCircle } from "lucide-react";
+import { Bot, X, PenTool, Calculator, Zap, MessageCircle, User } from "lucide-react";
 import { Workflow, WorkflowNode, WorkflowCanvasProps } from "@/types/workflow";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { LogSidebar } from "./LogSidebar";
@@ -9,6 +9,7 @@ import { FeedbackPopup } from "./FeedbackPopup";
 import { toast } from 'react-hot-toast';
 import { ExpandableCapabilities } from "./ExpandableCapabilities";
 import { CapabilityYamlEditor } from "./CapabilityYamlEditor";
+import { CustomUserAgentNode } from "./CustomUserAgentNode";
 import {
   ReactFlow,
   applyNodeChanges,
@@ -98,6 +99,7 @@ const CustomAgentNode = ({ data, selected, id }: { data: any; selected?: boolean
 // Node types for React Flow
 const nodeTypes = {
   agent: CustomAgentNode,
+  customAgent: CustomUserAgentNode,
 };
 
 // Main WorkflowCanvas component wrapped with ReactFlowProvider
@@ -146,7 +148,12 @@ function WorkflowCanvasInner({
   // Initialize nodes based on agents and edges based on connections
   useEffect(() => {
     if (agents) {
-      const agentNodes: Node[] = Object.entries(agents).map(([name, agent], index) => ({
+      // Separate custom agents from regular agents
+      const regularAgents = Object.entries(agents).filter(([_, agent]) => !agent.isCustom);
+      const customAgents = Object.entries(agents).filter(([_, agent]) => agent.isCustom);
+      
+      // Position regular agents in the main flow
+      const regularAgentNodes: Node[] = regularAgents.map(([name, agent], index) => ({
         id: `agent-${name}`,
         position: { 
           x: 100 + (index % 3) * 180, // Adjusted spacing for smaller nodes
@@ -155,7 +162,8 @@ function WorkflowCanvasInner({
         data: {
           label: agent.name || name,
           role: agent.role,
-          capabilities: agent.capabilities || []
+          capabilities: agent.capabilities || [],
+          isCustom: false
         },
         type: 'agent',
         style: {
@@ -163,6 +171,28 @@ function WorkflowCanvasInner({
           height: 50
         }
       }));
+      
+      // Position custom agents above the main flow, isolated
+      const customAgentNodes: Node[] = customAgents.map(([name, agent], index) => ({
+        id: `agent-${name}`,
+        position: { 
+          x: 100 + (index * 150), // Spread horizontally above
+          y: 20 // Position above regular agents
+        },
+        data: {
+          label: agent.name || name,
+          role: agent.role,
+          capabilities: agent.capabilities || [],
+          isCustom: true
+        },
+        type: 'customAgent',
+        style: {
+          width: 110,
+          height: 55
+        }
+      }));
+      
+      const agentNodes: Node[] = [...regularAgentNodes, ...customAgentNodes];
       
       // Add end node
       const endNode: Node = {
@@ -188,12 +218,19 @@ function WorkflowCanvasInner({
       setNodes(allNodes);
 
       // Create connections based on agent input/output relationships
-      if (agents && Object.keys(agents).length === 1) {
-        // Single agent case - connect directly to end node
-        const [agentName] = Object.keys(agents);
+      // Separate regular and custom agents for connection logic
+      const regularAgentEntries = regularAgents;
+      const customAgentEntries = customAgents;
+      
+      // Get the first regular agent for custom agent connections
+      const firstRegularAgent = regularAgentEntries.length > 0 ? regularAgentEntries[0] : null;
+      
+      if (regularAgentEntries.length === 1 && customAgentEntries.length === 0) {
+        // Single regular agent case - connect directly to end node
+        const [agentName] = regularAgentEntries;
         const singleAgentConnection: Edge = {
-          id: `${agentName}-to-end`,
-          source: `agent-${agentName}`,
+          id: `${agentName[0]}-to-end`,
+          source: `agent-${agentName[0]}`,
           target: 'end-node',
           type: 'smoothstep',
           animated: true,
@@ -209,21 +246,45 @@ function WorkflowCanvasInner({
           },
         };
         setEdges([singleAgentConnection]);
-      } else if (agents && Object.keys(agents).length > 1) {
-        const agentEntries = Object.entries(agents);
+      } else if (regularAgentEntries.length > 1 || (regularAgentEntries.length >= 1 && customAgentEntries.length > 0)) {
         const generatedConnections: Edge[] = [];
         
-        console.log('Available agents for connections:', agentEntries.map(([name, agent]) => ({
+        // First, connect custom agents to the first regular agent (if any)
+        if (firstRegularAgent && customAgentEntries.length > 0) {
+          const [firstRegularName] = firstRegularAgent;
+          customAgentEntries.forEach(([customName]) => {
+            generatedConnections.push({
+              id: `custom-${customName}-to-${firstRegularName}`,
+              source: `agent-${customName}`,
+              target: `agent-${firstRegularName}`,
+              type: 'smoothstep',
+              animated: true,
+              style: {
+                stroke: '#8b5cf6', // Purple for custom connections
+                strokeWidth: 2.5,
+                strokeDasharray: '8,4', // Dashed line to show it's custom
+              },
+              markerEnd: {
+                type: 'arrowclosed',
+                width: 16,
+                height: 16,
+                color: '#8b5cf6',
+              },
+            });
+          });
+        }
+        
+        console.log('Available regular agents for connections:', regularAgentEntries.map(([name, agent]) => ({
           name,
           inputs: agent.inputs,
           outputs: agent.outputs
         })));
         
-        // Create connections based on input/output flow
-        agentEntries.forEach(([sourceName, sourceAgent], sourceIndex) => {
+        // Create connections based on input/output flow (ONLY for regular agents)
+        regularAgentEntries.forEach(([sourceName, sourceAgent], sourceIndex) => {
           if (sourceAgent.outputs && sourceAgent.outputs.length > 0) {
             sourceAgent.outputs.forEach((output: string) => {
-              agentEntries.forEach(([targetName, targetAgent], targetIndex) => {
+              regularAgentEntries.forEach(([targetName, targetAgent], targetIndex) => {
                 if (sourceName !== targetName && targetAgent.inputs && targetAgent.inputs.includes(output)) {
                   const connectionId = `${sourceName}-to-${targetName}`;
                   
@@ -254,12 +315,12 @@ function WorkflowCanvasInner({
           }
         });
         
-        // If no connections generated from input/output matching, create a simple sequential flow
-        if (generatedConnections.length === 0 && agentEntries.length >= 2) {
+        // If no connections generated from input/output matching, create a simple sequential flow (ONLY regular agents)
+        if (generatedConnections.length === customAgentEntries.length && regularAgentEntries.length >= 2) {
           console.log('No input/output matches found, creating sequential flow');
-          for (let i = 0; i < agentEntries.length - 1; i++) {
-            const [sourceName] = agentEntries[i];
-            const [targetName] = agentEntries[i + 1];
+          for (let i = 0; i < regularAgentEntries.length - 1; i++) {
+            const [sourceName] = regularAgentEntries[i];
+            const [targetName] = regularAgentEntries[i + 1];
             
             generatedConnections.push({
               id: `seq-${sourceName}-to-${targetName}`,
@@ -282,9 +343,9 @@ function WorkflowCanvasInner({
           }
         }
         
-        // Connect the terminal agent(s) to the end node
-        // Find agents that are targets but not sources (terminal agents in the workflow)
-        const terminalAgents = agentEntries
+        // Connect the terminal agent(s) to the end node (ONLY regular agents)
+        // Find regular agents that are targets but not sources (terminal agents in the workflow)
+        const terminalAgents = regularAgentEntries
           .map(([name]) => name)
           .filter(agentName => {
             const isTarget = generatedConnections.some(conn => conn.target === `agent-${agentName}`);
@@ -293,10 +354,10 @@ function WorkflowCanvasInner({
             return isTarget && !isSource;
           });
         
-        // If no terminal agents found based on connections, use the last agent in execution order
-        if (terminalAgents.length === 0 && agentEntries.length > 0) {
-          // For sequential workflows, the last agent is typically the terminal one
-          terminalAgents.push(agentEntries[agentEntries.length - 1][0]);
+        // If no terminal agents found based on connections, use the last regular agent in execution order
+        if (terminalAgents.length === 0 && regularAgentEntries.length > 0) {
+          // For sequential workflows, the last regular agent is typically the terminal one
+          terminalAgents.push(regularAgentEntries[regularAgentEntries.length - 1][0]);
         }
         
         console.log('Terminal agents found for end connection:', terminalAgents);
@@ -325,11 +386,11 @@ function WorkflowCanvasInner({
         console.log('Generated connections:', generatedConnections);
         setEdges(generatedConnections);
         
-        // If still no connections but we have at least 2 agents, force a test connection
-        if (generatedConnections.length === 0 && agentEntries.length >= 2) {
-          console.log('Forcing a test connection between first two agents');
-          const [firstName] = agentEntries[0];
-          const [secondName] = agentEntries[1];
+        // If still no connections but we have at least 2 regular agents, force a test connection
+        if (generatedConnections.length === customAgentEntries.length && regularAgentEntries.length >= 2) {
+          console.log('Forcing a test connection between first two regular agents');
+          const [firstName] = regularAgentEntries[0];
+          const [secondName] = regularAgentEntries[1];
           
           const testConnection: Edge = {
             id: `test-${firstName}-to-${secondName}`,
@@ -394,18 +455,47 @@ function WorkflowCanvasInner({
         },
       }));
       
-      // Find terminal agents from explicit connections and add end node connections
+      // Separate custom and regular agents
+      const regularAgentsFromExplicit = Object.entries(agents).filter(([_, agent]) => !agent.isCustom);
+      const customAgentsFromExplicit = Object.entries(agents).filter(([_, agent]) => agent.isCustom);
+      
+      // Connect custom agents to first regular agent
+      if (regularAgentsFromExplicit.length > 0 && customAgentsFromExplicit.length > 0) {
+        const [firstRegularName] = regularAgentsFromExplicit[0];
+        customAgentsFromExplicit.forEach(([customName]) => {
+          reactFlowEdges.push({
+            id: `custom-${customName}-to-${firstRegularName}`,
+            source: `agent-${customName}`,
+            target: `agent-${firstRegularName}`,
+            type: 'smoothstep',
+            animated: true,
+            style: {
+              stroke: '#8b5cf6',
+              strokeWidth: 2.5,
+              strokeDasharray: '8,4',
+            },
+            markerEnd: {
+              type: 'arrowclosed' as const,
+              width: 16,
+              height: 16,
+              color: '#8b5cf6',
+            },
+          });
+        });
+      }
+      
+      // Find terminal agents from explicit connections and add end node connections (ONLY regular agents)
       if (agents) {
-        const agentNames = Object.keys(agents);
-        const terminalAgents = agentNames.filter(agentName => {
+        const regularAgentNames = regularAgentsFromExplicit.map(([name]) => name);
+        const terminalAgents = regularAgentNames.filter(agentName => {
           const agentId = `agent-${agentName}`;
           // Agent is terminal if it's not a source in any connection
           return !reactFlowEdges.some(edge => edge.source === agentId);
         });
         
-        // If no terminal agents, use the last agent
-        if (terminalAgents.length === 0 && agentNames.length > 0) {
-          terminalAgents.push(agentNames[agentNames.length - 1]);
+        // If no terminal agents, use the last regular agent
+        if (terminalAgents.length === 0 && regularAgentNames.length > 0) {
+          terminalAgents.push(regularAgentNames[regularAgentNames.length - 1]);
         }
         
         // Add connections to end node

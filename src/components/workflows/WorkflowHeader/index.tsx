@@ -18,6 +18,7 @@ interface WorkflowHeaderProps {
   onCloseWorkflow: (workflowId: string) => void;
   onCreateNew: () => void;
   onCreateWithModal?: (data: WorkflowFormData) => void;
+  onCreateCustomAgent?: (data: any) => void;
   onUndo?: () => void;
   canUndo?: boolean;
   onExecute: () => void;
@@ -67,6 +68,7 @@ export function WorkflowHeader({
       onCloseWorkflow={props.onCloseWorkflow}
       onCreateNew={props.onCreateNew}
       onCreateWithModal={props.onCreateWithModal}
+      onCreateCustomAgent={props.onCreateCustomAgent}
       onUndo={props.onUndo}
       canUndo={props.canUndo}
       onExecute={props.onExecute}

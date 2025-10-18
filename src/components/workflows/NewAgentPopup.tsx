@@ -45,20 +45,9 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
     setIsSubmitting(true);
     
     try {
-      console.log('🤖 Creating agent with data:', data);
+      console.log('🤖 Creating custom agent with data:', data);
       
-      // Use RTK Query mutation
-      const result = await createAgent({
-        workflow_id: 'default-workflow', // You can make this dynamic
-        name: data.agentName,
-        role: data.description,
-        execute_now: false
-      }).unwrap();
-
-      console.log('✅ Agent created successfully:', result);
-
-      toast.success('Agent created successfully!');
-      
+      // Call the onSubmit callback to add the custom agent to canvas
       if (onSubmit) {
         onSubmit(data);
       }
