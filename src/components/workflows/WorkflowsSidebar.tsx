@@ -108,7 +108,7 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
 
   console.log(mockAgentData , "mockAgentData-Ranga")
 
-  // Debug mock agent data changes
+  // Debug mock agent data change
   useEffect(() => {
     if (selectedWorkflowId) {
       console.log('🔄 Mock agent data query triggered for workflow:', selectedWorkflowId);
