@@ -164,7 +164,7 @@ export default function WorkflowsPage() {
             };
           });
           
-          // Update canvas with mock agents
+          // Update canvas with mock agents FIRST (priority display)
           setAgents(prevAgents => {
             // Clear any existing mock agents first
             const clearedAgents = Object.fromEntries(
@@ -172,12 +172,13 @@ export default function WorkflowsPage() {
             );
             
             return {
-              ...clearedAgents,
-              ...mockAgents
+              ...mockAgents,  // Mock agents FIRST
+              ...clearedAgents // Other agents SECOND
             };
           });
           
-          console.log('✅ Mock agents updated in canvas (ARRAY FORMAT)');
+          console.log('✅ Mock agents updated in canvas (ARRAY FORMAT) - PRIORITY DISPLAY');
+          console.log('🎯 Mock agents will appear FIRST in UI:', Object.keys(mockAgents));
         } else if (mockAgentData.id) {
           console.log('🎭 UPDATING CANVAS WITH MOCK AGENT DATA (OBJECT FORMAT):', mockAgentData);
           
@@ -194,7 +195,7 @@ export default function WorkflowsPage() {
             workflowId: activeWorkflow
           };
           
-          // Update canvas with mock agent
+          // Update canvas with mock agent FIRST (priority display)
           setAgents(prevAgents => {
             // Clear any existing mock agents first
             const clearedAgents = Object.fromEntries(
@@ -202,12 +203,13 @@ export default function WorkflowsPage() {
             );
             
             return {
-              ...clearedAgents,
-              [mockAgentId]: mockAgent
+              [mockAgentId]: mockAgent, // Mock agent FIRST
+              ...clearedAgents // Other agents SECOND
             };
           });
           
-          console.log('✅ Mock agent updated in canvas (OBJECT FORMAT)');
+          console.log('✅ Mock agent updated in canvas (OBJECT FORMAT) - PRIORITY DISPLAY');
+          console.log('🎯 Mock agent will appear FIRST in UI:', mockAgentId);
         }
         
         console.log('🔍 Mock agent data details:', {
