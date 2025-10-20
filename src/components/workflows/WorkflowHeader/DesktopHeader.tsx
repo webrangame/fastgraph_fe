@@ -23,6 +23,7 @@ interface DesktopHeaderProps {
   onStop: () => void;
   onSave: () => void;
   onDelete: () => void;
+  userId?: string;
 }
 
 export function DesktopHeader({
@@ -44,7 +45,8 @@ export function DesktopHeader({
   onExecute,
   onStop,
   onSave,
-  onDelete
+  onDelete,
+  userId
 }: DesktopHeaderProps) {
   return (
     <header className="theme-header-bg theme-border border-b">
@@ -102,6 +104,7 @@ export function DesktopHeader({
         onUndo={onUndo}
         canUndo={canUndo}
         maxWorkflows={5}
+        userId={userId}
       />
     </header>
   );

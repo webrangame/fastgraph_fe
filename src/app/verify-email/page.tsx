@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useVerifyEmailMutation } from '../../../lib/api/authApi';
 
 const VerifyEmailPage = () => {
   const router = useRouter();
@@ -10,6 +11,8 @@ const VerifyEmailPage = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const [token, setToken] = useState<string>('');
+  
+  const [verifyEmailMutation, { isLoading, error }] = useVerifyEmailMutation();
 
   useEffect(() => {
     const tokenParam = searchParams.get('token');
@@ -28,22 +31,20 @@ const VerifyEmailPage = () => {
     try {
       setStatus('loading');
       setMessage('Verifying your email...');
+      
+      // Add a small delay to ensure loading state is visible
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const response = await fetch('/api/v1/auth/verify-email-frontend', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: verificationToken
-        }),
-      });
+      console.log('🔵 Starting email verification for token:', verificationToken);
 
-      const data = await response.json();
+      const result = await verifyEmailMutation(verificationToken).unwrap();
+      
+      console.log('🔵 API response data:', result);
 
-      if (response.ok && data.verified) {
+      if (result.success) {
         setStatus('success');
         setMessage('Email verified successfully! Redirecting to login...');
+        console.log('✅ Email verification successful');
         
         // Redirect to login page after 3 seconds
         setTimeout(() => {
@@ -51,12 +52,13 @@ const VerifyEmailPage = () => {
         }, 3000);
       } else {
         setStatus('error');
-        setMessage(data.message || 'Email verification failed. Please try again.');
+        setMessage(result.message || 'Email verification failed. Please try again.');
+        console.log('❌ Email verification failed:', result.message);
       }
-    } catch (error) {
-      console.error('Email verification error:', error);
+    } catch (error: any) {
+      console.error('❌ Email verification error:', error);
       setStatus('error');
-      setMessage('Network error. Please check your connection and try again.');
+      setMessage(error?.data?.message || error?.message || 'Network error. Please check your connection and try again.');
     }
   };
 
@@ -83,15 +85,24 @@ const VerifyEmailPage = () => {
       <div className="p-8 w-full max-w-md relative z-10 bg-gray-800/90 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-2xl">
         
         {/* Loading State */}
-        {status === 'loading' && (
+        {(status === 'loading' || isLoading) && (
           <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-blue-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mx-auto w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mb-6">
+              <svg className="w-10 h-10 text-blue-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Verifying Email...</h2>
-            <p className="text-gray-300">{message}</p>
+            <p className="text-gray-300 mb-4">{message}</p>
+            
+            {/* Progress indicator */}
+            <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+              <div className="bg-blue-500 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+            </div>
+            
+            <p className="text-sm text-gray-400">
+              Please wait while we verify your email address...
+            </p>
           </div>
         )}
 

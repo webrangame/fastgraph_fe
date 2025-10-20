@@ -2,17 +2,19 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Plus, Play } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { useCreateAgentMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
+import { useCreateAgentV1Mutation, useCreateAgentMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
 import toast from 'react-hot-toast';
 
 interface NewAgentPopupProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: (data: AgentFormData) => void;
+  workflowId?: string;
+  userId?: string;
 }
 
 export interface AgentFormData {
@@ -20,9 +22,10 @@ export interface AgentFormData {
   description: string;
 }
 
-export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps) {
+export function NewAgentPopup({ isOpen, onClose, onSubmit, workflowId, userId }: NewAgentPopupProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [createAgentV1] = useCreateAgentV1Mutation();
   const [createAgent] = useCreateAgentMutation();
 
   const {
@@ -45,7 +48,34 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
     setIsSubmitting(true);
     
     try {
-      console.log('🤖 Creating custom agent with data:', data);
+      console.log('🤖 Creating agent with data:', data);
+      console.log('🔗 Using workflowId:', workflowId || 'default-workflow');
+      console.log('👤 Using userId:', userId || 'user');
+      
+      // First, call the new API endpoint
+      console.log('📡 Calling createAgentV1 API...');
+      const v1Result = await createAgentV1({
+        workflowId: workflowId || 'default-workflow',
+        agentName: data.agentName,
+        role: data.description,
+        isUserEvolved: false,
+        createdBy: userId || 'user'
+      }).unwrap();
+
+      console.log('✅ createAgentV1 API succeeded:', v1Result);
+      
+      // Only if the first API succeeds, call the second API
+      console.log('📡 Calling createAgent API...');
+      const result = await createAgent({
+        workflow_id: workflowId || 'default-workflow',
+        name: data.agentName,
+        role: data.description,
+        execute_now: true
+      }).unwrap();
+
+      console.log('✅ Agent created successfully:', result);
+      
+      toast.success('Agent created successfully!');
       
       // Call the onSubmit callback to add the custom agent to canvas
       if (onSubmit) {
@@ -62,38 +92,6 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
     }
   };
 
-  const handleTriggerAgent = async () => {
-    setIsSubmitting(true);
-    
-    try {
-      const data = formData;
-      console.log('🤖 Triggering agent with data:', data);
-      
-      // Use RTK Query mutation with execute_now: true
-      const result = await createAgent({
-        workflow_id: 'default-workflow', // You can make this dynamic
-        name: data.agentName,
-        role: data.description,
-        execute_now: true
-      }).unwrap();
-
-      console.log('✅ Agent triggered successfully:', result);
-
-      toast.success('Agent triggered successfully!');
-      
-      if (onSubmit) {
-        onSubmit(data);
-      }
-      
-      handleClose();
-      
-    } catch (error) {
-      console.error('Error triggering agent:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to trigger agent');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleClose = () => {
     if (isSubmitting) return; // Prevent closing during submission
@@ -241,25 +239,6 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
               </>
             ) : (
               'Create Agent'
-            )}
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            icon={Play}
-            onClick={handleTriggerAgent}
-            disabled={isSubmitting}
-            className={`transition-all duration-200 hover:scale-105 bg-green-600 hover:bg-green-700 ${
-              isSubmitting ? 'animate-pulse' : ''
-            }`}
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Triggering...
-              </>
-            ) : (
-              'Trigger Agent'
             )}
           </Button>
         </div>

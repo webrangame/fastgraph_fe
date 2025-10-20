@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { FileText, Play, Pause, Clock, CheckCircle, ChevronLeft, ChevronRight, Search, X, Loader2, Trash2 } from 'lucide-react';
 import type { Workflow } from '@/types/workflow';
-import { useGetDataCreatedByQuery, useDeleteDataMutation } from '../../../redux/api/autoOrchestrate/autoOrchestrateApi';
+import { useGetDataCreatedByQuery, useDeleteDataMutation, useGetMockAgentDataQuery } from '../../../redux/api/autoOrchestrate/autoOrchestrateApi';
 import toast from 'react-hot-toast';
 
 interface WorkflowsSidebarProps {
@@ -66,6 +66,7 @@ const formatDate = (dateString: string): string => {
 export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWorkflowId, isCollapsed = false, onToggleCollapse, userId = '1' }: WorkflowsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingWorkflow, setDeletingWorkflow] = useState<string | null>(null);
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   
   // Use the API to fetch workflows - only if userId is provided
   const { 
@@ -94,6 +95,74 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
   // Delete workflow mutation
   const [deleteData] = useDeleteDataMutation();
 
+  // Fetch mock agent data for the selected workflow
+  const { 
+    data: mockAgentData, 
+    error: mockAgentError, 
+    isLoading: isLoadingMockAgent,
+    refetch: refetchMockAgent
+  } = useGetMockAgentDataQuery(selectedWorkflowId, {
+    skip: !selectedWorkflowId // Skip if no workflow selected
+  });
+
+
+  console.log(mockAgentData , "mockAgentData-Ranga")
+
+  // Debug mock agent data changes
+  useEffect(() => {
+    if (selectedWorkflowId) {
+      console.log('🔄 Mock agent data query triggered for workflow:', selectedWorkflowId);
+      console.log('📊 Mock agent data state:', {
+        data: mockAgentData,
+        error: mockAgentError,
+        isLoading: isLoadingMockAgent,
+        hasData: !!mockAgentData,
+        dataKeys: mockAgentData ? Object.keys(mockAgentData) : []
+      });
+      
+      if (mockAgentData) {
+        console.log('✅ Mock agent data received:', mockAgentData);
+      }
+      
+      if (mockAgentError) {
+        console.error('❌ Mock agent data error:', mockAgentError);
+        console.error('❌ Error details:', {
+          message: (mockAgentError as any)?.message || 'Unknown error',
+          status: (mockAgentError as any)?.status || 'No status',
+          data: (mockAgentError as any)?.data || 'No data'
+        });
+      }
+    }
+  }, [selectedWorkflowId, mockAgentData, mockAgentError, isLoadingMockAgent]);
+
+  // Log when workflow selection changes
+  useEffect(() => {
+    if (selectedWorkflowId) {
+      console.log('✅ Workflow selected, mock agent data will be fetched:', selectedWorkflowId);
+    }
+  }, [selectedWorkflowId]);
+
+  // Generate fallback mock data when API fails
+  const generateFallbackMockData = (workflowId: string) => {
+    return {
+      name: `Mock Agent for ${workflowId}`,
+      role: 'validation',
+      capabilities: ['analyze', 'validate', 'process', 'report'],
+      inputs: ['data', 'parameters', 'config'],
+      outputs: ['results', 'reports', 'logs'],
+      logs: [
+        `Initialized for workflow ${workflowId}`,
+        'Mock data loaded successfully',
+        'Ready for processing'
+      ],
+      workflowId: workflowId,
+      isMock: true
+    };
+  };
+
+  // Use fallback data if API fails, but prioritize mockAgentData with valid ID or array
+  const displayData = (mockAgentData && (Array.isArray(mockAgentData) ? mockAgentData.length > 0 : mockAgentData.id)) ? mockAgentData : (mockAgentError ? generateFallbackMockData(selectedWorkflowId || 'unknown') : null);
+
 
   console.log(apiData , "apiData")
 
@@ -105,7 +174,26 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
     return [];
   }, [apiData]);
 
-  const handleWorkflowClick = (workflow: Workflow) => {
+  const handleWorkflowClick = async (workflow: Workflow) => {
+    console.log('🔄 Workflow clicked:', workflow.id);
+    console.log('📋 Workflow details:', {
+      id: workflow.id,
+      name: workflow.name,
+      description: workflow.description,
+      status: workflow.status
+    });
+    
+    // Clear previous mock agent data when switching workflows
+    if (selectedWorkflowId && selectedWorkflowId !== workflow.id) {
+      console.log('🧹 Clearing previous mock agent data for workflow:', selectedWorkflowId);
+      console.log('🔄 Switching to new workflow:', workflow.id);
+    }
+    
+    // Set the selected workflow ID (this will trigger the query)
+    setSelectedWorkflowId(workflow.id);
+    console.log('✅ Selected workflow ID set to:', workflow.id);
+    
+    // Call the parent handler
     if (onWorkflowSelect) {
       onWorkflowSelect(workflow.id);
     }
@@ -307,6 +395,8 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
           ) : filteredWorkflows.length > 0 ? (
             filteredWorkflows.map((workflow) => {
               const isSelected = currentWorkflowId === workflow.id;
+              const hasMockData = selectedWorkflowId === workflow.id && mockAgentData && (Array.isArray(mockAgentData) ? mockAgentData.length > 0 : mockAgentData.id);
+              const isLoadingMockDataFromAPI = selectedWorkflowId === workflow.id && isLoadingMockAgent;
               return (
                 <div 
                   key={workflow.id}
@@ -351,6 +441,35 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
                             {workflow.name}
                           </span>
                           {getStatusIcon(workflow.status)}
+
+                          
+                          
+                          {/* Mock data status indicator */}
+                          {selectedWorkflowId === workflow.id && (
+                            <div className="flex items-center space-x-1">
+                              {isLoadingMockDataFromAPI ? (
+                                <div className="flex items-center space-x-1">
+                                  <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
+                                  <span className="text-xs text-blue-500">Loading agents...</span>
+                                </div>
+                              ) : hasMockData ? (
+                                <div className="flex items-center space-x-1">
+                                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                  <span className="text-xs text-green-500">Valid Agents</span>
+                                </div>
+                              ) : mockAgentError ? (
+                                <div className="flex items-center space-x-1">
+                                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                  <span className="text-xs text-red-500">Error</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-1">
+                                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                  <span className="text-xs text-orange-500">No Agents</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <p className="text-xs theme-text-muted mb-2 line-clamp-2">
                           {workflow.description}
@@ -414,6 +533,189 @@ export function WorkflowsSidebar({ isMobile = false, onWorkflowSelect, currentWo
             </div>
           )}
         </div>
+
+        {/* Mock Agent Data Display - Only show when workflow is selected and not collapsed */}
+        {!isCollapsed && selectedWorkflowId && (
+          <div className="mt-6 p-4 theme-card-bg rounded-lg theme-border border">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold theme-text-primary flex items-center">
+                <FileText className="w-4 h-4 mr-2" />
+                Mock Agent Data
+              </h4>
+              <button
+                onClick={() => {
+                  console.log('🔄 Manual refetch triggered for workflow:', selectedWorkflowId);
+                  refetchMockAgent();
+                }}
+                className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                title="Refresh mock agent data"
+              >
+                Refresh
+              </button>
+            </div>
+            
+            {isLoadingMockAgent ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-4 h-4 animate-spin theme-text-muted mr-2" />
+                <span className="text-sm theme-text-muted">Loading agent data...</span>
+              </div>
+            ) : mockAgentError ? (
+              <div className="text-center py-4">
+                <div className="w-8 h-8 theme-text-muted mx-auto mb-2 opacity-50">
+                  <FileText className="w-full h-full" />
+                </div>
+                <p className="text-sm theme-text-muted mb-1">Failed to load agent data</p>
+                <p className="text-xs theme-text-muted">
+                  {'message' in mockAgentError ? mockAgentError.message : 'Please try again later'}
+                </p>
+              </div>
+            ) : displayData ? (
+              <div className="space-y-3">
+                <div className="text-xs theme-text-muted">
+                  <strong>Workflow ID:</strong> {selectedWorkflowId}
+                </div>
+                <div className="text-xs theme-text-muted">
+                  <strong>Data Source:</strong> {Array.isArray(displayData) ? `API (${displayData.length} agents)` : (displayData.isMock ? 'Fallback Mock' : 'API')}
+                </div>
+                
+                {/* Display mock agent data fields */}
+                <div className="space-y-2">
+                  {Array.isArray(displayData) ? (
+                    // Handle array format
+                    displayData.map((agent, index) => (
+                      <div key={index} className="border border-gray-200 dark:border-gray-700 rounded p-2">
+                        <div className="text-xs font-medium theme-text-primary mb-1">
+                          Agent {index + 1}: {agent.agentName || 'Unnamed Agent'}
+                        </div>
+                        <div className="text-xs theme-text-muted">
+                          <strong>Role:</strong> {agent.role || 'No role specified'}
+                        </div>
+                        <div className="text-xs theme-text-muted">
+                          <strong>Agent ID:</strong> {agent.agentId || 'No ID'}
+                        </div>
+                        <div className="text-xs theme-text-muted">
+                          <strong>Created:</strong> {agent.createdAt ? new Date(agent.createdAt).toLocaleDateString() : 'Unknown'}
+                        </div>
+                        <div className="text-xs theme-text-muted">
+                          <strong>Created By:</strong> {agent.createdBy || 'Unknown'}
+                        </div>
+                        <div className="text-xs theme-text-muted">
+                          <strong>User Evolved:</strong> {agent.isUserEvolved ? 'Yes' : 'No'}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    // Handle object format
+                    <>
+                      {displayData.name && (
+                        <div className="text-xs">
+                          <span className="theme-text-muted">Name:</span>
+                          <span className="ml-2 theme-text-primary font-medium">{displayData.name}</span>
+                        </div>
+                      )}
+                      
+                      {displayData.role && (
+                        <div className="text-xs">
+                          <span className="theme-text-muted">Role:</span>
+                          <span className="ml-2 theme-text-primary">{displayData.role}</span>
+                        </div>
+                      )}
+                      
+                      {displayData.capabilities && Array.isArray(displayData.capabilities) && (
+                        <div className="text-xs">
+                          <span className="theme-text-muted">Capabilities:</span>
+                          <div className="ml-2 mt-1 flex flex-wrap gap-1">
+                            {displayData.capabilities.map((capability: string, index: number) => (
+                              <span 
+                                key={index}
+                                className="px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 rounded text-xs"
+                              >
+                                {capability}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {displayData.inputs && Array.isArray(displayData.inputs) && (
+                        <div className="text-xs">
+                          <span className="theme-text-muted">Inputs:</span>
+                          <div className="ml-2 mt-1 flex flex-wrap gap-1">
+                            {displayData.inputs.map((input: string, index: number) => (
+                              <span 
+                                key={index}
+                                className="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400 rounded text-xs"
+                              >
+                                {input}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {displayData.outputs && Array.isArray(displayData.outputs) && (
+                        <div className="text-xs">
+                          <span className="theme-text-muted">Outputs:</span>
+                          <div className="ml-2 mt-1 flex flex-wrap gap-1">
+                            {displayData.outputs.map((output: string, index: number) => (
+                              <span 
+                                key={index}
+                                className="px-2 py-1 bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 rounded text-xs"
+                              >
+                                {output}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {displayData.logs && Array.isArray(displayData.logs) && (
+                        <div className="text-xs">
+                          <span className="theme-text-muted">Logs:</span>
+                          <div className="ml-2 mt-1 space-y-1">
+                            {displayData.logs.slice(0, 3).map((log: string, index: number) => (
+                              <div 
+                                key={index}
+                                className="px-2 py-1 bg-gray-100 text-gray-700 dark:bg-gray-500/10 dark:text-gray-400 rounded text-xs"
+                              >
+                                {log}
+                              </div>
+                            ))}
+                            {displayData.logs.length > 3 && (
+                              <div className="text-xs theme-text-muted">
+                                +{displayData.logs.length - 3} more logs
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+                
+                {/* Raw data toggle */}
+                <details className="mt-3">
+                  <summary className="text-xs theme-text-muted cursor-pointer hover:theme-text-primary">
+                    View Raw Data
+                  </summary>
+                  <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-auto max-h-32">
+                    {JSON.stringify(displayData, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <div className="w-8 h-8 theme-text-muted mx-auto mb-2 opacity-50">
+                  <FileText className="w-full h-full" />
+                </div>
+                <p className="text-sm theme-text-muted mb-1">No agent data available</p>
+                <p className="text-xs theme-text-muted">
+                  This workflow doesn't have mock agent data
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {isMobile && !isCollapsed && (
           <div className="mt-6 p-3 theme-card-bg rounded-lg theme-border border">

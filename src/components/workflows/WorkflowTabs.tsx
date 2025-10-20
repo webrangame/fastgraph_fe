@@ -6,6 +6,7 @@ import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { CreateWorkflowModal, WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 import { NewAgentPopup } from './NewAgentPopup';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface WorkflowTabsProps {
   workflows: Workflow[];
@@ -18,6 +19,7 @@ interface WorkflowTabsProps {
   onUndo?: () => void;
   canUndo?: boolean;
   maxWorkflows: number;
+  userId?: string;
 }
 
 export function WorkflowTabs({
@@ -30,7 +32,8 @@ export function WorkflowTabs({
   onCreateCustomAgent,
   onUndo,
   canUndo = false,
-  maxWorkflows
+  maxWorkflows,
+  userId
 }: WorkflowTabsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAgentPopupOpen, setIsAgentPopupOpen] = useState(false);
@@ -97,12 +100,28 @@ export function WorkflowTabs({
           </button>
         )}
 
-        {/* New Agent Button */}
+        {/* New Agent Button - Only active when there's an active workflow */}
         <button
-          onClick={() => setIsAgentPopupOpen(true)}
-          className="flex items-center space-x-1 px-3 py-2 theme-text-secondary hover:theme-text-primary theme-hover-bg rounded-lg transition-colors"
+          onClick={() => {
+            if (activeWorkflow) {
+              setIsAgentPopupOpen(true);
+            } else {
+              // Show a helpful message when no workflow is selected
+              toast.error('Please select a workflow first to create agents', {
+                duration: 3000,
+                icon: '⚠️',
+              });
+            }
+          }}
+          disabled={!activeWorkflow}
+          className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+            activeWorkflow
+              ? 'theme-text-secondary hover:theme-text-primary theme-hover-bg'
+              : 'theme-text-muted cursor-not-allowed opacity-50'
+          }`}
+          title={activeWorkflow ? 'Create new agent' : 'Select a workflow first to create agents'}
         >
-          <Bot className="w-4 h-4" />
+          <Bot className={`w-4 h-4 ${!activeWorkflow ? 'opacity-50' : ''}`} />
           <span className="text-sm">New Agent</span>
         </button>
       </div>
@@ -129,6 +148,8 @@ export function WorkflowTabs({
           }
           setIsAgentPopupOpen(false);
         }}
+        workflowId={activeWorkflow || undefined}
+        userId={userId}
       />
     </div>
   );

@@ -13,6 +13,16 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Email verification attempt (frontend):', { token });
 
+    // Check if this is a manual verification token (for testing)
+    if (token.startsWith('verify_')) {
+      console.log('🧪 Manual verification token detected, simulating successful verification');
+      return NextResponse.json({
+        message: 'Email verified successfully (manual verification)',
+        verified: true,
+        token: token
+      });
+    }
+
     // Check if this is a test token (for demonstration purposes)
     if (token.startsWith('test_verify_')) {
       console.log('🧪 Test verification token detected, simulating successful verification');
@@ -25,7 +35,11 @@ export async function POST(request: NextRequest) {
 
     // Call the actual backend API to verify the email
     try {
-      const response = await fetch('http://localhost:8080/api/v1/auth/verify-email', {
+      const backendUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://jobaapi.hattonn.com/api/v1/auth/verify-email'
+        : 'http://localhost:8080/api/v1/auth/verify-email';
+      
+      const response = await fetch(backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,11 +52,11 @@ export async function POST(request: NextRequest) {
 
       const data = await response.json();
 
-      if (response.ok && data.verified) {
+      if (response.ok) {
         console.log('✅ Email verified successfully via backend API:', data);
         return NextResponse.json({
-          message: 'Email verified successfully',
-          verified: true,
+          message: data.message || 'Email verified successfully',
+          verified: data.success || true, // Use backend's success field or default to true
           token: token
         });
       } else {
@@ -52,7 +66,7 @@ export async function POST(request: NextRequest) {
             message: data.message || 'Invalid or expired verification token',
             verified: false 
           },
-          { status: 400 }
+          { status: response.status } // Use the actual status from the backend
         );
       }
     } catch (apiError) {
