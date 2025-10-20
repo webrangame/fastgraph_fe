@@ -82,7 +82,7 @@ export const autoOrchestrateApi = createApi({
     }),
     createAgentV1: builder.mutation({
       query: ({ workflowId, agentName, role, isUserEvolved = false, createdBy = 'user' }) => ({
-        url: process.env.NEXT_PUBLIC_AGENT_API_URL || 'http://localhost:8080/api/v1/agents',
+        url: '/api/v1/agents',
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -104,6 +104,16 @@ export const autoOrchestrateApi = createApi({
       }),
       invalidatesTags: ['AutoOrchestrate'],
     }),
+    getMockAgentData: builder.query({
+      query: (workflowId) => ({
+        url: `/api/v1/agents/data/${workflowId}`,
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+        },
+      }),
+      providesTags: ['AutoOrchestrate'],
+    }),
   }),
 });
 
@@ -116,4 +126,5 @@ export const {
   useDeleteDataMutation,
   useCreateAgentV1Mutation,
   useCreateAgentMutation,
+  useGetMockAgentDataQuery,
 } = autoOrchestrateApi;

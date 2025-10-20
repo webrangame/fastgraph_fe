@@ -13,7 +13,7 @@ import { useEvolveAgentMutation } from '../../../../redux/api/evolveAgent/evolve
 import { WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 import { useDispatch, useSelector } from 'react-redux';
 import { addWorkflow, removeAllWorkflows, updateWorkflow, removeWorkflow, setWorkflows } from '@/redux/slice/workflowSlice';
-import { useGetDataCreatedByQuery, useInstallDataMutation } from '../../../../redux/api/autoOrchestrate/autoOrchestrateApi';
+import { useGetDataCreatedByQuery, useInstallDataMutation, useGetMockAgentDataQuery } from '../../../../redux/api/autoOrchestrate/autoOrchestrateApi';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
@@ -53,6 +53,7 @@ export default function WorkflowsPage() {
   } = useGetDataCreatedByQuery(currentUser?.id || currentUser?.userId || "1", {
     skip: !currentUser?.id && !currentUser?.userId // Skip if no user ID
   });
+
 
   // Evolution API
   const [evolveAgent, { isLoading: isEvolving }] = useEvolveAgentMutation();
@@ -110,6 +111,127 @@ export default function WorkflowsPage() {
     deleteNode
   } = useWorkflowManager();
 
+  // Fetch mock agent data for the current workflow
+  const { 
+    data: mockAgentData, 
+    error: mockAgentError, 
+    isLoading: isLoadingMockAgent,
+    refetch: refetchMockAgent
+  } = useGetMockAgentDataQuery(activeWorkflow, {
+    skip: !activeWorkflow // Skip if no active workflow
+  });
+
+  // Debug mock agent data changes and handle canvas updates
+  useEffect(() => {
+    if (activeWorkflow) {
+      console.log('🔄 Mock agent data query triggered for workflow:', activeWorkflow);
+      console.log('📊 Mock agent data state:', {
+        data: mockAgentData,
+        error: mockAgentError,
+        isLoading: isLoadingMockAgent,
+        hasData: !!mockAgentData,
+        hasId: mockAgentData?.id ? true : false,
+        isArray: Array.isArray(mockAgentData),
+        length: Array.isArray(mockAgentData) ? mockAgentData.length : 'not array',
+        dataKeys: mockAgentData ? Object.keys(mockAgentData) : 'no data'
+      });
+      
+      if (mockAgentData) {
+        console.log('✅ Mock agent data received:', mockAgentData);
+        
+        // Handle array format
+        if (Array.isArray(mockAgentData) && mockAgentData.length > 0) {
+          console.log('🎭 UPDATING CANVAS WITH MOCK AGENT DATA (ARRAY FORMAT):', mockAgentData);
+          
+          // Convert array of agents to individual agents in canvas
+          const mockAgents: { [key: string]: any } = {};
+          mockAgentData.forEach((agent, index) => {
+            const mockAgentId = `mock-agent-${activeWorkflow}-${index}`;
+            mockAgents[mockAgentId] = {
+              id: mockAgentId,
+              name: agent.agentName || `Mock Agent ${index + 1}`,
+              role: agent.role || 'validation',
+              capabilities: ['analyze', 'validate'],
+              inputs: ['data'],
+              outputs: ['results'],
+              logs: ['initialized'],
+              isMockAgent: true,
+              workflowId: activeWorkflow,
+              originalAgentId: agent.agentId,
+              createdAt: agent.createdAt,
+              createdBy: agent.createdBy,
+              isUserEvolved: agent.isUserEvolved
+            };
+          });
+          
+          // Update canvas with mock agents
+          setAgents(prevAgents => {
+            // Clear any existing mock agents first
+            const clearedAgents = Object.fromEntries(
+              Object.entries(prevAgents || {}).filter(([key, value]: [string, any]) => !value.isMockAgent)
+            );
+            
+            return {
+              ...clearedAgents,
+              ...mockAgents
+            };
+          });
+          
+          console.log('✅ Mock agents updated in canvas (ARRAY FORMAT)');
+        } else if (mockAgentData.id) {
+          console.log('🎭 UPDATING CANVAS WITH MOCK AGENT DATA (OBJECT FORMAT):', mockAgentData);
+          
+          const mockAgentId = `mock-agent-${activeWorkflow}`;
+          const mockAgent = {
+            id: mockAgentId,
+            name: mockAgentData.name || `Mock Agent for ${activeWorkflow}`,
+            role: mockAgentData.role || 'validation',
+            capabilities: mockAgentData.capabilities || ['analyze', 'validate'],
+            inputs: mockAgentData.inputs || ['data'],
+            outputs: mockAgentData.outputs || ['results'],
+            logs: mockAgentData.logs || ['initialized'],
+            isMockAgent: true,
+            workflowId: activeWorkflow
+          };
+          
+          // Update canvas with mock agent
+          setAgents(prevAgents => {
+            // Clear any existing mock agents first
+            const clearedAgents = Object.fromEntries(
+              Object.entries(prevAgents || {}).filter(([key, value]: [string, any]) => !value.isMockAgent)
+            );
+            
+            return {
+              ...clearedAgents,
+              [mockAgentId]: mockAgent
+            };
+          });
+          
+          console.log('✅ Mock agent updated in canvas (OBJECT FORMAT)');
+        }
+        
+        console.log('🔍 Mock agent data details:', {
+          id: mockAgentData.id,
+          name: mockAgentData.name,
+          role: mockAgentData.role,
+          capabilities: mockAgentData.capabilities,
+          inputs: mockAgentData.inputs,
+          outputs: mockAgentData.outputs,
+          logs: mockAgentData.logs
+        });
+      } else if (mockAgentError) {
+        console.log('❌ Mock agent data error:', mockAgentError);
+        console.log('❌ Error details:', {
+          message: (mockAgentError as any)?.message,
+          status: (mockAgentError as any)?.status,
+          data: (mockAgentError as any)?.data
+        });
+      } else {
+        console.log('⏳ Mock agent data loading or no data');
+      }
+    }
+  }, [activeWorkflow, mockAgentData, mockAgentError, isLoadingMockAgent]);
+
   // Use Redux workflows if available, otherwise fallback to workflow manager
   const displayWorkflows = workflows.length > 0 ? workflows : workflowManagerWorkflows;
   
@@ -126,18 +248,30 @@ export default function WorkflowsPage() {
     console.log('Current workflows in Redux:', workflows.length);
     console.log('Available API workflow data:', apiWorkflowData?.length || 0);
     
+    // Mock agent data will be fetched automatically by the useGetMockAgentDataQuery hook
+    console.log('📡 Mock agent data query will be triggered automatically for workflow:', workflowId);
+    console.log('🔐 Current user:', currentUser?.id || currentUser?.userId || 'No user');
+    console.log('🔐 Auth state:', {
+      hasUser: !!currentUser,
+      userId: currentUser?.id || currentUser?.userId,
+      hasAccessToken: !!currentUser?.accessToken
+    });
+    
     // FORCE COMPLETE STATE RESET
     console.log('🧹 CLEARING ALL STATE...');
     
     // Clear active workflow first
     setActiveWorkflow(null);
     
-    // Clear all canvas data
+    // Clear all canvas data including mock agent data
     setAgents(null);
     setConnections(null);
     setFinalData(null);
     setFinalizedResult(null);
     setCachedExecutionResults(null);
+    
+    // Clear mock agent data when switching workflows
+    console.log('🧹 Clearing mock agent data for workflow switch');
     
     // Clear Redux workflows
     dispatch(removeAllWorkflows());
@@ -217,9 +351,21 @@ export default function WorkflowsPage() {
         setActiveWorkflow(workflowId);
         
         // Load the new workflow data into canvas directly from processed results (no external API)
+        let finalAgents = {};
+        
+        // SECONDARY: Add processed workflow agents if available
         if (processedAgents && Object.keys(processedAgents).length > 0) {
-          console.log('🤖 LOADING AGENTS:', Object.keys(processedAgents));
-          setAgents(processedAgents);
+          console.log('🤖 ADDING PROCESSED WORKFLOW AGENTS:', Object.keys(processedAgents));
+          finalAgents = {
+            ...finalAgents,
+            ...processedAgents
+          };
+          console.log('✅ Processed workflow agents added to canvas');
+        }
+        
+        if (Object.keys(finalAgents).length > 0) {
+          console.log('🤖 LOADING AGENTS:', Object.keys(finalAgents));
+          setAgents(finalAgents);
           console.log('✅ Agents set in state');
         }
         
@@ -275,9 +421,12 @@ export default function WorkflowsPage() {
       }
     } else {
       console.log('No API data available');
+      
+      // Mock agent data will be handled by the useEffect when it's fetched
+      console.log('📡 Mock agent data will be handled by useEffect when fetched');
       toast.error('No workflow data available');
     }
-  }, [apiWorkflowData, setActiveWorkflow, dispatch]);
+  }, [apiWorkflowData, setActiveWorkflow, dispatch, mockAgentData, refetchMockAgent]);
 
   // Handle tab selection - also replace workflow entirely (same behavior as sidebar)
   const handleTabWorkflowSelect = useCallback((workflowId: string) => {
@@ -607,56 +756,196 @@ export default function WorkflowsPage() {
   };
 
   // Handle custom agent creation from NewAgentPopup
-  const handleCustomAgentCreate = useCallback((data: AgentFormData) => {
+  const handleCustomAgentCreate = useCallback(async (data: AgentFormData) => {
     console.log('🎨 Creating custom agent:', data);
     
-    // Generate mock data for the custom agent
-    const customAgentId = generateCustomAgentId();
-    const mockAgentData = generateCustomAgentMockData(data.agentName, data.description);
-    
-    console.log('Generated mock data:', mockAgentData);
-    
-    // Add the custom agent to the agents state
-    setAgents(prevAgents => {
-      const newAgents = {
-        ...prevAgents,
-        [customAgentId]: mockAgentData
-      };
-      
-      console.log('Updated agents:', Object.keys(newAgents));
-      return newAgents;
-    });
-    
-    // Show success toast with purple theme styling
-    toast.success(
-      <div>
-        <div className="font-bold">Custom Agent Created</div>
-        <div className="text-sm opacity-90">{data.agentName}</div>
-      </div>,
-      {
-        duration: 3000,
-        style: {
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-          color: '#fff',
-          border: '1px solid #8b5cf6',
-          boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.4)',
-        },
-        iconTheme: {
-          primary: '#8b5cf6',
-          secondary: '#fff',
-        },
+    try {
+      // Use existing mock agent data if available
+      if (mockAgentData && Array.isArray(mockAgentData) && mockAgentData.length > 0) {
+        console.log('✅ Using existing mock agent data (ARRAY FORMAT):', mockAgentData);
+        
+        // Use the first agent from the array as template
+        const templateAgent = mockAgentData[0];
+        const customAgentId = generateCustomAgentId();
+        const apiAgentData = {
+          id: customAgentId,
+          name: data.agentName,
+          role: data.description,
+          capabilities: ['analyze', 'validate'],
+          inputs: ['data'],
+          outputs: ['results'],
+          logs: ['initialized'],
+          isMockAgent: false, // This is a custom agent, not a mock agent
+          workflowId: activeWorkflow,
+          originalAgentId: templateAgent.agentId,
+          createdAt: new Date().toISOString(),
+          createdBy: templateAgent.createdBy,
+          isUserEvolved: false
+        };
+        
+        console.log('Using existing mock data as template:', apiAgentData);
+        console.log('🔍 Mock agent data validation:', {
+          isArray: Array.isArray(mockAgentData),
+          length: mockAgentData.length,
+          templateAgent: templateAgent,
+          workflowId: activeWorkflow
+        });
+        
+        // Add the custom agent to the agents state
+        setAgents(prevAgents => {
+          // Clear any existing mock agents first
+          const clearedAgents = Object.fromEntries(
+            Object.entries(prevAgents || {}).filter(([key, value]: [string, any]) => !value.isMockAgent)
+          );
+          
+          const newAgents = {
+            ...clearedAgents,
+            [customAgentId]: apiAgentData
+          };
+          
+          console.log('Updated agents:', Object.keys(newAgents));
+          return newAgents;
+        });
+        
+        // Show success toast with purple theme styling
+        toast.success(
+          <div>
+            <div className="font-bold">Custom Agent Created</div>
+            <div className="text-sm opacity-90">{data.agentName}</div>
+          </div>,
+          {
+            duration: 3000,
+            style: {
+              background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+              color: '#fff',
+              border: '1px solid #8b5cf6',
+              boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.4)',
+            },
+            iconTheme: {
+              primary: '#8b5cf6',
+              secondary: '#fff',
+            },
+          }
+        );
+        
+        // Add to undo stack
+        addToUndoStack({
+          type: 'customAgentCreate',
+          description: `Created custom agent: ${data.agentName}`,
+          data: { agentId: customAgentId, agentData: apiAgentData }
+        });
+        
+        console.log('✅ Custom agent added to canvas with existing mock data (ARRAY FORMAT)');
+      } else if (mockAgentData && mockAgentData.id) {
+        console.log('✅ Using existing mock agent data (OBJECT FORMAT):', mockAgentData);
+        
+        // Use the existing mock agent data
+        const customAgentId = generateCustomAgentId();
+        const apiAgentData = {
+          ...mockAgentData,
+          name: data.agentName,
+          role: data.description,
+          // Override with form data while keeping API structure
+        };
+        
+        console.log('Using existing mock data:', apiAgentData);
+        console.log('🔍 Mock agent data validation:', {
+          hasId: !!mockAgentData.id,
+          hasName: !!mockAgentData.name,
+          hasRole: !!mockAgentData.role,
+          workflowId: activeWorkflow
+        });
+        
+        // Add the custom agent to the agents state
+        setAgents(prevAgents => {
+          // Clear any existing mock agents first
+          const clearedAgents = Object.fromEntries(
+            Object.entries(prevAgents || {}).filter(([key, value]: [string, any]) => !value.isMockAgent)
+          );
+          
+          const newAgents = {
+            ...clearedAgents,
+            [customAgentId]: apiAgentData
+          };
+          
+          console.log('Updated agents:', Object.keys(newAgents));
+          return newAgents;
+        });
+        
+        // Show success toast with purple theme styling
+        toast.success(
+          <div>
+            <div className="font-bold">Custom Agent Created</div>
+            <div className="text-sm opacity-90">{data.agentName}</div>
+          </div>,
+          {
+            duration: 3000,
+            style: {
+              background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+              color: '#fff',
+              border: '1px solid #8b5cf6',
+              boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.4)',
+            },
+            iconTheme: {
+              primary: '#8b5cf6',
+              secondary: '#fff',
+            },
+          }
+        );
+        
+        // Add to undo stack
+        addToUndoStack({
+          type: 'customAgentCreate',
+          description: `Created custom agent: ${data.agentName}`,
+          data: { agentId: customAgentId, agentData: apiAgentData }
+        });
+        
+        console.log('✅ Custom agent added to canvas with existing mock data (OBJECT FORMAT)');
+      } else {
+        console.warn('No mock agent data available, falling back to local generation');
+        console.log('❌ No valid mock agent data available for workflow:', activeWorkflow);
+        console.log('🔍 Mock agent data check:', {
+          mockAgentData: mockAgentData,
+          hasData: !!mockAgentData,
+          isArray: Array.isArray(mockAgentData),
+          hasId: mockAgentData?.id ? true : false,
+          length: Array.isArray(mockAgentData) ? mockAgentData.length : 'not array'
+        });
+        
+        // Fallback to local generation if API fails
+        const customAgentId = generateCustomAgentId();
+        const fallbackMockData = generateCustomAgentMockData(data.agentName, data.description);
+        
+        setAgents(prevAgents => {
+          const newAgents = {
+            ...prevAgents,
+            [customAgentId]: fallbackMockData
+          };
+          return newAgents;
+        });
+        
+        toast.success(`Custom Agent Created: ${data.agentName}`);
+        console.log('✅ Custom agent added to canvas with fallback data');
       }
-    );
-    
-    // Add to undo stack
-    addToUndoStack({
-      type: 'customAgentCreate',
-      description: `Created custom agent: ${data.agentName}`,
-      data: { agentId: customAgentId, agentData: mockAgentData }
-    });
-    
-    console.log('✅ Custom agent added to canvas');
-  }, [addToUndoStack]);
+    } catch (error) {
+      console.error('Error fetching mock agent data:', error);
+      
+      // Fallback to local generation on error
+      const customAgentId = generateCustomAgentId();
+      const fallbackMockData = generateCustomAgentMockData(data.agentName, data.description);
+      
+      setAgents(prevAgents => {
+        const newAgents = {
+          ...prevAgents,
+          [customAgentId]: fallbackMockData
+        };
+        return newAgents;
+      });
+      
+      toast.error('Failed to fetch agent data, using fallback');
+      console.log('✅ Custom agent added to canvas with fallback data');
+    }
+  }, [addToUndoStack, mockAgentData, activeWorkflow]);
 
   return (
     <div className="h-screen theme-bg flex flex-col transition-colors duration-300">
@@ -684,6 +973,7 @@ export default function WorkflowsPage() {
         onSave={handleSave}
         onDelete={handleDeleteWorkflow}
         onMenuToggle={handleMobileMenuToggle}
+        userId={currentUser?.id || currentUser?.userId || "1"}
       />
 
       {/* Mobile Workflow Drawer */}

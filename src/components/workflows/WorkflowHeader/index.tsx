@@ -26,12 +26,14 @@ interface WorkflowHeaderProps {
   onSave: () => void;
   onDelete: () => void;
   onMenuToggle?: () => void;
+  userId?: string;
 }
 
 export function WorkflowHeader({
   isMobile,
   mobileMenuOpen,
   onMenuToggle,
+  userId,
   ...props
 }: WorkflowHeaderProps) {
   if (isMobile) {
@@ -75,6 +77,7 @@ export function WorkflowHeader({
       onStop={props.onStop}
       onSave={props.onSave}
       onDelete={props.onDelete}
+      userId={userId}
     />
   );
 }

@@ -13,6 +13,8 @@ interface NewAgentPopupProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: (data: AgentFormData) => void;
+  workflowId?: string;
+  userId?: string;
 }
 
 export interface AgentFormData {
@@ -20,7 +22,7 @@ export interface AgentFormData {
   description: string;
 }
 
-export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps) {
+export function NewAgentPopup({ isOpen, onClose, onSubmit, workflowId, userId }: NewAgentPopupProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [createAgentV1] = useCreateAgentV1Mutation();
@@ -47,15 +49,17 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
     
     try {
       console.log('🤖 Creating agent with data:', data);
+      console.log('🔗 Using workflowId:', workflowId || 'default-workflow');
+      console.log('👤 Using userId:', userId || 'user');
       
       // First, call the new API endpoint
       console.log('📡 Calling createAgentV1 API...');
       const v1Result = await createAgentV1({
-        workflowId: 'default-workflow',
+        workflowId: workflowId || 'default-workflow',
         agentName: data.agentName,
         role: data.description,
         isUserEvolved: false,
-        createdBy: 'user'
+        createdBy: userId || 'user'
       }).unwrap();
 
       console.log('✅ createAgentV1 API succeeded:', v1Result);
@@ -63,7 +67,7 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit }: NewAgentPopupProps)
       // Only if the first API succeeds, call the second API
       console.log('📡 Calling createAgent API...');
       const result = await createAgent({
-        workflow_id: 'default-workflow',
+        workflow_id: workflowId || 'default-workflow',
         name: data.agentName,
         role: data.description,
         execute_now: true
