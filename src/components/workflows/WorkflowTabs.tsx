@@ -16,6 +16,7 @@ interface WorkflowTabsProps {
   onCreateNew: () => void;
   onCreateWithModal?: (data: WorkflowFormData) => void;
   onCreateCustomAgent?: (data: any) => void; // Handler for custom agent creation
+  onRefreshMockData?: () => Promise<void>; // Handler for refreshing mock agent data
   onUndo?: () => void;
   canUndo?: boolean;
   maxWorkflows: number;
@@ -30,6 +31,7 @@ export function WorkflowTabs({
   onCreateNew,
   onCreateWithModal,
   onCreateCustomAgent,
+  onRefreshMockData,
   onUndo,
   canUndo = false,
   maxWorkflows,
@@ -150,6 +152,7 @@ export function WorkflowTabs({
         }}
         workflowId={activeWorkflow || undefined}
         userId={userId}
+        onRefreshMockData={onRefreshMockData}
       />
     </div>
   );

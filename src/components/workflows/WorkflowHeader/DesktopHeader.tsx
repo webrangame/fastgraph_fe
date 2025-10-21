@@ -17,6 +17,7 @@ interface DesktopHeaderProps {
   onCreateNew: () => void;
   onCreateWithModal?: (data: WorkflowFormData) => void;
   onCreateCustomAgent?: (data: any) => void;
+  onRefreshMockData?: () => Promise<void>;
   onUndo?: () => void;
   canUndo?: boolean;
   onExecute: () => void;
@@ -40,6 +41,7 @@ export function DesktopHeader({
   onCreateNew,
   onCreateWithModal,
   onCreateCustomAgent,
+  onRefreshMockData,
   onUndo,
   canUndo,
   onExecute,
@@ -101,6 +103,7 @@ export function DesktopHeader({
         onCreateNew={onCreateNew}
         onCreateWithModal={onCreateWithModal}
         onCreateCustomAgent={onCreateCustomAgent}
+        onRefreshMockData={onRefreshMockData}
         onUndo={onUndo}
         canUndo={canUndo}
         maxWorkflows={5}
