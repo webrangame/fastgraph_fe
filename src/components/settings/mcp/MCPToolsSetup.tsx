@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { AlertCircle, ChevronDown } from 'lucide-react';
 import { useCreateMCPServerMutation, useTestMCPConnectionMutation } from '@/redux/api/mcp/mcpApi';
@@ -39,6 +39,7 @@ export default function MCPToolsSetup({
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const [yamlContent, setYamlContent] = useState<string>(config?.configYml || '');
   const [yamlErrors, setYamlErrors] = useState<string[]>([]);
+  const [editorTheme, setEditorTheme] = useState<'vs-dark' | 'light'>('vs-dark');
   const {
     register,
     handleSubmit,
@@ -69,6 +70,24 @@ export default function MCPToolsSetup({
     });
     return () => subscription.unsubscribe();
   }, [watch, onConfigChange]);
+
+  // Keep Monaco theme in sync with app theme
+  useEffect(() => {
+    const compute = () => {
+      try {
+        const isDark = document.documentElement.classList.contains('dark');
+        setEditorTheme(isDark ? 'vs-dark' : 'light');
+        return;
+      } catch {}
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      setEditorTheme(mq.matches ? 'vs-dark' : 'light');
+    };
+    compute();
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => compute();
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   // Validate YAML (basic presence checks)
   const validateYaml = (content: string) => {
@@ -602,7 +621,7 @@ export default function MCPToolsSetup({
             </div>
           </div>
 
-          <div className="h-[420px] theme-border border rounded-sm overflow-hidden">
+          <div className="h-[420px] theme-border border rounded-sm overflow-hidden theme-bg">
             <Editor
               key={activeTab === 'yaml' ? 'yaml-open' : 'yaml-closed'}
               height="100%"
@@ -611,6 +630,7 @@ export default function MCPToolsSetup({
               defaultValue={yamlContent}
               onChange={handleYamlChange}
               onMount={handleYamlMount}
+              theme={editorTheme}
               options={{
                 minimap: { enabled: true },
                 fontSize: 13,
