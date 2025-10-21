@@ -15,6 +15,7 @@ interface NewAgentPopupProps {
   onSubmit?: (data: AgentFormData) => void;
   workflowId?: string;
   userId?: string;
+  onRefreshMockData?: () => Promise<void>;
 }
 
 export interface AgentFormData {
@@ -22,7 +23,7 @@ export interface AgentFormData {
   description: string;
 }
 
-export function NewAgentPopup({ isOpen, onClose, onSubmit, workflowId, userId }: NewAgentPopupProps) {
+export function NewAgentPopup({ isOpen, onClose, onSubmit, workflowId, userId, onRefreshMockData }: NewAgentPopupProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [createAgentV1] = useCreateAgentV1Mutation();
@@ -48,32 +49,36 @@ export function NewAgentPopup({ isOpen, onClose, onSubmit, workflowId, userId }:
     setIsSubmitting(true);
     
     try {
-      console.log('🤖 Creating agent with data:', data);
-      console.log('🔗 Using workflowId:', workflowId || 'default-workflow');
-      console.log('👤 Using userId:', userId || 'user');
+     
       
-      // First, call the new API endpoint
-      console.log('📡 Calling createAgentV1 API...');
       const v1Result = await createAgentV1({
-        workflowId: workflowId || 'default-workflow',
+        workflowId: workflowId,
         agentName: data.agentName,
         role: data.description,
         isUserEvolved: false,
         createdBy: userId || 'user'
       }).unwrap();
 
-      console.log('✅ createAgentV1 API succeeded:', v1Result);
       
       // Only if the first API succeeds, call the second API
-      console.log('📡 Calling createAgent API...');
       const result = await createAgent({
-        workflow_id: workflowId || 'default-workflow',
+        workflow_id: workflowId ,
         name: data.agentName,
         role: data.description,
         execute_now: true
       }).unwrap();
 
-      console.log('✅ Agent created successfully:', result);
+      // Third API call: Trigger mock agent data refresh
+      if (onRefreshMockData) {
+        try {
+          await onRefreshMockData();
+          console.log('✅ Mock agent data refresh triggered after agent creation');
+        } catch (error) {
+          console.warn('⚠️ Failed to trigger mock agent data refresh:', error);
+          // Don't fail the entire process if mock data refresh fails
+        }
+      }
+
       
       toast.success('Agent created successfully!');
       

@@ -456,8 +456,8 @@ function WorkflowCanvasInner({
       }));
       
       // Separate custom and regular agents
-      const regularAgentsFromExplicit = Object.entries(agents).filter(([_, agent]) => !agent.isCustom);
-      const customAgentsFromExplicit = Object.entries(agents).filter(([_, agent]) => agent.isCustom);
+      const regularAgentsFromExplicit = agents ? Object.entries(agents).filter(([_, agent]) => !agent.isCustom) : [];
+      const customAgentsFromExplicit = agents ? Object.entries(agents).filter(([_, agent]) => agent.isCustom) : [];
       
       // Connect custom agents to first regular agent
       if (regularAgentsFromExplicit.length > 0 && customAgentsFromExplicit.length > 0) {

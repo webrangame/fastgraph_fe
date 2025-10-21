@@ -19,6 +19,7 @@ interface WorkflowHeaderProps {
   onCreateNew: () => void;
   onCreateWithModal?: (data: WorkflowFormData) => void;
   onCreateCustomAgent?: (data: any) => void;
+  onRefreshMockData?: () => Promise<void>;
   onUndo?: () => void;
   canUndo?: boolean;
   onExecute: () => void;
@@ -71,6 +72,7 @@ export function WorkflowHeader({
       onCreateNew={props.onCreateNew}
       onCreateWithModal={props.onCreateWithModal}
       onCreateCustomAgent={props.onCreateCustomAgent}
+      onRefreshMockData={props.onRefreshMockData}
       onUndo={props.onUndo}
       canUndo={props.canUndo}
       onExecute={props.onExecute}
