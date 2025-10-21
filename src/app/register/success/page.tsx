@@ -50,15 +50,32 @@ const RegisterSuccessPage = () => {
         body: JSON.stringify({ email }),
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         alert('Verification email sent successfully!');
-        setCountdown(30); // Reset countdown
+        // Reset countdown to 30 seconds
+        setCountdown(30);
+        
+        // Start a new countdown timer
+        const timer = setInterval(() => {
+          setCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        
+        // Store timer reference for cleanup if needed
+        return () => clearInterval(timer);
       } else {
-        alert('Failed to send verification email. Please try again.');
+        alert(data.error || 'Failed to send verification email. Please try again.');
       }
     } catch (error) {
       console.error('Error resending verification email:', error);
-      alert('Failed to send verification email. Please try again.');
+      alert('Failed to send verification email. Please check your connection and try again.');
     }
   };
 
