@@ -77,7 +77,7 @@ const RegisterSuccessPage = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.verified) {
-          alert('Email verified successfully! You can now log in.');
+          alert('Email verified successfully! You can now log in to your account.');
           localStorage.removeItem('registeredEmail');
           router.push('/login');
         } else {
