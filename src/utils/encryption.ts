@@ -79,9 +79,9 @@ function encryptYamlWithPassword(yamlContent: string, password: string): string 
   } catch (error) {
     console.error('❌ Password-based encryption failed:', error);
     console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown'
     });
     throw error;
   }
@@ -155,9 +155,9 @@ export async function encryptYamlContent(yamlContent: string): Promise<string> {
   } catch (error) {
     console.error('❌ RSA encryption failed:', error);
     console.error('Error details:', {
-      message: error?.message,
-      stack: error?.stack,
-      name: error?.name
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown'
     });
     console.log('🔄 Falling back to password-based encryption...');
     
@@ -166,11 +166,11 @@ export async function encryptYamlContent(yamlContent: string): Promise<string> {
     } catch (fallbackError) {
       console.error('❌ Fallback encryption also failed:', fallbackError);
       console.error('Fallback error details:', {
-        message: fallbackError?.message,
-        stack: fallbackError?.stack,
-        name: fallbackError?.name
+        message: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+        stack: fallbackError instanceof Error ? fallbackError.stack : undefined,
+        name: fallbackError instanceof Error ? fallbackError.name : 'Unknown'
       });
-      throw new Error(`Failed to encrypt YAML content: ${error?.message || 'Unknown error'}`);
+      throw new Error(`Failed to encrypt YAML content: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
