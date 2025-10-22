@@ -10,7 +10,7 @@ export const mcpApi = createApi({
     // Create a new MCP server
     createMCPServer: builder.mutation({
       query: (serverData) => ({
-        url: '/api/v1/mcp/servers',
+        url: '/api/v1/mcp-settings',
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -24,7 +24,7 @@ export const mcpApi = createApi({
     // Get all MCP servers
     getMCPServers: builder.query({
       query: () => ({
-        url: '/api/v1/mcp/servers',
+        url: '/api/v1/mcp-settings',
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -139,7 +139,7 @@ export const mcpApi = createApi({
     // Get MCP servers created by a specific user
     getMCPServersByUser: builder.query({
       query: (userId) => ({
-        url: `/api/v1/mcp/servers/created-by/${userId}`,
+        url: `/api/v1/mcp-settings?status=active`,
         method: 'GET',
         headers: {
           'accept': 'application/json',
