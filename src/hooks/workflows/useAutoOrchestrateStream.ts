@@ -159,7 +159,7 @@ export function useAutoOrchestrateStream({
               if (user?.id && processedFinalData) {
                 try {
                   await installData({
-                    dataName: `Auto Orchestrate - ${command}`,
+                    dataName: `${command}`,
                     description: `Auto orchestrate result for: ${command}`,
                     dataType: 'auto_orchestrate',
                     dataContent: processedFinalData,

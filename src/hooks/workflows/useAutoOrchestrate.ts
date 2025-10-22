@@ -334,7 +334,7 @@ export function useAutoOrchestrate({
           });
 
           const saveResult = await installData({
-            dataName: `Auto Orchestrate - ${command}`,
+            dataName: `${command}`,
             description: `Auto orchestrate result for: ${command}`,
             dataType: 'json',
             dataContent: dataContent,
@@ -348,13 +348,22 @@ export function useAutoOrchestrate({
           try {
             console.log('📝 Attempting to save audit log...');
             await logAudit({
-              userId: user.id,
-              action: 'auto_orchestrate_completed',
-              details: {
+              action: 'create',
+              resource: 'data',
+              description: `Auto orchestrate completed: ${command}`,
+              details: `Agents: ${Object.keys(processedAgents).length}, Connections: ${processedConnections.length}`,
+              task: 'auto-orchestration',
+              endpoint: '/api/v1/workflows/auto-orchestrate',
+              method: 'POST',
+              statusCode: 200,
+              metadata: {
                 command,
                 agentsCount: Object.keys(processedAgents).length,
-                connectionsCount: processedConnections.length
-              }
+                connectionsCount: processedConnections.length,
+                processedAgents: Object.keys(processedAgents),
+                processedConnections: processedConnections.map(conn => conn.id || 'unknown')
+              },
+              createdBy: user.id
             }).unwrap();
             console.log('✅ Audit log saved successfully');
           } catch (auditError) {
