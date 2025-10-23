@@ -140,7 +140,7 @@ export default function DashboardPage() {
     // Handle the agent creation here
     console.log('Creating agent:', data);
     
-    
+    alert("okk")
     // You can add your agent creation logic here
     // For example: save to database, deploy agent, etc.
   };

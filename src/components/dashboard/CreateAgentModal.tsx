@@ -35,11 +35,7 @@ export function CreateAgentModal({ isOpen, onClose, onSubmit, currentWorkflowId 
   // Use dataId from Redux state as the workflowId, fallback to currentWorkflowId
   const actualWorkflowId = dataId || currentWorkflowId || '';
   
-  console.log('🆔 CreateAgentModal workflowId sources:', {
-    dataIdFromRedux: dataId,
-    currentWorkflowIdFromProps: currentWorkflowId,
-    actualWorkflowIdUsed: actualWorkflowId
-  });
+  
 
   const {
     register,

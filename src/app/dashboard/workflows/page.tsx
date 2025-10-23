@@ -184,7 +184,7 @@ export default function WorkflowsPage() {
         
         // Update canvas with mock agents FIRST (priority display)
         setAgents(prevAgents => {
-          // Clear any existing mock agents first
+          // Clear any existing mock agents first (now includes both bulk and custom agents)
           const clearedAgents = Object.fromEntries(
             Object.entries(prevAgents || {}).filter(([key, value]: [string, any]) => 
               !key.startsWith('mock-agent-') && 
@@ -257,7 +257,7 @@ export default function WorkflowsPage() {
         
         // Update canvas with mock agent FIRST (priority display)
         setAgents(prevAgents => {
-          // Clear any existing mock agents first
+          // Clear any existing mock agents first (now includes both bulk and custom agents)
           const clearedAgents = Object.fromEntries(
             Object.entries(prevAgents || {}).filter(([key, value]: [string, any]) => 
               !key.startsWith('mock-agent-') && 
@@ -869,176 +869,19 @@ export default function WorkflowsPage() {
 
   // Handle custom agent creation from NewAgentPopup
   const handleCustomAgentCreate = useCallback(async (data: AgentFormData) => {
-    console.log('🎨 Creating custom agent:', data);
+    console.log('🎨 Custom agent creation handled by NewAgentPopup - no duplicate creation needed');
     
-    try {
-      // Use existing mock agent data if available
-      if (mockAgentData && Array.isArray(mockAgentData) && mockAgentData.length > 0) {
-        console.log('✅ Using existing mock agent data (ARRAY FORMAT):', mockAgentData);
-        
-        // Use the first agent from the array as template
-        const templateAgent = mockAgentData[0];
-        const customAgentId = generateCustomAgentId();
-        const apiAgentData = {
-          id: customAgentId,
-          name: data.agentName,
-          role: data.description,
-          capabilities: ['analyze', 'validate'],
-          inputs: ['data'],
-          outputs: ['results'],
-          logs: ['initialized'],
-          isCustom: false, // This is a custom agent, not a mock agent
-          workflowId: activeWorkflow,
-          originalAgentId: templateAgent.agentId,
-          createdAt: new Date().toISOString(),
-          createdBy: templateAgent.createdBy,
-          isUserEvolved: false
-        };
-        
-        
-        // Add the custom agent to the agents state
-        setAgents(prevAgents => {
-          // Keep existing mock agents and add the new custom agent
-          const newAgents = {
-            ...prevAgents, // Keep all existing agents (including mock agents)
-            [customAgentId]: apiAgentData // Add the new custom agent
-          };
-          
-          console.log('✅ Updated agents state:', {
-            totalAgents: Object.keys(newAgents).length,
-            customAgent: customAgentId,
-            allAgentIds: Object.keys(newAgents)
-          });
-          
-          return newAgents;
-        });
-        
-        // Show success toast with purple theme styling
-        toast.success(
-          <div>
-            <div className="font-bold">Custom Agent Created</div>
-            <div className="text-sm opacity-90">{data.agentName}</div>
-          </div>,
-          {
-            duration: 3000,
-            style: {
-              background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-              color: '#fff',
-              border: '1px solid #8b5cf6',
-              boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.4)',
-            },
-            iconTheme: {
-              primary: '#8b5cf6',
-              secondary: '#fff',
-            },
-          }
-        );
-        
-        // Add to undo stack
-        addToUndoStack({
-          type: 'customAgentCreate',
-          description: `Created custom agent: ${data.agentName}`,
-          data: { agentId: customAgentId, agentData: apiAgentData }
-        });
-        
-        console.log('✅ Custom agent added to canvas with existing mock data (ARRAY FORMAT)');
-      } else if (mockAgentData && mockAgentData.id) {
-        console.log('✅ Using existing mock agent data (OBJECT FORMAT):', mockAgentData);
-        
-        // Use the existing mock agent data
-        const customAgentId = generateCustomAgentId();
-        const apiAgentData = {
-          ...mockAgentData,
-          name: data.agentName,
-          role: data.description,
-          // Override with form data while keeping API structure
-        };
-        
-        
-        // Add the custom agent to the agents state
-        setAgents(prevAgents => {
-          // Keep existing mock agents and add the new custom agent
-          const newAgents = {
-            ...prevAgents, // Keep all existing agents (including mock agents)
-            [customAgentId]: apiAgentData // Add the new custom agent
-          };
-          
-          console.log('✅ Updated agents state:', {
-            totalAgents: Object.keys(newAgents).length,
-            customAgent: customAgentId,
-            allAgentIds: Object.keys(newAgents)
-          });
-          
-          return newAgents;
-        });
-        
-        // Show success toast with purple theme styling
-        toast.success(
-          <div>
-            <div className="font-bold">Custom Agent Created</div>
-            <div className="text-sm opacity-90">{data.agentName}</div>
-          </div>,
-          {
-            duration: 3000,
-            style: {
-              background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-              color: '#fff',
-              border: '1px solid #8b5cf6',
-              boxShadow: '0 10px 30px -10px rgba(139, 92, 246, 0.4)',
-            },
-            iconTheme: {
-              primary: '#8b5cf6',
-              secondary: '#fff',
-            },
-          }
-        );
-        
-        // Add to undo stack
-        addToUndoStack({
-          type: 'customAgentCreate',
-          description: `Created custom agent: ${data.agentName}`,
-          data: { agentId: customAgentId, agentData: apiAgentData }
-        });
-        
-        console.log('✅ Custom agent added to canvas with existing mock data (OBJECT FORMAT)');
-      } else {
-        console.warn('No mock agent data available, falling back to local generation');
-        console.log('❌ No valid mock agent data available for workflow:', activeWorkflow);
-        
-        // Fallback to local generation if API fails
-        const customAgentId = generateCustomAgentId();
-        const fallbackMockData = generateCustomAgentMockData(data.agentName, data.description);
-        
-        setAgents(prevAgents => {
-          const newAgents = {
-            ...prevAgents,
-            [customAgentId]: fallbackMockData
-          };
-          return newAgents;
-        });
-        
-        toast.success(`Custom Agent Created: ${data.agentName}`);
-        console.log('✅ Custom agent added to canvas with fallback data');
-      }
-    } catch (error) {
-      console.error('Error fetching mock agent data:', error);
-      
-      // Fallback to local generation on error
-      const customAgentId = generateCustomAgentId();
-      const fallbackMockData = generateCustomAgentMockData(data.agentName, data.description);
-      
-      setAgents(prevAgents => {
-        const newAgents = {
-          ...prevAgents,
-          [customAgentId]: fallbackMockData
-        };
-        return newAgents;
-      });
-      
-      toast.error('Failed to fetch agent data, using fallback');
-      console.log('✅ Custom agent added to canvas with fallback data');
-    }
-  }, [addToUndoStack, mockAgentData, activeWorkflow]);
+    // Note: NewAgentPopup already handles agent creation via:
+    // 1. createAgentV1() - creates agent in backend (first API)
+    // 2. createAgent() - creates agent via RTK Query (second API) 
+    // 3. onRefreshMockData() - refreshes mock agent data and adds agent to canvas
+    //
+    // This callback is just for compatibility - the actual agent creation happens in NewAgentPopup
+    // The agent will appear as a mock agent after onRefreshMockData is called
+    // No need to create duplicate agents here!
+    
+    console.log('✅ Agent creation flow completed via NewAgentPopup - agent will appear after mock data refresh');
+  }, []);
 
   return (
     <div className="h-screen theme-bg flex flex-col transition-colors duration-300">
