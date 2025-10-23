@@ -147,40 +147,50 @@ export default function WorkflowsPage() {
         
         // Convert array of agents to individual agents in canvas
         const mockAgents: { [key: string]: any } = {};
+        
+        // Create ALL mock agents as CustomUserAgentNode (no extra orchestrator)
         mockAgentData.forEach((agent, index) => {
           const mockAgentId = `mock-agent-${activeWorkflow}-${index}`;
           mockAgents[mockAgentId] = {
             id: mockAgentId,
             name: agent.agentName || `Mock Agent ${index + 1}`,
             role: agent.role || 'validation',
-            capabilities: ['analyze', 'validate'],
-            inputs: ['data'],
-            outputs: ['results'],
-            logs: ['initialized'],
-            isCustom: false, // Mock agents from API should be regular agents
+            capabilities: agent.capabilities || ['analyze', 'validate'],
+            inputs: agent.inputs || ['data'],
+            outputs: agent.outputs || ['results'],
+            logs: agent.logs || ['initialized'],
+            isCustom: true, // ALL mock agents should be CustomUserAgentNode
             workflowId: activeWorkflow,
             originalAgentId: agent.agentId,
             createdAt: agent.createdAt,
             createdBy: agent.createdBy,
-            isUserEvolved: agent.isUserEvolved
+            isUserEvolved: agent.isUserEvolved,
+            isMockAgent: true // Flag to identify mock agents
           };
           
-          console.log(`✅ Created mock agent ${index + 1}:`, {
+          console.log(`✅ Created mock agent ${index + 1} (CustomUserAgentNode):`, {
             id: mockAgentId,
             name: agent.agentName,
             role: agent.role,
-            originalAgentId: agent.agentId
+            originalAgentId: agent.agentId,
+            isCustom: true
           });
         });
         
         console.log('🎯 All mock agents created:', Object.keys(mockAgents));
         console.log('📊 Agent count:', Object.keys(mockAgents).length, '(from API)');
         
+        // No connections needed - just display the mock agents as CustomUserAgentNode
+        
         // Update canvas with mock agents FIRST (priority display)
         setAgents(prevAgents => {
-          // Clear any existing mock agents first (identified by mock-agent- prefix)
+          // Clear any existing mock agents first
           const clearedAgents = Object.fromEntries(
-            Object.entries(prevAgents || {}).filter(([key, value]: [string, any]) => !key.startsWith('mock-agent-'))
+            Object.entries(prevAgents || {}).filter(([key, value]: [string, any]) => 
+              !key.startsWith('mock-agent-') && 
+              !key.startsWith('main-agent-') && 
+              !key.startsWith('main-workflow-agent-')
+            )
           );
           
           const finalAgents = {
@@ -197,33 +207,81 @@ export default function WorkflowsPage() {
           
           return finalAgents;
         });
+        
+        // Clear any existing mock connections (no connections needed)
+        setConnections(prevConnections => {
+          // Clear any existing mock connections first
+          const clearedConnections = (prevConnections || []).filter(conn => 
+            !conn.id.startsWith('connection-main-agent-') && 
+            !conn.id.startsWith('connection-mock-agent-') &&
+            !conn.id.startsWith('connection-main-workflow-agent-')
+          );
+          
+          console.log('🔄 Updated connections state (no mock connections):', {
+            totalConnections: clearedConnections.length,
+            clearedConnections: clearedConnections.length,
+            connectionIds: clearedConnections.map(c => c.id)
+          });
+          
+          return clearedConnections;
+        });
       } else if (mockAgentData.id) {
         console.log('📋 Converting single agent to canvas format:', mockAgentData);
         
+        // Create the single mock agent as CustomUserAgentNode (no extra orchestrator)
         const mockAgentId = `mock-agent-${activeWorkflow}`;
         const mockAgent = {
           id: mockAgentId,
-          name: mockAgentData.name || `Mock Agent for ${activeWorkflow}`,
+          name: mockAgentData.name || 'Mock Agent',
           role: mockAgentData.role || 'validation',
           capabilities: mockAgentData.capabilities || ['analyze', 'validate'],
           inputs: mockAgentData.inputs || ['data'],
           outputs: mockAgentData.outputs || ['results'],
           logs: mockAgentData.logs || ['initialized'],
-          isCustom: false, // Mock agents from API should be regular agents
-          workflowId: activeWorkflow
+          isCustom: true, // Single mock agent should be CustomUserAgentNode
+          workflowId: activeWorkflow,
+          originalAgentId: mockAgentData.id,
+          createdAt: mockAgentData.createdAt,
+          createdBy: mockAgentData.createdBy,
+          isUserEvolved: mockAgentData.isUserEvolved,
+          isMockAgent: true // Flag to identify mock agent
         };
+        
+        console.log(`✅ Created single mock agent (CustomUserAgentNode):`, {
+          id: mockAgentId,
+          name: mockAgentData.name,
+          role: mockAgentData.role,
+          originalAgentId: mockAgentData.id,
+          isCustom: true
+        });
         
         // Update canvas with mock agent FIRST (priority display)
         setAgents(prevAgents => {
-          // Clear any existing mock agents first (identified by mock-agent- prefix)
+          // Clear any existing mock agents first
           const clearedAgents = Object.fromEntries(
-            Object.entries(prevAgents || {}).filter(([key, value]: [string, any]) => !key.startsWith('mock-agent-'))
+            Object.entries(prevAgents || {}).filter(([key, value]: [string, any]) => 
+              !key.startsWith('mock-agent-') && 
+              !key.startsWith('main-agent-') && 
+              !key.startsWith('main-workflow-agent-')
+            )
           );
           
           return {
             [mockAgentId]: mockAgent, // Mock agent FIRST
             ...clearedAgents // Other agents SECOND
           };
+        });
+        
+        // Clear any existing mock connections (no connections needed)
+        setConnections(prevConnections => {
+          // Clear any existing mock connections first
+          const clearedConnections = (prevConnections || []).filter(conn => 
+            !conn.id.startsWith('connection-main-agent-') && 
+            !conn.id.startsWith('connection-mock-agent-') &&
+            !conn.id.startsWith('connection-main-workflow-agent-')
+          );
+          
+          return clearedConnections;
         });
       }
     } else if (activeWorkflow && !mockAgentData && !isLoadingMockAgent) {
