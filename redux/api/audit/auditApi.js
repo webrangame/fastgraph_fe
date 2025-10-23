@@ -71,7 +71,7 @@ export const auditApi = createApi({
     }),
     getAuditLog: builder.query({
       query: (logId) => ({
-        url: `/audit/log/${logId}`,
+        url: `/audit/logs/${logId}`,
         method: 'GET',
         headers: {
           'accept': 'application/json',

@@ -5,9 +5,10 @@ import { useForm } from 'react-hook-form';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { useAuditLog } from '@/hooks/useAuditLog';
-import { UserPlus, X, Bot } from 'lucide-react';
+import { useCreateAgentMutation } from '@/redux/api/agent/agentApi';
+import { useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
+import { X, Bot } from 'lucide-react';
 
 interface CreateAgentModalProps {
   isOpen: boolean;
@@ -26,7 +27,15 @@ export interface AgentFormData {
 export function CreateAgentModal({ isOpen, onClose, onSubmit, currentWorkflowId }: CreateAgentModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  const { logAgentAction } = useAuditLog();
+  const [createAgent, { isLoading }] = useCreateAgentMutation();
+  
+  // Get dataId from Redux state (this is the actual workflowId)
+  const { dataId } = useSelector((state: any) => state.workflows);
+  
+  // Use dataId from Redux state as the workflowId, fallback to currentWorkflowId
+  const actualWorkflowId = dataId || currentWorkflowId || '';
+  
+  
 
   const {
     register,
@@ -37,7 +46,7 @@ export function CreateAgentModal({ isOpen, onClose, onSubmit, currentWorkflowId 
     setValue
   } = useForm<AgentFormData>({
     defaultValues: {
-      workflow_id: currentWorkflowId || '',
+      workflow_id: actualWorkflowId, // Use actualWorkflowId from Redux state
       name: '',
       role: '',
       execute_now: false
@@ -52,31 +61,17 @@ export function CreateAgentModal({ isOpen, onClose, onSubmit, currentWorkflowId 
     try {
       console.log('🤖 Creating agent with data:', data);
       
-      // Call the API
-      const response = await fetch('/api/v1/agent/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-      });
+      // Use RTK Query mutation
+      const result = await createAgent(data).unwrap();
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create agent');
-      }
-
-      // Log audit trail
-      await logAgentAction('create', data);
-      
+      console.log('✅ Agent created successfully:', result);
       toast.success('Agent created successfully!');
       onSubmit(data);
       handleClose();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating agent:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create agent');
+      toast.error(error?.data?.error || error?.message || 'Failed to create agent');
     } finally {
       setIsSubmitting(false);
     }
@@ -267,10 +262,10 @@ export function CreateAgentModal({ isOpen, onClose, onSubmit, currentWorkflowId 
           <Button
             type="submit"
             variant="primary"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading}
             className="px-6"
           >
-            {isSubmitting ? (
+            {isSubmitting || isLoading ? (
               <>
                 <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 Creating...
