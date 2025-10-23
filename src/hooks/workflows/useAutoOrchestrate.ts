@@ -108,6 +108,29 @@ export function useAutoOrchestrate({
     setIsAutoOrchestrating(true);
     setAutoOrchestrateError(null);
 
+    // Log workflow start
+    try {
+      await logAudit({
+        action: 'other',
+        resource: 'data',
+        description: `Workflow started: Auto-orchestrate execution`,
+        details: `Command: ${command}`,
+        task: 'workflow-execution',
+        endpoint: '/api/v1/auto-orchestrate',
+        method: 'POST',
+        statusCode: 200,
+        metadata: {
+          command,
+          startTime: new Date().toISOString(),
+          eventType: 'workflow_start'
+        },
+        createdBy: user?.id || user?.userId || 'unknown-user',
+        userAgent: navigator.userAgent
+      }).unwrap();
+    } catch (auditError) {
+      console.warn('Failed to log workflow start:', auditError);
+    }
+
     try {
       // Use direct external API call and handle streaming response
       const url = `https://fatgraph-prod-twu675cviq-uc.a.run.app/autoOrchestrateStreamSSE?command=${encodeURIComponent(command)}`;
@@ -344,38 +367,6 @@ export function useAutoOrchestrate({
 
           console.log('✅ Auto orchestrate data saved successfully:', saveResult);
 
-          // Log audit (optional - don't fail if audit fails)
-          try {
-            console.log('📝 Attempting to save audit log...');
-            await logAudit({
-              action: 'create',
-              resource: 'data',
-              description: `Auto orchestrate completed: ${command}`,
-              details: `Agents: ${Object.keys(processedAgents).length}, Connections: ${processedConnections.length}`,
-              task: 'auto-orchestration',
-              endpoint: '/api/v1/workflows/auto-orchestrate',
-              method: 'POST',
-              statusCode: 200,
-              metadata: {
-                command,
-                agentsCount: Object.keys(processedAgents).length,
-                connectionsCount: processedConnections.length,
-                processedAgents: Object.keys(processedAgents),
-                processedConnections: processedConnections.map(conn => conn.id || 'unknown')
-              },
-              createdBy: user.id
-            }).unwrap();
-            console.log('✅ Audit log saved successfully');
-          } catch (auditError) {
-            console.warn('⚠️ Audit log failed (non-critical):', {
-              errorType: typeof auditError,
-              errorMessage: (auditError as any)?.message || 'No message',
-              errorStatus: (auditError as any)?.status || 'No status',
-              errorData: (auditError as any)?.data || 'No data',
-              fullError: auditError
-            });
-            // Don't throw - audit logging is optional
-          }
         } catch (error) {
           console.error('❌ Error saving auto orchestrate data:', error);
           console.error('Error details:', {
@@ -396,12 +387,36 @@ export function useAutoOrchestrate({
 
       setIsAutoOrchestrating(false);
 
+      // Log workflow completion
+      try {
+        await logAudit({
+          action: 'other',
+          resource: 'data',
+          description: `Workflow completed: Auto-orchestrate execution`,
+          details: `Command: ${command}, Agents: ${Object.keys(processedAgents).length}, Connections: ${processedConnections.length}`,
+          task: 'workflow-execution',
+          endpoint: '/api/v1/auto-orchestrate',
+          method: 'POST',
+          statusCode: 200,
+          metadata: {
+            command,
+            agentsCount: Object.keys(processedAgents).length,
+            connectionsCount: processedConnections.length,
+            endTime: new Date().toISOString(),
+            eventType: 'workflow_completed'
+          },
+          createdBy: user?.id || user?.userId || 'unknown-user',
+          userAgent: navigator.userAgent
+        }).unwrap();
+      } catch (auditError) {
+        console.warn('Failed to log workflow completion:', auditError);
+      }
     } catch (error) {
       console.error('Error calling auto orchestrate API:', error);
       setAutoOrchestrateError(error);
       setIsAutoOrchestrating(false);
     }
-  }, [user, installData, logAudit, onAgentsProcessed, resetAutoOrchestrate, isAutoOrchestrating]);
+  }, [user, installData, onAgentsProcessed, resetAutoOrchestrate, isAutoOrchestrating]);
 
   // Removed automatic workflow execution - workflows should only run when explicitly requested
   // useEffect(() => {

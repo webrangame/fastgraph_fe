@@ -5,8 +5,8 @@ import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '@/redux/slice/authSlice';
 
 interface AuditLogData {
-  action: string;
-  resource: string;
+  action: 'create' | 'read' | 'update' | 'delete' | 'login' | 'logout' | 'install' | 'export' | 'import' | 'other';
+  resource: 'data' | 'user' | 'auth' | 'mcp' | 'system' | 'other';
   description: string;
   details?: string;
   task?: string;
@@ -40,96 +40,93 @@ export function useAuditLog() {
     } catch (error) {
       console.error('❌ Failed to create audit log:', {
         error,
+        errorType: typeof error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined,
         user,
         auditData,
-        errorDetails: error instanceof Error ? error.message : 'Unknown error'
+        fullAuditData: {
+          ...auditData,
+          createdBy: user?.id || user?.userId || 'unknown-user',
+          userAgent: navigator.userAgent,
+        }
       });
       // Don't throw error to avoid breaking the main operation
     }
   };
 
-  // Convenience methods for common actions
-  const logWorkflowAction = async (action: 'create' | 'update' | 'delete' | 'execute', workflowData: any) => {
+  // Workflow lifecycle actions
+  const logWorkflowCreate = async (workflowData: any) => {
     await logActivity({
-      action,
+      action: 'create',
       resource: 'data',
-      description: `Workflow ${action}d: ${workflowData.name}`,
-      details: `Workflow ID: ${workflowData.id}, Status: ${workflowData.status}`,
+      description: `New workflow created: ${workflowData.name}`,
+      details: `Workflow ID: ${workflowData.id}, Description: ${workflowData.description}`,
       task: 'workflow-management',
       endpoint: '/api/v1/workflows',
-      method: action === 'create' ? 'POST' : action === 'delete' ? 'DELETE' : 'PUT',
+      method: 'POST',
+      statusCode: 201,
+      metadata: {
+        workflowId: workflowData.id,
+        workflowName: workflowData.name,
+        workflowDescription: workflowData.description,
+        workflowStatus: workflowData.status,
+        nodeCount: workflowData.nodes?.length || 0,
+        connectionCount: workflowData.connections?.length || 0,
+        createdAt: new Date().toISOString()
+      }
+    });
+  };
+
+  const logWorkflowStart = async (workflowData: any) => {
+    await logActivity({
+      action: 'other',
+      resource: 'data',
+      description: `Workflow started: ${workflowData.name}`,
+      details: `Workflow ID: ${workflowData.id}, Status: ${workflowData.status}`,
+      task: 'workflow-execution',
+      endpoint: '/api/v1/workflows',
+      method: 'POST',
       statusCode: 200,
       metadata: {
         workflowId: workflowData.id,
         workflowName: workflowData.name,
         workflowStatus: workflowData.status,
         nodeCount: workflowData.nodes?.length || 0,
-        connectionCount: workflowData.connections?.length || 0
+        connectionCount: workflowData.connections?.length || 0,
+        startTime: new Date().toISOString(),
+        eventType: 'workflow_start'
       }
     });
   };
 
-  const logAgentAction = async (action: 'create' | 'update' | 'delete' | 'deploy', agentData: any) => {
+  const logWorkflowEnd = async (workflowData: any, result?: any) => {
     await logActivity({
-      action,
-      resource: 'other',
-      description: `Agent ${action}d: ${agentData.role || agentData.name}`,
-      details: `Agent role: ${agentData.role}, Task: ${agentData.task}`,
-      task: 'agent-management',
-      endpoint: '/api/v1/agents',
-      method: action === 'create' ? 'POST' : action === 'delete' ? 'DELETE' : 'PUT',
-      statusCode: 200,
-      metadata: {
-        agentRole: agentData.role,
-        agentTask: agentData.task,
-        agentCapabilities: agentData.capabilities,
-        agentTags: agentData.tags
-      }
-    });
-  };
-
-  const logDataAction = async (action: 'create' | 'update' | 'delete' | 'install', dataInfo: any) => {
-    await logActivity({
-      action,
+      action: 'other',
       resource: 'data',
-      description: `Data ${action}d: ${dataInfo.dataName || dataInfo.name}`,
-      details: `Data type: ${dataInfo.dataType}, Agents: ${dataInfo.numberOfAgents || 0}`,
-      task: 'data-management',
-      endpoint: '/api/v1/data',
-      method: action === 'create' ? 'POST' : action === 'delete' ? 'DELETE' : 'PUT',
+      description: `Workflow completed: ${workflowData.name}`,
+      details: `Workflow ID: ${workflowData.id}, Status: ${workflowData.status}`,
+      task: 'workflow-execution',
+      endpoint: '/api/v1/workflows',
+      method: 'POST',
       statusCode: 200,
       metadata: {
-        dataName: dataInfo.dataName || dataInfo.name,
-        dataType: dataInfo.dataType,
-        numberOfAgents: dataInfo.numberOfAgents,
-        description: dataInfo.description
-      }
-    });
-  };
-
-  const logUserAction = async (action: 'login' | 'logout' | 'profile_update', userInfo: any) => {
-    await logActivity({
-      action,
-      resource: 'user',
-      description: `User ${action}: ${userInfo.fullName || userInfo.email}`,
-      details: `User ID: ${userInfo.id || userInfo.userId}`,
-      task: 'user-management',
-      endpoint: '/api/v1/auth',
-      method: action === 'login' ? 'POST' : 'PUT',
-      statusCode: 200,
-      metadata: {
-        userId: userInfo.id || userInfo.userId,
-        userEmail: userInfo.email,
-        userName: userInfo.fullName
+        workflowId: workflowData.id,
+        workflowName: workflowData.name,
+        workflowStatus: workflowData.status,
+        nodeCount: workflowData.nodes?.length || 0,
+        connectionCount: workflowData.connections?.length || 0,
+        endTime: new Date().toISOString(),
+        result: result || 'completed',
+        eventType: 'workflow_completed'
       }
     });
   };
 
   return {
     logActivity,
-    logWorkflowAction,
-    logAgentAction,
-    logDataAction,
-    logUserAction
+    logWorkflowCreate,
+    logWorkflowStart,
+    logWorkflowEnd
   };
 }

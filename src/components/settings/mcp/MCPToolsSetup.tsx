@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { AlertCircle, ChevronDown } from 'lucide-react';
 import { useCreateMCPServerMutation, useTestMCPConnectionMutation } from '@/redux/api/mcp/mcpApi';
-import { useAuditLog } from '@/hooks/useAuditLog';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '@/redux/slice/authSlice';
 import { encryptYamlContent } from '@/utils/encryption';
@@ -57,7 +56,6 @@ export default function MCPToolsSetup({
 
   const [createMCPServer, { isLoading: isCreating }] = useCreateMCPServerMutation();
   const [testMCPConnection, { isLoading: isTesting }] = useTestMCPConnectionMutation();
-  const { logActivity } = useAuditLog();
   const user = useSelector(selectCurrentUser);
 
   const isConnecting = connectionStatus === 'connecting' || isCreating || isTesting;
@@ -146,22 +144,6 @@ export default function MCPToolsSetup({
         createdBy: user?.id || user?.userId || 'unknown-user'
       }).unwrap();
 
-      // Log MCP server creation audit
-      await logActivity({
-        action: 'create',
-        resource: 'mcp',
-        description: `MCP server created from YAML: ${formData.serverName || 'YAML MCP Server'}`,
-        details: `YAML content length: ${yamlContent.length} characters`,
-        task: 'mcp-server-creation-yaml',
-        endpoint: '/api/v1/mcp-settings',
-        method: 'POST',
-        statusCode: 201,
-        metadata: {
-          serverName: formData.serverName || 'YAML MCP Server',
-          yamlContentLength: yamlContent.length,
-          hasCustomYaml: true
-        }
-      });
 
       toast.success('MCP server created successfully from YAML!', { id: 'yaml-create' });
       
@@ -178,22 +160,6 @@ export default function MCPToolsSetup({
     } catch (error: any) {
       console.error('MCP server creation from YAML failed:', error);
       
-      // Log error audit
-      await logActivity({
-        action: 'create',
-        resource: 'mcp',
-        description: `MCP server creation from YAML failed: ${getValues('serverName') || 'YAML MCP Server'}`,
-        details: `Error: ${error?.data?.message || error?.message || 'Unknown error'}`,
-        task: 'mcp-server-creation-yaml',
-        endpoint: '/api/v1/mcp-settings',
-        method: 'POST',
-        statusCode: 500,
-        metadata: {
-          serverName: getValues('serverName') || 'YAML MCP Server',
-          yamlContentLength: yamlContent.length,
-          errorMessage: error?.data?.message || error?.message || 'Unknown error'
-        }
-      });
       
       toast.error(
         error?.data?.message || 
@@ -235,23 +201,6 @@ export default function MCPToolsSetup({
       if (testResult.success) {
         toast.success('Connection test successful!', { id: 'mcp-test' });
         
-        // Log connection test audit
-        await logActivity({
-          action: 'test',
-          resource: 'mcp',
-          description: `MCP server connection test successful: ${formData.serverName}`,
-          details: `Server URL: ${formData.serverUrl}, Type: ${formData.serverType}`,
-          task: 'mcp-connection-test',
-          endpoint: '/api/v1/mcp/test-connection',
-          method: 'POST',
-          statusCode: 200,
-          metadata: {
-            serverName: formData.serverName,
-            serverType: formData.serverType,
-            serverUrl: formData.serverUrl,
-            authType: formData.authType
-          }
-        });
         
         // Create the MCP server
         toast.loading('Creating MCP server...', { id: 'mcp-create' });
@@ -276,27 +225,6 @@ export default function MCPToolsSetup({
           createdBy: user?.id || user?.userId || 'unknown-user'
         }).unwrap();
 
-        // Log MCP server creation audit
-        await logActivity({
-          action: 'create',
-          resource: 'mcp',
-          description: `MCP server created: ${formData.serverName}`,
-          details: `Server ID: ${formData.serverId}, Type: ${formData.serverType}, URL: ${formData.serverUrl}`,
-          task: 'mcp-server-creation',
-          endpoint: '/api/v1/mcp-settings',
-          method: 'POST',
-          statusCode: 201,
-          metadata: {
-            serverId: formData.serverId,
-            serverName: formData.serverName,
-            serverType: formData.serverType,
-            serverUrl: formData.serverUrl,
-            authType: formData.authType,
-            timeout: formData.timeout,
-            retries: formData.retries,
-            hasConfigYml: !!formData.configYml
-          }
-        });
 
         toast.success('MCP server created successfully! Redirecting to Available MCPs...', { id: 'mcp-create' });
         
@@ -311,48 +239,12 @@ export default function MCPToolsSetup({
           }, 1500);
         }
       } else {
-        // Log failed connection test audit
-        await logActivity({
-          action: 'test',
-          resource: 'mcp',
-          description: `MCP server connection test failed: ${formData.serverName}`,
-          details: `Error: ${testResult.message}, Server URL: ${formData.serverUrl}`,
-          task: 'mcp-connection-test',
-          endpoint: '/api/v1/mcp/test-connection',
-          method: 'POST',
-          statusCode: 400,
-          metadata: {
-            serverName: formData.serverName,
-            serverType: formData.serverType,
-            serverUrl: formData.serverUrl,
-            authType: formData.authType,
-            errorMessage: testResult.message
-          }
-        });
         
         toast.error('Connection test failed: ' + testResult.message, { id: 'mcp-test' });
       }
     } catch (error: any) {
       console.error('MCP server creation failed:', error);
       
-      // Log error audit
-      await logActivity({
-        action: 'create',
-        resource: 'mcp',
-        description: `MCP server creation failed: ${formData.serverName}`,
-        details: `Error: ${error?.data?.message || error?.message || 'Unknown error'}`,
-        task: 'mcp-server-creation',
-        endpoint: '/api/v1/mcp/servers',
-        method: 'POST',
-        statusCode: 500,
-        metadata: {
-          serverName: formData.serverName,
-          serverType: formData.serverType,
-          serverUrl: formData.serverUrl,
-          authType: formData.authType,
-          errorMessage: error?.data?.message || error?.message || 'Unknown error'
-        }
-      });
       
       toast.error(
         error?.data?.message || 

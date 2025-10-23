@@ -4,7 +4,7 @@ import Cookies from 'js-cookie';
 
 // Use local backend for development, external API for production
 const isProduction = process.env.NODE_ENV === 'production';
-const auditBaseQuery = fetchBaseQuery({
+const agentBaseQuery = fetchBaseQuery({
   baseUrl: isProduction ? 'https://jobaapi.hattonn.com/api/v1' : 'http://localhost:8080/api/v1',
   prepareHeaders: async (headers, { getState }) => {
     const accessToken = getState().auth.accessToken || Cookies.get('access_token');
@@ -15,80 +15,79 @@ const auditBaseQuery = fetchBaseQuery({
   },
 });
 
-export const auditApi = createApi({
-  reducerPath: 'auditApi',
-  baseQuery: auditBaseQuery,
-  tagTypes: ['AuditLog'],
+export const agentApi = createApi({
+  reducerPath: 'agentApi',
+  baseQuery: agentBaseQuery,
+  tagTypes: ['Agent'],
   endpoints: (builder) => ({
-    logAudit: builder.mutation({
-      query: (auditData) => ({
-        url: '/audit/logs',
+    createAgent: builder.mutation({
+      query: (agentData) => ({
+        url: '/agent/create',
         method: 'POST',
         headers: {
           'accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: auditData,
+        body: agentData,
       }),
-      invalidatesTags: ['AuditLog'],
+      invalidatesTags: ['Agent'],
     }),
-    getAuditLogs: builder.query({
+    getAgents: builder.query({
       query: (params = {}) => ({
-        url: '/audit/logs',
+        url: '/agents',
         method: 'GET',
         headers: {
           'accept': 'application/json',
         },
         params,
       }),
-      providesTags: ['AuditLog'],
+      providesTags: ['Agent'],
     }),
-    getAuditLogsByUser: builder.query({
-      query: (userId) => ({
-        url: `/audit/user/${userId}`,
+    getAgentById: builder.query({
+      query: (agentId) => ({
+        url: `/agents/${agentId}`,
         method: 'GET',
         headers: {
           'accept': 'application/json',
         },
       }),
-      providesTags: (result, error, userId) => [
-        { type: 'AuditLog', id: `user-${userId}` },
-        'AuditLog'
+      providesTags: (result, error, agentId) => [
+        { type: 'Agent', id: agentId },
+        'Agent'
       ],
     }),
-    getAuditLogsByResource: builder.query({
-      query: (resource) => ({
-        url: `/audit/logs/resource/${resource}`,
-        method: 'GET',
+    updateAgent: builder.mutation({
+      query: ({ agentId, ...agentData }) => ({
+        url: `/agents/${agentId}`,
+        method: 'PUT',
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: agentData,
+      }),
+      invalidatesTags: (result, error, { agentId }) => [
+        { type: 'Agent', id: agentId },
+        'Agent'
+      ],
+    }),
+    deleteAgent: builder.mutation({
+      query: (agentId) => ({
+        url: `/agents/${agentId}`,
+        method: 'DELETE',
         headers: {
           'accept': 'application/json',
         },
       }),
-      providesTags: (result, error, resource) => [
-        { type: 'AuditLog', id: `resource-${resource}` },
-        'AuditLog'
-      ],
-    }),
-    getAuditLog: builder.query({
-      query: (logId) => ({
-        url: `/audit/logs/${logId}`,
-        method: 'GET',
-        headers: {
-          'accept': 'application/json',
-        },
-      }),
-      providesTags: (result, error, logId) => [
-        { type: 'AuditLog', id: logId },
-        'AuditLog'
-      ],
+      invalidatesTags: ['Agent'],
     }),
   }),
 });
 
 export const {
-  useLogAuditMutation,
-  useGetAuditLogsQuery,
-  useGetAuditLogsByUserQuery,
-  useGetAuditLogsByResourceQuery,
-  useGetAuditLogQuery,
-} = auditApi;
+  useCreateAgentMutation,
+  useGetAgentsQuery,
+  useGetAgentByIdQuery,
+  useUpdateAgentMutation,
+  useDeleteAgentMutation,
+} = agentApi;

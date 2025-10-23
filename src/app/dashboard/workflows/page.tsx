@@ -12,15 +12,15 @@ import { useAutoOrchestrate } from '@/hooks/workflows/useAutoOrchestrate';
 import { useEvolveAgentMutation } from '../../../../redux/api/evolveAgent/evolveAgentApi';
 import { WorkflowFormData } from '@/components/dashboard/CreateWorkflowModal';
 import { useDispatch, useSelector } from 'react-redux';
-import { addWorkflow, removeAllWorkflows, updateWorkflow, removeWorkflow, setWorkflows } from '@/redux/slice/workflowSlice';
+import { addWorkflow, removeAllWorkflows, updateWorkflow, removeWorkflow, setWorkflows, setDataId, clearDataId } from '@/redux/slice/workflowSlice';
 import { useGetDataCreatedByQuery, useInstallDataMutation, useGetMockAgentDataQuery } from '../../../../redux/api/autoOrchestrate/autoOrchestrateApi';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { processAgentsFromResponse } from '@/services/workflows/agentProcessor';
-import { useAuditLog } from '@/hooks/useAuditLog';
 import { generateCustomAgentMockData, generateCustomAgentId } from '@/lib/customAgentMockData';
 import { AgentFormData } from '@/components/workflows/NewAgentPopup';
+import { useAuditLog } from '@/hooks/useAuditLog';
 
 // Generate a proper UUID v4
 function generateUUID(): string {
@@ -34,10 +34,7 @@ function generateUUID(): string {
 export default function WorkflowsPage() {
   const dispatch = useDispatch();
   const router = useRouter();
-  const { logWorkflowAction, logDataAction } = useAuditLog();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { logWorkflowCreate } = useAuditLog();
   const [agents, setAgents] = useState<Record<string, any> | null>(null);
   const [connections, setConnections] = useState<any[] | null>(null);
   const [finalData, setFinalData] = useState<any>(null);
@@ -48,10 +45,14 @@ export default function WorkflowsPage() {
   // Undo functionality state
   const [undoStack, setUndoStack] = useState<any[]>([]);
   const [canUndo, setCanUndo] = useState(false);
+  // Mobile and UI state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
 
   // Custom hooks for workflow management
-  const { workflows, workflowStatus, workflowError } = useSelector((state: any) => state.workflows);
+  const { workflows, workflowStatus, workflowError, dataId } = useSelector((state: any) => state.workflows);
   const currentUser = useSelector((state: any) => state.auth.user);
   
   // Fetch workflows from API and load into Redux store
@@ -242,11 +243,16 @@ export default function WorkflowsPage() {
   const handleSidebarWorkflowSelect = useCallback(async (workflowId: string) => {
     console.log('=== WORKFLOW SELECTION START ===');
     console.log('Sidebar workflow selected:', workflowId);
+    console.log('Setting dataId to:', workflowId);
     console.log('Current active workflow:', activeWorkflow);
     console.log('Current agents:', agents ? Object.keys(agents) : 'null');
     console.log('Current connections:', connections ? connections.length : 'null');
     console.log('Current workflows in Redux:', workflows.length);
     console.log('Available API workflow data:', apiWorkflowData?.length || 0);
+    
+    // Set the dataId state variable
+    dispatch(setDataId(workflowId));
+    console.log('✅ dataId state variable set to:', workflowId);
     
     // Mock agent data will be fetched automatically by the useGetMockAgentDataQuery hook
     console.log('🔐 Current user:', currentUser?.id || currentUser?.userId || 'No user');
@@ -268,6 +274,7 @@ export default function WorkflowsPage() {
     setFinalData(null);
     setFinalizedResult(null);
     setCachedExecutionResults(null);
+    dispatch(clearDataId()); // Clear dataId when clearing state
     
     // Clear mock agent data when switching workflows
     
@@ -443,6 +450,15 @@ export default function WorkflowsPage() {
     setCanUndo(undoStack.length > 0);
   }, [undoStack]);
 
+  // Log when dataId changes
+  useEffect(() => {
+    if (dataId) {
+      console.log('🆔 dataId state variable updated to:', dataId);
+    } else {
+      console.log('🆔 dataId state variable cleared');
+    }
+  }, [dataId]);
+
   // Function to add action to undo stack
   const addToUndoStack = (action: { type: string; description: string; data?: any }) => {
     setUndoStack(prev => [...prev, { ...action, timestamp: Date.now() }]);
@@ -492,15 +508,6 @@ export default function WorkflowsPage() {
         overwrite: true
       }).unwrap();
 
-      // Log the regeneration
-      await logDataAction('update', {
-        dataName: actualCurrentWorkflow.name,
-        description: prompt,
-        dataType: 'json',
-        numberOfAgents: 0
-      });
-
-      await logWorkflowAction('update', regeneratedWorkflowData);
 
       // Add to undo stack
       addToUndoStack({
@@ -519,7 +526,7 @@ export default function WorkflowsPage() {
     } finally {
       setIsRegenerating(false);
     }
-  }, [actualCurrentWorkflow, dispatch, installData, logDataAction, logWorkflowAction, resetAutoOrchestrate, addToUndoStack, startAutoOrchestrate]);
+  }, [actualCurrentWorkflow, dispatch, installData, resetAutoOrchestrate, addToUndoStack, startAutoOrchestrate]);
 
   const { handlePromptSubmit, isProcessing } = usePromptHandler({
     currentWorkflow: actualCurrentWorkflow,
@@ -624,7 +631,7 @@ export default function WorkflowsPage() {
   };
 
 
-  const handleWorkflowSubmit = async (data: WorkflowFormData) => {
+  const handleWorkflowSubmit = useCallback(async (data: WorkflowFormData) => {
     console.log('Creating/regenerating workflow with command:', data);
     try {
       // Check if there's an existing workflow to regenerate
@@ -659,7 +666,7 @@ export default function WorkflowsPage() {
       };
 
       // 📡 Persist an initial record (overwrite: true)
-      await installData({
+      const installResult = await installData({
         dataName: data.name,
         description: data.description,
         numberOfAgents:0,
@@ -670,17 +677,22 @@ export default function WorkflowsPage() {
         overwrite: true
       }).unwrap();
 
-      // Log data installation audit
-      await logDataAction(isRegenerating ? 'update' : 'create', {
-        dataName: data.name,
-        description: data.description,
-        dataType: 'json',
-        numberOfAgents: 0
-      });
+      // Set the dataId from the API response
+      if (installResult?.dataId) {
+        dispatch(setDataId(installResult.dataId));
+        console.log('✅ dataId set from new workflow creation:', installResult.dataId);
+      } else {
+        // Fallback: use the generated workflowId as dataId
+        dispatch(setDataId(workflowId));
+        console.log('✅ dataId set to generated workflowId (fallback):', workflowId);
+      }
 
       // 🎯 Load as the only active workflow (single tab)
       dispatch(setWorkflows([workflowData]));
       setActiveWorkflow(workflowId);
+
+      // Log workflow creation audit
+      await logWorkflowCreate(workflowData);
 
       // Create default mock agents for new workflows
       if (!isRegenerating) {
@@ -722,8 +734,6 @@ export default function WorkflowsPage() {
         console.log('📊 Agent count: 5 (matching existing workflow count)');
       }
 
-      // Log workflow creation/regeneration audit
-      await logWorkflowAction(isRegenerating ? 'update' : 'create', workflowData);
 
       // Add to undo stack
       addToUndoStack({
@@ -740,7 +750,7 @@ export default function WorkflowsPage() {
       console.error('Failed to create/regenerate workflow:', error);
       toast.error('Failed to create/regenerate workflow. Please try again.');
     }
-  };
+  }, [workflows, setActiveWorkflow, setAgents, setConnections, setFinalData, setFinalizedResult, setFinalizedArtifactLinks, setCachedExecutionResults, resetAutoOrchestrate, dispatch, installData, logWorkflowCreate, startAutoOrchestrate, addToUndoStack]);
 
   const handleAgentFeedback = async (agentId: string, agentName: string, action?: string, feedback?: string | string[]) => {
     console.log('Feedback action:', action, 'for agent:', { agentId, agentName }, 'feedback:', feedback);

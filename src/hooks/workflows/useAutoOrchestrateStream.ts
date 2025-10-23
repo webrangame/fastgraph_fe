@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useAutoOrchestrateStreamMutation, useInstallDataMutation } from '@/redux/api/autoOrchestrate/autoOrchestrateApi';
-import { useLogAuditMutation } from '@/redux/api/audit/auditApi';
 import { selectCurrentUser } from '@/redux/slice/authSlice';
 import { processAgentsFromResponse } from '@/services/workflows/agentProcessor';
 import type { ProcessedAgent, AgentConnection } from '@/services/workflows/agentProcessor';
@@ -51,7 +50,6 @@ export function useAutoOrchestrateStream({
 
   const [autoOrchestrateStream] = useAutoOrchestrateStreamMutation();
   const [installData] = useInstallDataMutation();
-  const [logAudit] = useLogAuditMutation();
 
   // Reset function to clear auto orchestrate state
   const resetAutoOrchestrate = useCallback(() => {
@@ -167,16 +165,6 @@ export function useAutoOrchestrateStream({
                     overwrite: false
                   }).unwrap();
 
-                  // Log audit
-                  await logAudit({
-                    userId: user.id,
-                    action: 'auto_orchestrate_completed',
-                    details: {
-                      command,
-                      agentsCount: Object.keys(processedAgents).length,
-                      connectionsCount: processedConnections.length
-                    }
-                  }).unwrap();
                 } catch (error) {
                   console.error('Error saving auto orchestrate data:', error);
                 }
@@ -216,7 +204,7 @@ export function useAutoOrchestrateStream({
       setError(error);
       setIsAutoOrchestrating(false);
     }
-  }, [user, installData, logAudit, onAgentsProcessed, resetAutoOrchestrate]);
+  }, [user, installData, onAgentsProcessed, resetAutoOrchestrate]);
 
   return {
     isAutoOrchestrating,

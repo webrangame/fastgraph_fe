@@ -57,7 +57,10 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   const router = useRouter();
   const user = useSelector(selectCurrentUser);
-  const { logWorkflowAction, logAgentAction } = useAuditLog();
+  const { logWorkflowCreate } = useAuditLog();
+  
+  // Get workflows and dataId from Redux store
+  const { workflows, dataId } = useSelector((state: any) => state.workflows);
   
   // Fetch user stats
   const userId = user?.id || user?.userId;
@@ -86,6 +89,18 @@ export default function DashboardPage() {
   const [isWorkflowModalOpen, setIsWorkflowModalOpen] = useState(false);
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
 
+  // Get current workflow ID - use dataId from Redux if available, otherwise use first workflow or generate new one
+  const getCurrentWorkflowId = () => {
+    if (dataId) {
+      return dataId;
+    }
+    if (workflows && workflows.length > 0) {
+      return workflows[0].id;
+    }
+    // Generate a new workflow ID for new agents
+    return `workflow-${Date.now()}`;
+  };
+
   const handleCreateWorkflow = () => {
     setIsWorkflowModalOpen(true);
   };
@@ -111,8 +126,8 @@ export default function DashboardPage() {
     
     dispatch(addWorkflow(workflowData));
     
-    // Log audit trail
-    await logWorkflowAction('create', workflowData);
+    // Log workflow creation audit
+    await logWorkflowCreate(workflowData);
     
     // Close the modal
     setIsWorkflowModalOpen(false);
@@ -125,8 +140,6 @@ export default function DashboardPage() {
     // Handle the agent creation here
     console.log('Creating agent:', data);
     
-    // Log audit trail
-    await logAgentAction('create', data);
     
     // You can add your agent creation logic here
     // For example: save to database, deploy agent, etc.
@@ -278,7 +291,7 @@ export default function DashboardPage() {
         isOpen={isAgentModalOpen}
         onClose={() => setIsAgentModalOpen(false)}
         onSubmit={handleAgentSubmit}
-        currentWorkflowId="default-workflow"
+        currentWorkflowId={getCurrentWorkflowId()}
       />
     </div>
   );
