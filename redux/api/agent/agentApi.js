@@ -21,15 +21,38 @@ export const agentApi = createApi({
   tagTypes: ['Agent'],
   endpoints: (builder) => ({
     createAgent: builder.mutation({
-      query: (agentData) => ({
-        url: '/agent/create',
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: agentData,
-      }),
+      query: (agentData, { getState }) => {
+        // Get user ID from Redux state
+        const state = getState();
+        const userId = state.auth?.user?.id || state.auth?.user?.userId || 'unknown-user';
+        
+        // Transform form data to match your actual API specification
+        const transformedData = {
+          workflowId: agentData.workflow_id, // Map workflow_id to workflowId
+          agentName: agentData.name, // Map name to agentName
+          description: agentData.role || '', // Use role as description
+          agentData: {}, // Empty object as per API spec
+          role: agentData.role || 'validation', // Keep role field
+          isUserEvolved: false, // Default to false
+          createdBy: userId // Get actual user ID from Redux state
+        };
+        
+        console.log('🔄 Transforming agent data to match API spec:', {
+          original: agentData,
+          transformed: transformedData,
+          userId: userId
+        });
+        
+        return {
+          url: '/agents', // Correct endpoint as per your API
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: transformedData,
+        };
+      },
       invalidatesTags: ['Agent'],
     }),
     getAgents: builder.query({

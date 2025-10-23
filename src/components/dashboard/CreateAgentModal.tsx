@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { useCreateAgentMutation } from '@/redux/api/agent/agentApi';
+import { useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
 import { X, Bot } from 'lucide-react';
 
@@ -27,6 +28,18 @@ export function CreateAgentModal({ isOpen, onClose, onSubmit, currentWorkflowId 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [createAgent, { isLoading }] = useCreateAgentMutation();
+  
+  // Get dataId from Redux state (this is the actual workflowId)
+  const { dataId } = useSelector((state: any) => state.workflows);
+  
+  // Use dataId from Redux state as the workflowId, fallback to currentWorkflowId
+  const actualWorkflowId = dataId || currentWorkflowId || '';
+  
+  console.log('🆔 CreateAgentModal workflowId sources:', {
+    dataIdFromRedux: dataId,
+    currentWorkflowIdFromProps: currentWorkflowId,
+    actualWorkflowIdUsed: actualWorkflowId
+  });
 
   const {
     register,
@@ -37,7 +50,7 @@ export function CreateAgentModal({ isOpen, onClose, onSubmit, currentWorkflowId 
     setValue
   } = useForm<AgentFormData>({
     defaultValues: {
-      workflow_id: currentWorkflowId || '',
+      workflow_id: actualWorkflowId, // Use actualWorkflowId from Redux state
       name: '',
       role: '',
       execute_now: false
