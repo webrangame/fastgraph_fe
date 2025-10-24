@@ -3,7 +3,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { AlertCircle, ChevronDown } from 'lucide-react';
 import { useCreateMCPServerMutation, useTestMCPConnectionMutation } from '@/redux/api/mcp/mcpApi';
-import { useAuditLog } from '@/hooks/useAuditLog';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '@/redux/slice/authSlice';
+import { encryptYamlContent } from '@/utils/encryption';
 import toast from 'react-hot-toast';
 import Editor from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
@@ -54,7 +56,7 @@ export default function MCPToolsSetup({
 
   const [createMCPServer, { isLoading: isCreating }] = useCreateMCPServerMutation();
   const [testMCPConnection, { isLoading: isTesting }] = useTestMCPConnectionMutation();
-  const { logActivity } = useAuditLog();
+  const user = useSelector(selectCurrentUser);
 
   const isConnecting = connectionStatus === 'connecting' || isCreating || isTesting;
   const canConnect = isValid && !isConnecting;
@@ -120,13 +122,51 @@ export default function MCPToolsSetup({
     }, 50);
   };
 
-  const handleYamlSaveToForm = () => {
-    if (validateYaml(yamlContent)) {
-      // Save YAML into the form state only on explicit save to avoid re-renders while typing
-      setValue('configYml', yamlContent, { shouldDirty: true, shouldValidate: true });
-      toast.success('YAML saved to configuration');
-    } else {
+  const handleYamlSaveToForm = async () => {
+    if (!validateYaml(yamlContent)) {
       toast.error('Please fix YAML errors before saving');
+      return;
+    }
+
+    try {
+      // Get current form values
+      const formData = getValues();
+      
+      // Create MCP server with YAML content
+      toast.loading('Creating MCP server from YAML...', { id: 'yaml-create' });
+      
+      // Encrypt the YAML content
+      const encryptedYamlContent = await encryptYamlContent(yamlContent);
+      
+      const createResult = await createMCPServer({
+        yamlContent: encryptedYamlContent,
+        status: 'active',
+        createdBy: user?.id || user?.userId || 'unknown-user'
+      }).unwrap();
+
+
+      toast.success('MCP server created successfully from YAML!', { id: 'yaml-create' });
+      
+      // Save YAML into the form state
+      setValue('configYml', yamlContent, { shouldDirty: true, shouldValidate: true });
+      
+      // Navigate to Available MCPs section after successful save
+      if (onNavigateToAvailableMCPs) {
+        setTimeout(() => {
+          onNavigateToAvailableMCPs();
+        }, 1500);
+      }
+      
+    } catch (error: any) {
+      console.error('MCP server creation from YAML failed:', error);
+      
+      
+      toast.error(
+        error?.data?.message || 
+        error?.message || 
+        'Failed to create MCP server from YAML. Please check your configuration.',
+        { id: 'yaml-create' }
+      );
     }
   };
 
@@ -161,65 +201,30 @@ export default function MCPToolsSetup({
       if (testResult.success) {
         toast.success('Connection test successful!', { id: 'mcp-test' });
         
-        // Log connection test audit
-        await logActivity({
-          action: 'test',
-          resource: 'mcp',
-          description: `MCP server connection test successful: ${formData.serverName}`,
-          details: `Server URL: ${formData.serverUrl}, Type: ${formData.serverType}`,
-          task: 'mcp-connection-test',
-          endpoint: '/api/v1/mcp/test-connection',
-          method: 'POST',
-          statusCode: 200,
-          metadata: {
-            serverName: formData.serverName,
-            serverType: formData.serverType,
-            serverUrl: formData.serverUrl,
-            authType: formData.authType
-          }
-        });
         
         // Create the MCP server
         toast.loading('Creating MCP server...', { id: 'mcp-create' });
+        
+        // Encrypt the YAML content
+        const yamlToEncrypt = formData.configYml || `server:
+  name: "${formData.serverName}"
+  type: "${formData.serverType}"
+  url: "${formData.serverUrl}"
+  auth:
+    type: "${formData.authType}"
+    apiKey: "${formData.apiKey || ''}"
+  timeout: ${formData.timeout}
+  retries: ${formData.retries}`;
+        
+        const encryptedYamlContent = await encryptYamlContent(yamlToEncrypt);
+        
         const createResult = await createMCPServer({
-          serverName: formData.serverName,
-          serverId: formData.serverId,
-          serverType: formData.serverType,
-          serverUrl: formData.serverUrl,
-          protocolVersion: '1.0',
-          authType: formData.authType,
-          apiKey: formData.apiKey,
-          timeout: formData.timeout,
-          retries: formData.retries,
-          configYml: formData.configYml,
-          customHeaders: {},
-          metadata: {
-            description: `${formData.serverName} MCP Server`,
-            version: '1.0.0'
-          }
+          name: formData.serverName,
+          yamlContent: encryptedYamlContent,
+          status: 'active',
+          createdBy: user?.id || user?.userId || 'unknown-user'
         }).unwrap();
 
-        // Log MCP server creation audit
-        await logActivity({
-          action: 'create',
-          resource: 'mcp',
-          description: `MCP server created: ${formData.serverName}`,
-          details: `Server ID: ${formData.serverId}, Type: ${formData.serverType}, URL: ${formData.serverUrl}`,
-          task: 'mcp-server-creation',
-          endpoint: '/api/v1/mcp/servers',
-          method: 'POST',
-          statusCode: 201,
-          metadata: {
-            serverId: formData.serverId,
-            serverName: formData.serverName,
-            serverType: formData.serverType,
-            serverUrl: formData.serverUrl,
-            authType: formData.authType,
-            timeout: formData.timeout,
-            retries: formData.retries,
-            hasConfigYml: !!formData.configYml
-          }
-        });
 
         toast.success('MCP server created successfully! Redirecting to Available MCPs...', { id: 'mcp-create' });
         
@@ -234,48 +239,12 @@ export default function MCPToolsSetup({
           }, 1500);
         }
       } else {
-        // Log failed connection test audit
-        await logActivity({
-          action: 'test',
-          resource: 'mcp',
-          description: `MCP server connection test failed: ${formData.serverName}`,
-          details: `Error: ${testResult.message}, Server URL: ${formData.serverUrl}`,
-          task: 'mcp-connection-test',
-          endpoint: '/api/v1/mcp/test-connection',
-          method: 'POST',
-          statusCode: 400,
-          metadata: {
-            serverName: formData.serverName,
-            serverType: formData.serverType,
-            serverUrl: formData.serverUrl,
-            authType: formData.authType,
-            errorMessage: testResult.message
-          }
-        });
         
         toast.error('Connection test failed: ' + testResult.message, { id: 'mcp-test' });
       }
     } catch (error: any) {
       console.error('MCP server creation failed:', error);
       
-      // Log error audit
-      await logActivity({
-        action: 'create',
-        resource: 'mcp',
-        description: `MCP server creation failed: ${formData.serverName}`,
-        details: `Error: ${error?.data?.message || error?.message || 'Unknown error'}`,
-        task: 'mcp-server-creation',
-        endpoint: '/api/v1/mcp/servers',
-        method: 'POST',
-        statusCode: 500,
-        metadata: {
-          serverName: formData.serverName,
-          serverType: formData.serverType,
-          serverUrl: formData.serverUrl,
-          authType: formData.authType,
-          errorMessage: error?.data?.message || error?.message || 'Unknown error'
-        }
-      });
       
       toast.error(
         error?.data?.message || 

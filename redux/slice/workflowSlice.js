@@ -6,6 +6,7 @@ const workflowSlice = createSlice({
     workflows: [],
     status: 'idle',
     error: null,
+    dataId: null, // Add dataId to Redux state
   },
   reducers: {
     addWorkflow: (state, action) => {
@@ -26,8 +27,14 @@ const workflowSlice = createSlice({
     setWorkflows: (state, action) => {
       state.workflows = action.payload;
     },
+    setDataId: (state, action) => {
+      state.dataId = action.payload;
+    },
+    clearDataId: (state) => {
+      state.dataId = null;
+    },
   },
 });
 
-export const { addWorkflow, removeWorkflow, removeAllWorkflows, updateWorkflow, setWorkflows } = workflowSlice.actions;
+export const { addWorkflow, removeWorkflow, removeAllWorkflows, updateWorkflow, setWorkflows, setDataId, clearDataId } = workflowSlice.actions;
 export default workflowSlice.reducer;

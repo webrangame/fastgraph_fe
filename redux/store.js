@@ -19,6 +19,7 @@ import { evolveAgentApi } from './api/evolveAgent/evolveAgentApi';
 import { mcpApi } from './api/mcp/mcpApi';
 import { userStatsApi } from './api/userStats/userStatsApi';
 import { auditApi } from './api/audit/auditApi';
+import { agentApi } from './api/agent/agentApi';
 import { publishApi } from '../src/lib/api/publishApi';
 
 
@@ -33,7 +34,7 @@ const persistConfig = {
     
     // If state has unexpected keys, return a clean state
     if (state && typeof state === 'object') {
-      const expectedKeys = ['auth', 'workflows', 'ui', 'authApi', 'autoOrchestrateApi', 'evolveAgentApi', 'mcpApi', 'userStatsApi', 'auditApi', 'publishApi'];
+      const expectedKeys = ['auth', 'workflows', 'ui', 'authApi', 'autoOrchestrateApi', 'evolveAgentApi', 'mcpApi', 'userStatsApi', 'auditApi', 'agentApi', 'publishApi'];
       const unexpectedKeys = Object.keys(state).filter(key => !expectedKeys.includes(key));
       
       if (unexpectedKeys.length > 0) {
@@ -65,7 +66,7 @@ const persistConfig = {
       in: (state) => state,
       out: (state) => {
         if (state && typeof state === 'object') {
-          const expectedKeys = ['auth', 'workflows', 'ui', 'authApi', 'autoOrchestrateApi', 'evolveAgentApi', 'mcpApi', 'userStatsApi', 'auditApi', 'publishApi'];
+          const expectedKeys = ['auth', 'workflows', 'ui', 'authApi', 'autoOrchestrateApi', 'evolveAgentApi', 'mcpApi', 'userStatsApi', 'auditApi', 'agentApi', 'publishApi'];
           const filteredState = {};
           
           expectedKeys.forEach(key => {
@@ -102,6 +103,7 @@ const rootReducer = combineReducers({
   [mcpApi.reducerPath]: mcpApi.reducer,
   [userStatsApi.reducerPath]: userStatsApi.reducer,
   [auditApi.reducerPath]: auditApi.reducer,
+  [agentApi.reducerPath]: agentApi.reducer,
   [publishApi.reducerPath]: publishApi.reducer,
 });
 
@@ -114,7 +116,7 @@ export const Store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(authApi.middleware, autoOrchestrateApi.middleware, evolveAgentApi.middleware, mcpApi.middleware, userStatsApi.middleware, auditApi.middleware, publishApi.middleware),
+    }).concat(authApi.middleware, autoOrchestrateApi.middleware, evolveAgentApi.middleware, mcpApi.middleware, userStatsApi.middleware, auditApi.middleware, agentApi.middleware, publishApi.middleware),
   devTools: process.env.NODE_ENV !== 'production',
 });
 

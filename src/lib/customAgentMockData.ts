@@ -230,9 +230,9 @@ function generateIOFromCapabilities(capabilities: string[]): {
 }
 
 /**
- * Generate a unique ID for custom agents
+ * Generate a unique ID for custom agents (using mock-agent- prefix for consistency)
  */
 export function generateCustomAgentId(): string {
-  return `custom-agent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `mock-agent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
