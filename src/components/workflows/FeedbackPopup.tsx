@@ -28,6 +28,7 @@ export function FeedbackPopup({
   const [currentFeedback, setCurrentFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState<WizardStep>('feedback');
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   const wizardSteps: { key: WizardStep; title: string; description: string }[] = [
     { key: 'feedback', title: 'Enter Feedbacks', description: 'Provide feedback to improve the agent' },
@@ -74,11 +75,16 @@ export function FeedbackPopup({
     setFeedbacks([]);
     setCurrentFeedback('');
     setCurrentStep('feedback');
+    setShowComingSoon(false);
   };
 
   const handleClose = () => {
     resetForm();
     onClose();
+  };
+
+  const handleEvolveClick = () => {
+    setShowComingSoon(true);
   };
 
   const getCurrentStepIndex = () => wizardSteps.findIndex(step => step.key === currentStep);
@@ -210,6 +216,33 @@ export function FeedbackPopup({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(80vh-200px)]">
+          {/* Coming Soon Message */}
+          {showComingSoon && (
+            <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 border-2 border-purple-300 dark:border-purple-700 animate-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-full bg-purple-500">
+                    <Zap className="w-5 h-5 text-white animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-purple-900 dark:text-purple-100">
+                      Workflow Evolution Coming Soon! 
+                    </h4>
+                    <p className="text-sm text-purple-700 dark:text-purple-300 mt-0.5">
+                      This exciting feature is under development and will be available soon.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowComingSoon(false)}
+                  className="p-1 rounded hover:bg-purple-200 dark:hover:bg-purple-800 text-purple-600 dark:text-purple-300 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {currentStep === 'feedback' && (
             <div className="space-y-4">
               <div>
@@ -348,7 +381,7 @@ export function FeedbackPopup({
 
             {!isLastStep ? (
               <button
-                onClick={handleNext}
+                onClick={handleEvolveClick}
                 disabled={isSubmitting || !canProceedToNext()}
                 className="flex items-center space-x-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
               >
