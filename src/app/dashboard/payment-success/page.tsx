@@ -70,6 +70,13 @@ export default function PaymentSuccessPage() {
       // Get the actual logged-in user ID
       const userId = user?.id || user?.email || 'unknown';
       
+      // Check if we already have a subscription ID - if not, something is wrong
+      if (!paymentData.subscriptionId) {
+        console.warn('No subscription ID found in payment data');
+        setDataSaved(true); // Mark as saved even if we skip the API call
+        return;
+      }
+      
       // Use Stripe product ID from payment data or fallback to mapping
       const stripeProductId = paymentData.stripeProductId || getStripeProductId(paymentData.planName);
       
@@ -112,10 +119,19 @@ export default function PaymentSuccessPage() {
       console.log('Saving payment data to external API via Redux:', apiPayload);
 
       // Use Redux mutation instead of direct fetch
-      const result = await savePaymentPlan(apiPayload).unwrap();
-      
-      console.log('Payment data saved successfully:', result);
-      setDataSaved(true);
+      try {
+        const result = await savePaymentPlan(apiPayload).unwrap();
+        console.log('Payment data saved successfully:', result);
+        setDataSaved(true);
+      } catch (error: any) {
+        // Handle 409 Conflict - subscription already exists
+        if (error?.status === 409 || error?.data?.statusCode === 409) {
+          console.log('Subscription already exists in database (409 Conflict). This is okay - the subscription is already saved.');
+          setDataSaved(true); // Mark as saved since the subscription is already in the database
+        } else {
+          throw error; // Re-throw other errors
+        }
+      }
     } catch (err) {
       console.error('Error saving payment data to API:', err);
       // Don't set error state here to avoid breaking the success flow

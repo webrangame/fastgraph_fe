@@ -41,7 +41,7 @@ const VerifyEmailPage = () => {
       
       console.log('🔵 API response data:', result);
 
-      if (result.verified) {
+      if (result.success) {
         setStatus('success');
         setMessage('Email verified successfully! Redirecting to login...');
         console.log('✅ Email verification successful');

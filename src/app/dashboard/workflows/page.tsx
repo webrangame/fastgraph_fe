@@ -289,6 +289,25 @@ export default function WorkflowsPage() {
       console.log('📭 No mock agent data available for workflow:', activeWorkflow);
       console.log('💡 This is normal for new workflows - they will use default agents or auto-orchestrate will create agents');
     }
+    
+    // Handle errors when fetching mock agent data
+    if (mockAgentError) {
+      console.error('❌ Error fetching mock agent data:', mockAgentError);
+      
+      // Check if it's a 500 error
+      if (mockAgentError && typeof mockAgentError === 'object' && 'status' in mockAgentError) {
+        const errorStatus = (mockAgentError as any).status;
+        if (errorStatus === 500) {
+          console.log('🔴 Server error (500) when fetching agents - backend may be down or data not found');
+          // Don't show an error toast here as it's too disruptive for the user
+          // Just log it and continue with empty agents
+        } else if (errorStatus === 404) {
+          console.log('📭 No agents found for this workflow (404) - this is normal for new workflows');
+        } else {
+          console.log(`⚠️ Error ${errorStatus} when fetching agents`);
+        }
+      }
+    }
   }, [activeWorkflow, mockAgentData, mockAgentError, isLoadingMockAgent]);
 
   // Use Redux workflows if available, otherwise fallback to workflow manager
