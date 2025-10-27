@@ -151,6 +151,21 @@ export const mcpApi = createApi({
       ],
     }),
 
+    // Get MCP servers with status filter
+    getMCPServersByStatus: builder.query({
+      query: (status = 'active') => ({
+        url: `/api/v1/mcp-settings?status=${status}`,
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+        },
+      }),
+      providesTags: (result, error, status) => [
+        { type: 'MCPServer', id: `status-${status}` },
+        'MCPServer'
+      ],
+    }),
+
   }),
 });
 
@@ -166,4 +181,5 @@ export const {
   useGetMCPServerStatusQuery,
   useGetMCPServerCapabilitiesQuery,
   useGetMCPServersByUserQuery,
+  useGetMCPServersByStatusQuery,
 } = mcpApi;

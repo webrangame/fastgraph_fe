@@ -38,16 +38,12 @@ export default function MCPSettings({ activeSubSection, onSectionChange }: MCPSe
           <AvailableMCPs 
             capabilities={availableMCPs}
             connectionStatus={connectionStatus}
-            onToggleCapability={toggleCapability}
           />
         );
       case 'mcp-tools-setup':
         return (
           <MCPToolsSetup 
             config={mcpConfig}
-            connectionStatus={connectionStatus}
-            onConfigChange={updateConfig}
-            onConnect={handleConnect}
             onNavigateToAvailableMCPs={() => onSectionChange?.('available-mcps')}
           />
         );

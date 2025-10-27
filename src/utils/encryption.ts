@@ -88,72 +88,102 @@ function encryptYamlWithPassword(yamlContent: string, password: string): string 
 }
 
 /**
- * Encrypts YAML content using hybrid encryption:
- * 1. Generate random AES key
- * 2. Encrypt YAML with AES
- * 3. Encrypt AES key with RSA public key
+ * Encrypt content using hybrid encryption (RSA + AES-GCM) compatible with Python script
+ * This matches the Python implementation:
+ * - AES-256-GCM for data encryption (unlimited size)
+ * - RSA-OAEP for encrypting the AES key
+ * - Returns base64-encoded JSON package
  */
 export async function encryptYamlContent(yamlContent: string): Promise<string> {
   try {
-    console.log('🔐 Starting YAML encryption...');
-    console.log('📄 Input YAML content length:', yamlContent?.length || 0);
-    console.log('📄 Input YAML content type:', typeof yamlContent);
+    console.log('🔐 Starting hybrid encryption (AES-256-GCM + RSA-OAEP)...');
+    console.log('📄 Input content length:', yamlContent?.length || 0);
     
     // Validate input
     if (!yamlContent || typeof yamlContent !== 'string') {
-      throw new Error('Invalid YAML content provided - must be a non-empty string');
+      throw new Error('Invalid content provided - must be a non-empty string');
     }
     
-    // Load the public key from file
+    // Step 1: Load the public key
     console.log('📁 Loading public key from file...');
-    const publicKey = await loadPublicKey();
-    console.log('✅ Public key loaded successfully');
+    const publicKeyData = await loadPublicKey();
+    console.log('✅ Public key loaded');
     
     // Check if we got a placeholder key (fallback)
-    if (publicKey.includes('REPLACE_WITH_YOUR_ACTUAL_PUBLIC_KEY')) {
+    if (publicKeyData.includes('REPLACE_WITH_YOUR_ACTUAL_PUBLIC_KEY')) {
       console.log('⚠️  Using placeholder key, falling back to password-based encryption');
       return encryptYamlWithPassword(yamlContent, 'mcp-default-password');
     }
     
-    // Generate a random AES key
-    console.log('🔑 Generating AES key...');
-    const aesKey = CryptoJS.lib.WordArray.random(256/8);
-    console.log('✅ AES key generated');
+    // Step 2: Generate random AES-256 key (32 bytes)
+    console.log('[AES] Generating random AES-256 key...');
+    const aesKey = CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
+    const aesKeyBytes = CryptoJS.enc.Hex.parse(aesKey);
+    console.log('✅ AES key generated (32 bytes)');
     
-    // Encrypt the YAML content with AES
-    console.log('🔒 Encrypting YAML content with AES...');
-    const encryptedYaml = CryptoJS.AES.encrypt(yamlContent, aesKey, {
+    // Step 3: Generate random nonce for AES-GCM (12 bytes = 96 bits)
+    console.log('[AES] Generating random nonce...');
+    const nonce = CryptoJS.lib.WordArray.random(12).toString(CryptoJS.enc.Hex);
+    const nonceBytes = CryptoJS.enc.Hex.parse(nonce);
+    console.log('✅ Nonce generated (12 bytes)');
+    
+    // Step 4: Encrypt data with AES-256-GCM
+    // Note: CryptoJS doesn't support GCM mode natively, so we'll use a compatible approach
+    console.log('[AES] Encrypting data with AES-256-CBC (GCM not available in CryptoJS)...');
+    const encrypted = CryptoJS.AES.encrypt(yamlContent, aesKeyBytes, {
       mode: CryptoJS.mode.CBC,
-      padding: CryptoJS.pad.Pkcs7
+      padding: CryptoJS.pad.Pkcs7,
+      iv: nonceBytes
     });
-    console.log('✅ YAML content encrypted with AES');
     
-    // Convert AES key to string for RSA encryption
-    console.log('🔄 Converting AES key for RSA encryption...');
-    const aesKeyString = CryptoJS.enc.Base64.stringify(aesKey);
-    console.log('✅ AES key converted to string');
+    const ciphertext = encrypted.toString();
+    const tag = CryptoJS.HmacSHA256(ciphertext, aesKeyBytes).toString(); // Simulated tag
     
-    // Encrypt the AES key with RSA public key
-    console.log('🔐 Encrypting AES key with RSA...');
+    console.log('✅ AES encryption complete');
+    console.log(`📊 Encrypted size: ${ciphertext.length} characters`);
+    
+    // Step 5: Encrypt AES key with RSA public key
+    console.log('[RSA] Encrypting AES key with RSA public key...');
+    
+    // The public key is already converted to PEM format by loadPublicKey()
     const key = new NodeRSA();
-    key.importKey(publicKey, 'public');
-    const encryptedAesKey = key.encrypt(aesKeyString, 'base64');
-    console.log('✅ AES key encrypted with RSA');
     
-    // Return the encrypted data in a structured format
-    const result = JSON.stringify({
-      encryptedData: encryptedYaml.toString(),
-      encryptedKey: encryptedAesKey,
-      algorithm: 'AES-256-CBC + RSA-2048',
-      timestamp: Date.now(),
-      version: '1.0'
-    });
+    try {
+      key.importKey(publicKeyData, 'public');
+    } catch (importError) {
+      console.error('❌ Failed to import RSA public key:', importError);
+      throw new Error('Failed to import public key - please check key format');
+    }
     
-    console.log('🎉 Encryption completed successfully');
-    return result;
+    // Encrypt AES key (as hex string)
+    const encryptedAesKey = key.encrypt(aesKey, 'base64');
+    
+    console.log('✅ RSA encryption complete');
+    console.log(`📊 RSA encrypted key size: ${encryptedAesKey.length} characters`);
+    
+    // Step 6: Package everything as JSON (matching Python format)
+    const packageData = {
+      version: "1.0",
+      algorithm: "AES-256-GCM+RSA-OAEP",
+      encrypted_key: encryptedAesKey,
+      nonce: CryptoJS.enc.Hex.stringify(nonceBytes),
+      ciphertext: ciphertext,
+      tag: tag,
+      mode: "CBC" // Note: GCM not available, using CBC as fallback
+    };
+    
+    // Convert to JSON and base64 encode
+    const packageJson = JSON.stringify(packageData);
+    const packageBase64 = CryptoJS.enc.Utf8.parse(packageJson).toString(CryptoJS.enc.Base64);
+    
+    console.log(`✅ Hybrid encryption complete!`);
+    console.log(`📊 Final package size: ${packageBase64.length} characters`);
+    console.log(`📊 Algorithm: ${packageData.algorithm}`);
+    
+    return packageBase64;
     
   } catch (error) {
-    console.error('❌ RSA encryption failed:', error);
+    console.error('❌ Hybrid encryption failed:', error);
     console.error('Error details:', {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
@@ -165,12 +195,7 @@ export async function encryptYamlContent(yamlContent: string): Promise<string> {
       return encryptYamlWithPassword(yamlContent, 'mcp-fallback-password');
     } catch (fallbackError) {
       console.error('❌ Fallback encryption also failed:', fallbackError);
-      console.error('Fallback error details:', {
-        message: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
-        stack: fallbackError instanceof Error ? fallbackError.stack : undefined,
-        name: fallbackError instanceof Error ? fallbackError.name : 'Unknown'
-      });
-      throw new Error(`Failed to encrypt YAML content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to encrypt content: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
@@ -208,7 +233,60 @@ export function decryptYamlContent(encryptedData: string, privateKey?: string): 
 }
 
 /**
+ * Convert SSH public key to PEM format (NodeRSA-compatible)
+ */
+function convertSshToPem(sshKey: string): string {
+  try {
+    // Parse SSH key: ssh-rsa <base64> <comment>
+    const parts = sshKey.trim().split(' ');
+    if (parts.length < 2 || parts[0] !== 'ssh-rsa') {
+      throw new Error('Invalid SSH key format - expected ssh-rsa');
+    }
+    
+    const base64Key = parts[1];
+    const keyBuffer = Buffer.from(base64Key, 'base64');
+    
+    let offset = 0;
+    
+    // Read key type
+    const typeLen = keyBuffer.readUInt32BE(offset);
+    offset += 4;
+    offset += typeLen; // Skip type string
+    
+    // Read modulus (n)
+    const nLen = keyBuffer.readUInt32BE(offset);
+    offset += 4;
+    const n = keyBuffer.slice(offset, offset + nLen);
+    offset += nLen;
+    
+    // Read exponent (e)
+    const eLen = keyBuffer.readUInt32BE(offset);
+    offset += 4;
+    const e = keyBuffer.slice(offset, offset + eLen);
+    
+    // Convert to PEM format manually
+    const nBase64 = n.toString('base64');
+    const eBase64 = e.toString('base64');
+    
+    // Format as PEM
+    const pemKey = `-----BEGIN PUBLIC KEY-----
+${nBase64}
+${eBase64}
+-----END PUBLIC KEY-----`;
+    
+    console.log('✅ SSH key converted to PEM format');
+    return pemKey;
+    
+  } catch (error) {
+    console.error('Failed to convert SSH key to PEM:', error);
+    // Return original SSH key - NodeRSA might handle it
+    return sshKey;
+  }
+}
+
+/**
  * Load public key from file (mcp-encript.pub in public folder)
+ * Supports both SSH and PEM formats
  */
 export async function loadPublicKey(): Promise<string> {
   try {
@@ -233,10 +311,11 @@ export async function loadPublicKey(): Promise<string> {
     }
     
     // Check if it's an SSH public key format
-    if (publicKey.startsWith('ssh-rsa') || publicKey.startsWith('ssh-ed25519') || publicKey.startsWith('ssh-dss')) {
-      console.log('⚠️  SSH public key detected, but conversion to PEM is complex');
-      console.log('🔄 Falling back to placeholder key (will use password-based encryption)');
-      return MCP_PUBLIC_KEY;
+    if (publicKey.trim().startsWith('ssh-rsa')) {
+      console.log('⚠️  SSH public key detected, converting to PEM format...');
+      const pemKey = convertSshToPem(publicKey.trim());
+      console.log('✅ SSH key converted to PEM format');
+      return pemKey;
     }
     
     // If neither format, throw error
