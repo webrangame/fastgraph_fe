@@ -1,5 +1,11 @@
 # 🔐 Token Expiration Handling Guide
 
+## 🎯 **Recent Update (2025-01-27):**
+- **JWT access token**: Changed from 15 minutes to **24 hours**
+- **Refresh token**: Changed from 7 days to **30 days**
+- Users remain logged in for 24 hours and won't be logged out while working
+- **⚠️ Note**: Users must log in again to get the longer-lived tokens
+
 ## 🎯 **Problem Solved:**
 Fixed token expiration handling to automatically redirect users to login page when tokens expire.
 
@@ -74,7 +80,7 @@ Fixed token expiration handling to automatically redirect users to login page wh
 ### **1. Test Access Token Expiration**
 ```bash
 # 1. Login to get tokens
-# 2. Wait for access token to expire (1 hour)
+# 2. Wait for access token to expire (24 hours)
 # 3. Try to access /dashboard
 # 4. Should automatically refresh and continue
 ```
@@ -82,7 +88,7 @@ Fixed token expiration handling to automatically redirect users to login page wh
 ### **2. Test Refresh Token Expiration**
 ```bash
 # 1. Login to get tokens
-# 2. Wait for refresh token to expire (7 days)
+# 2. Wait for refresh token to expire (30 days)
 # 3. Try to access /dashboard
 # 4. Should redirect to login page
 ```
@@ -115,19 +121,19 @@ GET /api/v1/auth/profile (after refresh)
 ### **3. Check Cookies**
 ```bash
 # Verify these cookies exist:
-access_token (expires in 1 hour)
-refresh_token (expires in 7 days)
+access_token (expires in 24 hours)
+refresh_token (expires in 30 days)
 ```
 
 ## 🛠️ **Token Configuration:**
 
 ### **Access Token**
-- **Expiry**: 1 hour
+- **Expiry**: 24 hours
 - **Usage**: API authentication
 - **Refresh**: Automatic when expired
 
 ### **Refresh Token**
-- **Expiry**: 7 days
+- **Expiry**: 30 days
 - **Usage**: Get new access tokens
 - **Refresh**: On successful login
 
@@ -151,10 +157,11 @@ refresh_token (expires in 7 days)
 
 ## 🚨 **Important Notes:**
 
-1. **Access tokens expire in 1 hour** - Users will need refresh every hour
-2. **Refresh tokens expire in 7 days** - Users need to login weekly
+1. **Access tokens expire in 24 hours** - Users remain logged in for a full day
+2. **Refresh tokens expire in 30 days** - Users need to login monthly
 3. **All redirects go to `/login`** - Ensure login page exists
 4. **Tokens are stored in cookies** - Not localStorage for security
 5. **Middleware runs on every request** - Performance impact is minimal
+6. **⚠️ Users must log in again to get the longer-lived tokens** - Existing tokens are not updated automatically
 
 Your token expiration handling is now robust and user-friendly! 🎉
